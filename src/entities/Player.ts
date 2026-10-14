@@ -69,6 +69,7 @@ import {
   isStunned,
   takeDamage,
   updateHealth,
+  type HealthState,
 } from '../logic/health';
 import { createJumpState, resetJump, updateJump } from '../logic/movement';
 import { consumeDodgeBonus, createDodgeBonus, grantDodgeBonus } from '../logic/perfectDodge';
@@ -77,8 +78,10 @@ import {
   createLoadout,
   registerHit,
   replaceRelic,
+  startingSlots,
   trySwap,
   updateLoadout,
+  type Loadout,
 } from '../logic/relics';
 import {
   cancelRoll,
@@ -110,11 +113,21 @@ export interface PlayerSnapshot {
  * Arcade; as regras (coyote, buffer, rolagem, ataque, combo, recarga, troca de relíquia,
  * vida) vivem em src/logic e os valores de cada relíquia em src/data/relics.ts.
  */
+/** O que os upgrades permanentes mudam no jogador (ver src/logic/meta/effects.ts). */
+export interface PlayerStats {
+  maxHp: number;
+  damageMultiplier: number;
+  /** Milissegundos a mais na janela da esquiva perfeita. */
+  dodgeWindowBonusMs: number;
+  /** Relíquia escolhida para começar a run (ou null para a padrão). */
+  startRelic: RelicId | null;
+}
+
 export class Player extends Phaser.Physics.Arcade.Sprite {
-  readonly health = createHealth(PLAYER_COMBAT.maxHp);
+  readonly health: HealthState;
   readonly attack = createAttackState();
   readonly roll = createRollState();
-  readonly loadout = createLoadout(STARTING_LOADOUT[0], STARTING_LOADOUT[1]);
+  readonly loadout: Loadout;
   /** Recarga do especial de cada slot de relíquia (as duas correm ao mesmo tempo). */
   readonly cooldowns = [createCooldown(), createCooldown()] as const;
   readonly barrier: Barrier;
@@ -168,8 +181,12 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     x: number,
     y: number,
     private readonly bolts: ProjectileSystem,
+    private stats: PlayerStats,
   ) {
     super(scene, x, y, HERO_SHEET_KEY, 'idle-0');
+    this.health = createHealth(stats.maxHp);
+    const [first, second] = startingSlots(stats.startRelic, STARTING_LOADOUT);
+    this.loadout = createLoadout(first, second);
     scene.add.existing(this);
     scene.physics.add.existing(this);
     // O corpo de colisão é menor que o quadro 32x32 do desenho: o centro dele é o centro do quadro
@@ -191,6 +208,24 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       .setVisible(false);
     this.bonusMarker = scene.add.image(x, y, TEXTURE.marker).setVisible(false);
     this.barrier = new Barrier(scene, relic.color);
+  }
+
+  /** Janela (ms) da esquiva perfeita: a base mais o bônus dos upgrades. */
+  get dodgeWindowMs(): number {
+    return PERFECT_DODGE.windowMs + this.stats.dodgeWindowBonusMs;
+  }
+
+  /**
+   * Aplica melhorias compradas no santuário no meio da run: a vida máxima nova entra cheia só na
+   * parte que cresceu (quem tinha 40/100 e ganha +10 fica com 50/110), sem curar o resto.
+   */
+  applyStats(next: PlayerStats): void {
+    const grown = next.maxHp - this.health.maxHp;
+    this.health.maxHp = next.maxHp;
+    if (grown > 0 && this.health.hp > 0) this.health.hp += grown;
+    this.health.hp = Math.min(this.health.hp, this.health.maxHp);
+    this.stats = next;
+    this.refreshActiveRelic();
   }
 
   /** Guarda o estado que precisa sobreviver à troca de sala. */
@@ -439,7 +474,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     // Recarga e bônus da esquiva perfeita só são gastos quando o golpe de fato acontece
     // (fase ativa); se o golpe for cancelado na preparação, nada se perde.
     this.swingEmpowered = false;
-    this.swingMultiplier = relic.passive.damageMult;
+    this.swingMultiplier = relic.passive.damageMult * this.stats.damageMultiplier;
   }
 
   /** Troca a relíquia ativa; no momento certo (logo após acertar) dispara o golpe de troca. */
@@ -473,7 +508,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     if (def.damage > 0 || def.projectile) {
       const dodgeMultiplier = consumeDodgeBonus(this.dodgeBonus, PERFECT_DODGE.damageMultiplier);
       this.swingEmpowered = dodgeMultiplier > 1;
-      this.swingMultiplier = dodgeMultiplier * relic.passive.damageMult;
+      this.swingMultiplier =
+        dodgeMultiplier * relic.passive.damageMult * this.stats.damageMultiplier;
     }
     if (def.projectile) {
       const bolt = this.bolts.fire(

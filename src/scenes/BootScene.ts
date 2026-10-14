@@ -29,7 +29,7 @@ export class BootScene extends Phaser.Scene {
     // se falhar, o jogo segue com a fonte de reserva (monospace).
     const start = (): void => {
       createPixelFont(this); // os glifos só podem ser desenhados com a fonte já carregada
-      this.scene.start('Game');
+      this.scene.start('Game', {}); // dados vazios: começa uma run nova (ver GameScene.init)
     };
     document.fonts.load(FONT.loadSpec).then(start, start);
   }

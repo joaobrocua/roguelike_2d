@@ -46,7 +46,15 @@ export const GAMEPAD_BINDINGS: Record<InputAction, readonly number[]> = {
 export const STICK_DEADZONE = 0.35;
 
 /** Botões do controle usados nos menus (layout standard): direcional e confirmar. */
-export const MENU_PAD = { up: 12, down: 13, left: 14, right: 15, confirm: [0, 2] } as const;
+export const MENU_PAD = {
+  up: 12,
+  down: 13,
+  left: 14,
+  right: 15,
+  confirm: [0, 2],
+  /** Botão B (Xbox) / círculo: fecha o painel do santuário. */
+  cancel: [1],
+} as const;
 
 /** Teclas de atalho da tela de troca de relíquia: 1 e 2 escolhem qual descartar, 3 deixa no chão. */
 export const CHOICE_SHORTCUT_KEYS = ['ONE', 'TWO', 'THREE'] as const;

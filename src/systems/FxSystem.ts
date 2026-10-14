@@ -35,6 +35,7 @@ export class FxSystem {
   private readonly empoweredSparks: Phaser.GameObjects.Particles.ParticleEmitter;
   private readonly playerSparks: Phaser.GameObjects.Particles.ParticleEmitter;
   private readonly dodgeSparks: Phaser.GameObjects.Particles.ParticleEmitter;
+  private readonly soulSparks: Phaser.GameObjects.Particles.ParticleEmitter;
   private readonly dust: Phaser.GameObjects.Particles.ParticleEmitter;
 
   constructor(private readonly scene: Phaser.Scene) {
@@ -43,6 +44,7 @@ export class FxSystem {
     this.empoweredSparks = this.createEmitter(SPARK_FX.empowered);
     this.playerSparks = this.createEmitter(SPARK_FX.player);
     this.dodgeSparks = this.createEmitter(SPARK_FX.dodge);
+    this.soulSparks = this.createEmitter(SPARK_FX.soul);
     this.dust = scene.add
       .particles(0, 0, TEXTURE.spark, {
         lifespan: DUST_FX.lifespanMs,
@@ -115,6 +117,12 @@ export class FxSystem {
       duration: SWAP_FX.ringMs,
       onComplete: () => ring.destroy(),
     });
+  }
+
+  /** Almas ganhas ao derrotar um inimigo: "+N" na cor da alma e faíscas subindo. */
+  soulGain(x: number, y: number, amount: number): void {
+    this.numbers.spawnLabel(x, y - 8, `+${amount}`, DAMAGE_NUMBER_FX.soulColor);
+    this.soulSparks.explode(SPARK_FX.soulBurst, x, y);
   }
 
   /** Cura: número verde e faíscas de alma subindo do jogador. */

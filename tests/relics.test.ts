@@ -8,6 +8,7 @@ import {
   replaceRelic,
   trySwap,
   updateLoadout,
+  startingSlots,
 } from '../src/logic/relics';
 
 const CFG = { cooldownMs: 450, strikeWindowMs: 700 };
@@ -176,5 +177,25 @@ describe('replaceRelic', () => {
     replaceRelic(l, 1, 'foice');
     expect(l.active).toBe(1);
     expect(activeRelic(l)).toBe('foice');
+  });
+});
+
+describe('startingSlots', () => {
+  const defaults = ['lamina', 'tomo'] as const;
+
+  it('sem escolha, devolve as casas padrão', () => {
+    expect(startingSlots(null, defaults)).toEqual(['lamina', 'tomo']);
+  });
+
+  it('a relíquia escolhida vai para a primeira casa e a segunda continua a padrão', () => {
+    expect(startingSlots('martelo', defaults)).toEqual(['martelo', 'tomo']);
+  });
+
+  it('escolher a da segunda casa não repete: a segunda vira a primeira padrão', () => {
+    expect(startingSlots('tomo', defaults)).toEqual(['tomo', 'lamina']);
+  });
+
+  it('escolher a própria primeira padrão não muda nada', () => {
+    expect(startingSlots('lamina', defaults)).toEqual(['lamina', 'tomo']);
   });
 });

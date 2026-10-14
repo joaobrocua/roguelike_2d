@@ -65,6 +65,17 @@ export const HUD = {
     pulseMs: 700,
     pulseDepth: 0.25,
   },
+  /** Almas carregadas (embaixo da barra de vida). */
+  souls: {
+    x: 4,
+    y: 26,
+    width: 52,
+    height: 15,
+    gem: { x: 5, y: 3 },
+    textX: 15,
+    textY: 4,
+    flashMs: 400,
+  },
   /** Relíquias carregadas (canto inferior esquerdo). */
   relics: {
     slot: 24,
@@ -97,13 +108,15 @@ export const HUD = {
 
 export const DEATH_SCREEN = {
   title: 'VOCÊ CAIU',
-  prompt: 'J / ESPAÇO / A: recomeçar',
+  prompt: 'J / ESPAÇO / A: acordar no santuário',
+  keptLabel: 'ALMAS GUARDADAS',
+  lostLabel: 'ALMAS PERDIDAS',
   /** Tempo (ms) em que a tela ignora o input, para não recomeçar sem querer. */
   inputLockMs: 600,
   overlayAlpha: 0.78,
   titleFadeMs: 700,
   /** Medidas relativas ao centro da tela. */
-  layout: { bandHalf: 38, dividerY: 34, titleY: -8, promptY: 20 },
+  layout: { bandHalf: 38, dividerY: 34, titleY: -12, summaryY: 8, promptY: 24 },
 } as const;
 
 /** Tela "Nova relíquia": textos e medidas (a tela tem 480x270). */
@@ -165,15 +178,63 @@ export const BANNER = {
   captionDy: -17,
   dividerDy: 15,
   slidePx: 6,
+  /** Rótulo em cima do nome SANTUÁRIO: entre biomas ou ao despertar depois de morrer. */
+  sanctuary: { nextBiome: 'ENTRE OS ATOS', start: 'DESPERTAR' },
+  /** Linha das almas guardadas, abaixo do divisor de baixo. */
+  bankedLabel: 'ALMAS GUARDADAS',
+  bankedDy: 18,
 } as const;
 
 /** Tela de vitória (depois de derrotar o Guardião Partido). */
 export const VICTORY_SCREEN = {
   title: 'A NÉVOA RECUA',
   subtitle: 'O Guardião Partido caiu. A fortaleza descansa.',
-  prompt: 'J / ESPAÇO / A: nova descida',
+  prompt: 'J / ESPAÇO / A: acordar no santuário',
+  bankedLabel: 'ALMAS GUARDADAS',
   inputLockMs: 900,
   overlayAlpha: 0.82,
   titleFadeMs: 900,
-  layout: { bandHalf: 52, dividerY: 46, titleY: -22, subtitleY: 4, promptY: 30 },
+  layout: { bandHalf: 52, dividerY: 46, titleY: -24, subtitleY: 0, summaryY: 16, promptY: 34 },
+} as const;
+
+/** Santuário: a tela entre as runs onde as almas viram melhorias permanentes. */
+export const SANCTUARY = {
+  title: 'SANTUÁRIO',
+  startLabel: 'RELÍQUIA INICIAL',
+  startHelp: 'Esq. e dir. trocam a relíquia inicial',
+  hint: 'SETAS ESCOLHER   J COMPRAR   E SAIR',
+  columns: {
+    basic: 'ATRIBUTOS',
+    agency: 'AGÊNCIA',
+    expansion: 'EXPANSÃO',
+  },
+  status: {
+    maxed: 'NO MÁXIMO',
+    maxedShort: 'MÁX',
+    notSaved: 'COMPRADO (SEM SALVAR)',
+    locked: 'BLOQUEADO: ',
+    poor: 'ALMAS INSUFICIENTES',
+    ready: 'J PARA COMPRAR',
+    bought: 'COMPRADO!',
+  },
+  inputLockMs: 350,
+  /** Escurecimento do jogo parado atrás da janela. */
+  dimAlpha: 0.62,
+  fx: { flashColor: 0xffffff, flashAlpha: 0.7, flashMs: 320 },
+  /** Medidas (px de tela de 480x270). A janela fica centralizada; as posições são relativas a ela. */
+  layout: {
+    width: 340,
+    height: 194,
+    padding: 10,
+    titleY: 10,
+    columnWidth: 104,
+    columnGap: 4,
+    headerY: 26,
+    firstCardY: 34,
+    card: { height: 22, gap: 3 },
+    startRow: { y: 140, height: 12 },
+    detail: { y: 148, height: 28 },
+    hintY: 185,
+    pip: { size: 4, gap: 2 },
+  },
 } as const;

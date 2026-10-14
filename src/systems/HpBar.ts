@@ -61,7 +61,7 @@ export class HpBar {
   /** `hp` é a vida ao criar a barra: o rastro já nasce nela (entrar numa sala não é levar dano). */
   constructor(
     scene: Phaser.Scene,
-    private readonly maxHp: number,
+    private maxHp: number,
     hp: number,
   ) {
     this.ghostFraction = clampFraction(hp / maxHp);
@@ -84,6 +84,11 @@ export class HpBar {
     this.ghost = create(keys.ghost, inner.x, inner.y, DEPTH.hud + 1.1);
     this.fill = create(keys.fill, inner.x, inner.y, DEPTH.hud + 1.2);
     create(keys.marks, inner.x, inner.y, DEPTH.hud + 1.3);
+  }
+
+  /** A vida máxima mudou (melhoria comprada no santuário). */
+  setMax(maxHp: number): void {
+    this.maxHp = maxHp;
   }
 
   /** `dtMs` em tempo real (o rastro e o pulso seguem rodando em câmera lenta); `hp` é a vida atual. */

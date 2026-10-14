@@ -3,6 +3,16 @@ import { generateBiomeMap } from './map/generateMap';
 import type { BiomeMap, TemplateInfo } from './map/types';
 
 /**
+ * A sala do santuário em que o herói está. Ela fica entre dois biomas ('nextBiome') ou no despertar
+ * depois de morrer ou vencer ('start': a porta leva ao começo de uma run nova). `biome` é o bioma
+ * cujo visual a sala veste.
+ */
+export interface SanctuaryState {
+  biome: BiomeId;
+  leadsTo: 'start' | 'nextBiome';
+}
+
+/**
  * Estado de uma run (do começo ao fim da fortaleza): o mapa do bioma atual, a sala em que
  * o jogador está e o que já foi feito em cada sala. A cena do jogo é recriada a cada sala;
  * este objeto é o que sobrevive de uma sala para a outra.
@@ -19,6 +29,19 @@ export interface RunState {
   usedProps: Set<string>;
   /** A run terminou (o chefe caiu): as portas deixam de funcionar e a tela final vem a seguir. */
   finished: boolean;
+  /** Almas carregadas, ainda não guardadas (só vão para a base ao passar de bioma ou vencer). */
+  souls: number;
+  /** Salas secretas por bioma nesta run (vêm dos upgrades permanentes). */
+  secretRooms: number;
+  /** Almas que acabaram de ser guardadas ao passar de bioma (só para avisar na tela). */
+  lastBanked: number;
+  /** Está na sala do santuário (e não numa sala do mapa)? */
+  sanctuary: SanctuaryState | null;
+}
+
+/** Opções da run vindas da meta-progressão. */
+export interface RunOptions {
+  secretRooms: number;
 }
 
 /** Semente de cada bioma: derivada da semente da run, então a run toda é reproduzível. */
@@ -36,15 +59,25 @@ export function isLastBiome(index: number): boolean {
   return index >= BIOME_ORDER.length - 1;
 }
 
-function mapFor(runSeed: number, index: number, catalog: readonly TemplateInfo[]): BiomeMap {
+function mapFor(
+  runSeed: number,
+  index: number,
+  catalog: readonly TemplateInfo[],
+  secretRooms: number,
+): BiomeMap {
   const biome = biomeAt(index);
-  return generateBiomeMap(biomeSeed(runSeed, index), biome, catalog, BIOME_CONFIG[biome], {
+  const config = { ...BIOME_CONFIG[biome], secrets: secretRooms };
+  return generateBiomeMap(biomeSeed(runSeed, index), biome, catalog, config, {
     final: isLastBiome(index),
   });
 }
 
-export function createRun(seed: number, catalog: readonly TemplateInfo[]): RunState {
-  const map = mapFor(seed, 0, catalog);
+export function createRun(
+  seed: number,
+  catalog: readonly TemplateInfo[],
+  options: RunOptions = { secretRooms: 0 },
+): RunState {
+  const map = mapFor(seed, 0, catalog, options.secretRooms);
   return {
     seed,
     biomeIndex: 0,
@@ -54,6 +87,10 @@ export function createRun(seed: number, catalog: readonly TemplateInfo[]): RunSt
     cleared: new Set(),
     usedProps: new Set(),
     finished: false,
+    souls: 0,
+    secretRooms: options.secretRooms,
+    lastBanked: 0,
+    sanctuary: null,
   };
 }
 
@@ -73,11 +110,32 @@ export function advanceBiome(run: RunState, catalog: readonly TemplateInfo[]): b
     return false;
   }
   run.biomeIndex += 1;
-  run.map = mapFor(run.seed, run.biomeIndex, catalog);
+  run.map = mapFor(run.seed, run.biomeIndex, catalog, run.secretRooms);
   run.roomId = run.map.startId;
   run.visited = new Set([run.map.startId]);
   run.cleared = new Set();
   run.usedProps = new Set();
+  return true;
+}
+
+/** Entra no santuário entre dois biomas: a sala veste o bioma que acabou de ser vencido. */
+export function enterSanctuaryBetweenBiomes(run: RunState): void {
+  run.sanctuary = { biome: run.map.biome, leadsTo: 'nextBiome' };
+}
+
+/** Faz a run começar no santuário (despertar depois de morrer ou vencer), vestindo o bioma `biome`. */
+export function startInSanctuary(run: RunState, biome: BiomeId): void {
+  run.sanctuary = { biome, leadsTo: 'start' };
+}
+
+/**
+ * Sai do santuário pela porta. Entre biomas passa para o próximo (devolve false se não há); no
+ * despertar só marca que o herói saiu (a cena cria a run nova com o progresso já comprado).
+ */
+export function leaveSanctuary(run: RunState, catalog: readonly TemplateInfo[]): boolean {
+  const sanctuary = run.sanctuary;
+  run.sanctuary = null;
+  if (sanctuary?.leadsTo === 'nextBiome') return advanceBiome(run, catalog);
   return true;
 }
 

@@ -1,22 +1,34 @@
 import Phaser from 'phaser';
 import { GAME_SIZE } from '../data/balance';
+import type { BiomeId } from '../data/mapRules';
 import { PALETTE } from '../data/palette';
 import { DEATH_SCREEN, TEXT_COLORS } from '../data/ui';
 import { InputSystem } from '../systems/InputSystem';
 import { pixelText } from '../systems/pixelFont';
 import { pulse, UI_TEXTURE } from '../systems/uiArt';
+import type { GameSceneData } from './GameScene';
+
+export interface DeathData {
+  /** Almas que ficaram guardadas (Retenção) e almas perdidas. */
+  kept: number;
+  lost: number;
+  /** Bioma em que o herói caiu: o santuário em que ele acorda veste este bioma. */
+  biome: BiomeId;
+}
 
 /** Tela de morte: aparece por cima do jogo parado; apertar um botão reinicia a run. */
 export class DeathScene extends Phaser.Scene {
   private inputSystem!: InputSystem;
   private lockMs: number = DEATH_SCREEN.inputLockMs;
+  private biome: BiomeId = 'muralhas';
 
   constructor() {
     super('Death');
   }
 
-  create(): void {
+  create(data: DeathData): void {
     this.lockMs = DEATH_SCREEN.inputLockMs;
+    this.biome = data?.biome ?? 'muralhas';
     this.inputSystem = new InputSystem(this);
 
     this.add
@@ -38,6 +50,13 @@ export class DeathScene extends Phaser.Scene {
       originY: 0.5,
     }).setAlpha(0);
     this.tweens.add({ targets: title, alpha: 1, duration: DEATH_SCREEN.titleFadeMs });
+    pixelText(
+      this,
+      cx,
+      cy + layout.summaryY,
+      `${DEATH_SCREEN.lostLabel} ${data?.lost ?? 0}   ${DEATH_SCREEN.keptLabel} ${data?.kept ?? 0}`,
+      { color: PALETTE.soul, originX: 0.5, originY: 0.5 },
+    );
     const prompt = pixelText(this, cx, cy + layout.promptY, DEATH_SCREEN.prompt, {
       color: TEXT_COLORS.normal,
       originX: 0.5,
@@ -52,7 +71,9 @@ export class DeathScene extends Phaser.Scene {
     const intent = this.inputSystem.intent;
     if (this.lockMs <= 0 && (intent.attackPressed || intent.jumpPressed)) {
       this.scene.stop('Game');
-      this.scene.start('Game'); // para esta cena e começa uma run nova
+      // Dados vazios (e não `undefined`): o Phaser reaproveita os dados da última vez que a cena
+      // foi iniciada, e a run nova não pode herdar a sala e o herói da anterior
+      this.scene.start('Game', { sanctuaryBiome: this.biome } satisfies GameSceneData);
     }
   }
 }

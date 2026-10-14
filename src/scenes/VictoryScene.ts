@@ -1,22 +1,33 @@
 import Phaser from 'phaser';
 import { GAME_SIZE } from '../data/balance';
+import type { BiomeId } from '../data/mapRules';
 import { PALETTE } from '../data/palette';
 import { TEXT_COLORS, VICTORY_SCREEN } from '../data/ui';
 import { InputSystem } from '../systems/InputSystem';
 import { pixelText } from '../systems/pixelFont';
 import { pulse, UI_TEXTURE } from '../systems/uiArt';
+import type { GameSceneData } from './GameScene';
+
+export interface VictoryData {
+  /** Almas que foram para a base com a vitória. */
+  banked: number;
+  /** Bioma em que o herói venceu: o santuário em que ele acorda veste este bioma. */
+  biome: BiomeId;
+}
 
 /** Tela de vitória: o Guardião caiu e a névoa recua. Apertar um botão começa uma run nova. */
 export class VictoryScene extends Phaser.Scene {
   private inputSystem!: InputSystem;
   private lockMs: number = VICTORY_SCREEN.inputLockMs;
+  private biome: BiomeId = 'catacumbas';
 
   constructor() {
     super('Victory');
   }
 
-  create(): void {
+  create(data: VictoryData): void {
     this.lockMs = VICTORY_SCREEN.inputLockMs;
+    this.biome = data?.biome ?? 'catacumbas';
     this.inputSystem = new InputSystem(this);
 
     this.add
@@ -43,6 +54,17 @@ export class VictoryScene extends Phaser.Scene {
       originX: 0.5,
       originY: 0.5,
     });
+    pixelText(
+      this,
+      cx,
+      cy + layout.summaryY,
+      `${VICTORY_SCREEN.bankedLabel} ${data?.banked ?? 0}`,
+      {
+        color: PALETTE.soul,
+        originX: 0.5,
+        originY: 0.5,
+      },
+    );
     const prompt = pixelText(this, cx, cy + layout.promptY, VICTORY_SCREEN.prompt, {
       color: TEXT_COLORS.dim,
       originX: 0.5,
@@ -57,7 +79,7 @@ export class VictoryScene extends Phaser.Scene {
     const intent = this.inputSystem.intent;
     if (this.lockMs <= 0 && (intent.attackPressed || intent.jumpPressed)) {
       this.scene.stop('Game');
-      this.scene.start('Game'); // sem dados: começa uma run nova
+      this.scene.start('Game', { sanctuaryBiome: this.biome } satisfies GameSceneData);
     }
   }
 }

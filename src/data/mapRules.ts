@@ -40,7 +40,7 @@ export interface BiomeConfig {
   /** Quantas salas de cada tipo extra (além de entrada, saída e combate). */
   chests: number;
   rests: number;
-  secrets: number;
+  secrets: number; // valor-base dos testes de gerador; numa run vale o que os upgrades liberam (começa em 0)
   /** Quantas ligações extras (laços/atalhos) além da árvore principal. */
   extraLinks: number;
 }

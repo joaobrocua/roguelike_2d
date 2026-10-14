@@ -21,6 +21,7 @@ function fakePlayer(overrides: Record<string, unknown> = {}) {
     pendingSwapStrike: null as { damage: number; radius: number } | null,
     barrier: { live: false, box: { x: 0, y: 0, width: 6, height: 40 } },
     rollElapsedMs: 0,
+    dodgeWindowMs: PERFECT_DODGE.windowMs,
     // Como a entidade real: o golpe só vale na fase ativa e se tem forma
     get hitboxLive(): boolean {
       return this.attack.phase === 'active' && this.currentAttack.shape !== 'none';

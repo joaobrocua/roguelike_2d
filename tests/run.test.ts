@@ -8,8 +8,11 @@ import {
   biomeSeed,
   createRun,
   enterRoom,
+  enterSanctuaryBetweenBiomes,
   isLastBiome,
+  leaveSanctuary,
   propKey,
+  startInSanctuary,
 } from '../src/logic/run';
 
 const catalog = buildCatalog(ROOM_TEMPLATES).infos;
@@ -104,5 +107,68 @@ describe('propKey', () => {
 describe('biomeAt', () => {
   it('rejeita biomas que não existem', () => {
     expect(() => biomeAt(99)).toThrow();
+  });
+});
+
+describe('almas e salas secretas da run', () => {
+  it('a run nasce sem almas e, sem upgrades, sem salas secretas', () => {
+    const run = createRun(5, catalog);
+    expect(run.souls).toBe(0);
+    expect(run.secretRooms).toBe(0);
+    expect(run.map.rooms.some((r) => r.kind === 'secret')).toBe(false);
+  });
+
+  it('com o upgrade, cada bioma ganha a sala secreta, inclusive os seguintes', () => {
+    const run = createRun(5, catalog, { secretRooms: 1 });
+    expect(run.map.rooms.filter((r) => r.kind === 'secret')).toHaveLength(1);
+    advanceBiome(run, catalog);
+    expect(run.map.rooms.filter((r) => r.kind === 'secret')).toHaveLength(1);
+    advanceBiome(run, catalog);
+    expect(run.map.rooms.filter((r) => r.kind === 'secret')).toHaveLength(1);
+  });
+
+  it('gera mapas válidos sem salas secretas em muitas sementes', () => {
+    for (let seed = 1; seed <= 60; seed++) {
+      const run = createRun(seed, catalog);
+      advanceBiome(run, catalog);
+      advanceBiome(run, catalog);
+      expect(run.map.rooms.length).toBeGreaterThan(4);
+    }
+  });
+});
+
+describe('santuário na run', () => {
+  it('uma run nova não começa no santuário', () => {
+    expect(createRun(1, catalog).sanctuary).toBeNull();
+  });
+
+  it('entre biomas o santuário veste o bioma que acabou e a porta leva ao próximo', () => {
+    const run = createRun(2, catalog);
+    enterSanctuaryBetweenBiomes(run);
+    expect(run.sanctuary).toEqual({ biome: 'muralhas', leadsTo: 'nextBiome' });
+    expect(run.biomeIndex).toBe(0); // ainda não passou de bioma
+    expect(leaveSanctuary(run, catalog)).toBe(true);
+    expect(run.sanctuary).toBeNull();
+    expect(run.biomeIndex).toBe(1);
+    expect(run.map.biome).toBe('saloes');
+    expect(run.roomId).toBe(run.map.startId);
+  });
+
+  it('no despertar a porta não muda de bioma', () => {
+    const run = createRun(3, catalog);
+    startInSanctuary(run, 'catacumbas');
+    expect(run.sanctuary).toEqual({ biome: 'catacumbas', leadsTo: 'start' });
+    expect(leaveSanctuary(run, catalog)).toBe(true);
+    expect(run.sanctuary).toBeNull();
+    expect(run.biomeIndex).toBe(0);
+  });
+
+  it('sair sem estar no santuário não faz nada, e no último bioma não há próximo', () => {
+    const run = createRun(4, catalog);
+    expect(leaveSanctuary(run, catalog)).toBe(true);
+    expect(run.biomeIndex).toBe(0);
+    while (!isLastBiome(run.biomeIndex)) advanceBiome(run, catalog);
+    enterSanctuaryBetweenBiomes(run);
+    expect(leaveSanctuary(run, catalog)).toBe(false);
   });
 });

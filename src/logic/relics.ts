@@ -56,6 +56,19 @@ export function trySwap(loadout: Loadout, cfg: SwapConfig): SwapResult {
   return 'swapped';
 }
 
+/**
+ * Casas com que a run começa: a relíquia escolhida (se houver) vai para a primeira casa e a
+ * segunda continua a padrão; se a escolhida for a da segunda casa, a segunda vira a primeira
+ * padrão (nunca carregar a mesma relíquia duas vezes).
+ */
+export function startingSlots(
+  chosen: RelicId | null,
+  defaults: readonly [RelicId, RelicId],
+): [RelicId, RelicId] {
+  if (chosen === null) return [defaults[0], defaults[1]];
+  return [chosen, chosen === defaults[1] ? defaults[0] : defaults[1]];
+}
+
 export function carries(loadout: Loadout, id: RelicId): boolean {
   return loadout.slots[0] === id || loadout.slots[1] === id;
 }

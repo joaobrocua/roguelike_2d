@@ -3,7 +3,8 @@ import { PALETTE } from '../data/palette';
 import { fillPx, linePx, createSpriteSheet, type SheetFrame } from './pixelSheet';
 
 /**
- * Objetos do cenário que o jogador toca: baú, fogueira de descanso e porta do próximo bioma.
+ * Objetos do cenário que o jogador toca: baú, fogueira de descanso, porta do próximo bioma e a
+ * estátua do santuário.
  * Pixel art em código (com contorno automático). Todos têm base apoiada no chão do bloco.
  */
 
@@ -18,6 +19,13 @@ export const PROP_FRAME = {
   fireOut: 'fire-out',
   door: 'door',
 } as const;
+
+/** A estátua do santuário é grande demais para o quadro dos outros objetos: tem textura própria. */
+export const SHRINE_SHEET_KEY = 'shrine-statue';
+export const SHRINE_FRAME = 'shrine';
+export const SHRINE_CELL = { width: 48, height: 64 } as const;
+/** Linha do quadro em que a base da estátua encosta no chão. */
+export const SHRINE_BASE_ROW = 62;
 
 type Ctx = CanvasRenderingContext2D;
 
@@ -80,6 +88,88 @@ function drawDoor(ctx: Ctx): void {
   fillPx(ctx, PALETTE.glow, x + 9, base - 28, 2, 2); // pingente acima do arco
 }
 
+/**
+ * Estátua do santuário: um anjo de pedra caído, de cabeça baixa, mãos sobre a espada cravada, uma
+ * asa inteira e a outra partida, a auréola quebrada ainda brilhando. Base na linha 62 do quadro.
+ */
+function drawShrine(ctx: Ctx): void {
+  const base = SHRINE_BASE_ROW;
+  const cx = 24;
+  // Degrau largo e pedestal com um símbolo gravado
+  fillPx(ctx, PALETTE.stoneDark, 5, base - 4, 38, 5);
+  fillPx(ctx, PALETTE.stone, 6, base - 3, 36, 3);
+  fillPx(ctx, PALETTE.stoneLight, 5, base - 4, 38, 1);
+  fillPx(ctx, PALETTE.deep, 11, base - 1, 1, 2);
+  fillPx(ctx, PALETTE.deep, 31, base - 2, 1, 3);
+  fillPx(ctx, PALETTE.stoneDark, 11, base - 10, 26, 6);
+  fillPx(ctx, PALETTE.stone, 12, base - 9, 24, 5);
+  fillPx(ctx, PALETTE.stoneLight, 11, base - 10, 26, 1);
+  fillPx(ctx, PALETTE.glow, cx - 1, base - 8, 2, 3, 0.9); // símbolo gravado
+  fillPx(ctx, PALETTE.glow, cx - 3, base - 7, 6, 1, 0.6);
+  const floorTop = base - 10; // topo do pedestal: onde o manto termina
+
+  // Asas caídas atrás dos ombros: penas em colunas que crescem para fora. A da direita está partida
+  for (let i = 0; i < 16; i++) {
+    const top = 18 + Math.round(i * 0.7);
+    const reach = Math.min(floorTop + 1, 32 + Math.round(i * 1.5));
+    const bottom = reach - (i % 2) * 3; // pontas das penas em dentes
+    const color = i % 3 === 1 ? PALETTE.stoneLight : PALETTE.mist;
+    for (const [x, broken] of [
+      [cx - 7 - i, false],
+      [cx + 6 + i, true],
+    ] as const) {
+      if (broken && i > 11) continue; // asa partida
+      const end = broken ? bottom - (i > 8 ? 6 : 0) : bottom;
+      if (end <= top) continue;
+      fillPx(ctx, color, x, top, 1, end - top);
+      fillPx(ctx, PALETTE.bone, x, top, 1, 1); // borda de ataque clara
+      fillPx(ctx, PALETTE.stone, x, end - 3, 1, 3); // ponta na sombra
+      for (let y = top + 3 + (i % 3); y < end - 3; y += 5)
+        fillPx(ctx, PALETTE.stoneDark, x, y, 1, 1);
+    }
+  }
+
+  // Manto: ombros, tronco, barra aberta, dobras
+  fillPx(ctx, PALETTE.stone, cx - 5, 20, 10, 4); // ombros
+  fillPx(ctx, PALETTE.stone, cx - 4, 24, 8, 22);
+  fillPx(ctx, PALETTE.stone, cx - 7, 42, 14, floorTop - 42);
+  fillPx(ctx, PALETTE.stoneLight, cx - 5, 20, 1, 4);
+  fillPx(ctx, PALETTE.stoneLight, cx - 4, 24, 1, 22);
+  fillPx(ctx, PALETTE.stoneLight, cx - 7, 42, 1, floorTop - 42);
+  fillPx(ctx, PALETTE.stoneDark, cx + 3, 24, 1, 22);
+  fillPx(ctx, PALETTE.stoneDark, cx + 6, 42, 1, floorTop - 42);
+  fillPx(ctx, PALETTE.stoneDark, cx - 7, floorTop - 1, 14, 1); // barra
+  for (const dx of [-3, 2]) fillPx(ctx, PALETTE.stoneDark, cx + dx, 36, 1, floorTop - 38); // dobras
+  fillPx(ctx, PALETTE.stoneDark, cx - 1, 40, 1, floorTop - 42);
+
+  // Cabeça baixa com capuz
+  fillPx(ctx, PALETTE.stoneLight, cx - 4, 10, 8, 10);
+  fillPx(ctx, PALETTE.stone, cx + 2, 11, 2, 9);
+  fillPx(ctx, PALETTE.deep, cx - 3, 14, 6, 4); // rosto na sombra
+  fillPx(ctx, PALETTE.mist, cx - 2, 17, 4, 1); // queixo
+  fillPx(ctx, PALETTE.stoneDark, cx - 3, 19, 6, 1);
+
+  // Espada cravada à frente, com as mãos no punho e a guarda em cruz
+  fillPx(ctx, PALETTE.bone, cx - 1, 33, 2, floorTop - 33);
+  fillPx(ctx, PALETTE.mist, cx, 34, 1, floorTop - 36);
+  fillPx(ctx, PALETTE.stoneLight, cx - 5, 31, 10, 2);
+  fillPx(ctx, PALETTE.bone, cx - 5, 31, 10, 1);
+  fillPx(ctx, PALETTE.mist, cx - 3, 26, 6, 4); // mãos
+  fillPx(ctx, PALETTE.bone, cx - 3, 26, 6, 1);
+
+  // Auréola partida (um arco com um vão) e fagulhas soltas
+  for (let deg = 0; deg < 360; deg += 5) {
+    if (deg > 300 && deg < 350) continue;
+    const x = cx + Math.round(Math.cos((deg * Math.PI) / 180) * 9);
+    const y = 6 + Math.round(Math.sin((deg * Math.PI) / 180) * 3);
+    fillPx(ctx, PALETTE.glow, x, y, 1, 1);
+  }
+  fillPx(ctx, PALETTE.glow, cx + 8, 12, 1, 2, 0.8); // fragmento caindo
+  fillPx(ctx, PALETTE.playerAccent, cx - 11, 14, 1, 1, 0.8);
+  fillPx(ctx, PALETTE.playerAccent, cx + 12, 22, 1, 1, 0.7);
+  fillPx(ctx, PALETTE.glow, cx - 14, 30, 1, 1, 0.7);
+}
+
 export function createPropSheet(scene: Phaser.Scene): void {
   const frames: SheetFrame[] = [
     { name: PROP_FRAME.chestClosed, draw: (ctx) => drawChest(ctx, false) },
@@ -90,4 +180,12 @@ export function createPropSheet(scene: Phaser.Scene): void {
     { name: PROP_FRAME.door, draw: drawDoor },
   ];
   createSpriteSheet(scene, PROP_SHEET_KEY, PROP_CELL, frames, PALETTE.void);
+  createSpriteSheet(
+    scene,
+    SHRINE_SHEET_KEY,
+    SHRINE_CELL.width,
+    [{ name: SHRINE_FRAME, draw: drawShrine }],
+    PALETTE.void,
+    SHRINE_CELL.height,
+  );
 }

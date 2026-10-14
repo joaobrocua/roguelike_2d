@@ -1,0 +1,155 @@
+/**
+ * A sala do santuário: uma câmara só para a estátua do anjo caído, entre um bioma e o seguinte e
+ * no despertar depois de morrer. O desenho é um só; o bioma entra com a pedra, o fundo, a
+ * escuridão e as cores (SANCTUARY_LOOK). Legenda: ver data/rooms.ts, mais:
+ *   'S' a estátua (a coluna marca a BORDA ESQUERDA do tile: o centro dela é o eixo da sala)
+ *   'X' a porta que leva adiante (ao próximo bioma ou ao começo da run)
+ * Tudo em tiles de 16 px; a sala tem 1 célula (30 x 17), sem aberturas nas paredes.
+ */
+import type { BiomeId } from './mapRules';
+
+export const SANCTUARY_LAYOUT: readonly string[] = [
+  '##############################',
+  '#............................#',
+  '#............................#',
+  '#............................#',
+  '#............................#',
+  '#...T....................T...#',
+  '#............................#',
+  '#.......T............T.......#',
+  '#............................#',
+  '#............................#',
+  '#............................#',
+  '#..............S.............#',
+  '#............####............#',
+  '#..........########..........#',
+  '#..P.....############.....X..#',
+  '##############################',
+  '##############################',
+];
+
+/** Cores do santuário em cada bioma (a pedra e o fundo já vêm de BIOME_LOOK). */
+export interface SanctuaryLook {
+  /** Chama dos braseiros e das velas: da borda ao miolo. */
+  flame: readonly [number, number, number];
+  /** Pano dos estandartes e o acabamento dele. */
+  banner: number;
+  bannerTrim: number;
+  /** Cor do círculo de runas no chão e do feixe do vitral. */
+  rune: number;
+}
+
+export const SANCTUARY_LOOK: Readonly<Record<BiomeId, SanctuaryLook>> = {
+  // Pátio ao entardecer: fogo âmbar, pano índigo, luz pálida da lua
+  muralhas: {
+    flame: [0xe8892d, 0xffc46b, 0xfff0c0],
+    banner: 0x2c3a78,
+    bannerTrim: 0xffc46b,
+    rune: 0xaebcf0,
+  },
+  // Capela: fogo violeta, pano vinho, vitral aceso
+  saloes: {
+    flame: [0x7a45d6, 0xd9a0ff, 0xf6e6ff],
+    banner: 0x7a1f3a,
+    bannerTrim: 0xffb35a,
+    rune: 0xd9a0ff,
+  },
+  // Catacumbas: fogo-fátuo verde, pano de musgo, luz de alma
+  catacumbas: {
+    flame: [0x2f9a7a, 0x6fe3b0, 0xd0fff0],
+    banner: 0x224a3a,
+    bannerTrim: 0x6fe3b0,
+    rune: 0x7fffd0,
+  },
+};
+
+/** Onde cada peça de cenário fica (px de mundo; o chão da sala está em y = 240). */
+export const SANCTUARY_DECOR = {
+  floorY: 240,
+  /** Colunas do fundo (centro x). */
+  pillars: [104, 376],
+  pillar: { width: 24, top: 16 },
+  /** Vitral atrás da estátua. */
+  window: { x: 240, y: 22, width: 56, height: 104 },
+  /** Feixe de luz do vitral até o chão (aditivo). */
+  shaft: { topY: 112, bottomY: 192, topWidth: 54, bottomWidth: 120, alpha: 0.26 },
+  /** Estandartes pendurados do teto: centro x e o comprimento. */
+  banners: [176, 304],
+  banner: { width: 20, height: 64, top: 16, swayDeg: 1.6, swayMs: 3200 },
+  /** Braseiros altos dos dois lados da escada (centro x, no chão). */
+  braziers: [128, 352],
+  brazier: {
+    light: { radius: 112, strength: 0.95 },
+    frameMs: 120,
+    glowAlpha: 0.3,
+    /** Altura (px) do centro do desenho e do brilho acima do chão. */
+    centerDy: 24,
+    glowDy: 38,
+  },
+  /** Velas nos degraus (x, y do chão do degrau). */
+  candles: [
+    [152, 224],
+    [162, 224],
+    [318, 224],
+    [328, 224],
+    [190, 208],
+    [290, 208],
+  ],
+  candle: {
+    light: { radius: 34, strength: 0.6 },
+    frameMs: 190,
+    glowAlpha: 0.22,
+    /** Altura (px) do centro do desenho e do brilho acima do degrau. */
+    centerDy: 6,
+    glowDy: 9,
+  },
+  /** Defasagem entre as chamas (rad) e o quanto o brilho encolhe em relação ao alcance da luz. */
+  flame: { braziersPhase: 1.7, candlesPhase: 0.9, glowShrink: 0.8, startClockMs: 100 },
+  /** Respiração do feixe de luz e do círculo de runas (fração mínima e velocidade do feixe em rad/s). */
+  pulse: { shaftBase: 0.85, shaftSwing: 0.15, shaftSpeed: 0.9, runesBase: 0.55, runesSwing: 0.45 },
+  /** Círculo de runas no chão, em volta da escada. */
+  runes: { x: 240, y: 238, width: 232, height: 14, alpha: 0.4, pulseMs: 2600 },
+  /** Poeira suspensa que sobe pelo feixe. */
+  motes: {
+    frequencyMs: 260,
+    lifespanMs: 5200,
+    width: 70,
+    alpha: 0.5,
+    speedY: { min: -7, max: -2 },
+    speedX: 3,
+    /** Faixa em que nascem: começa `zoneTop` px acima do pé do feixe e tem `zoneHeight` de altura. */
+    zoneTop: 16,
+    zoneHeight: 56,
+  },
+  /**
+   * O portal gigante que leva adiante: um arco de pedra com um vão de energia da cor do bioma de
+   * destino. `x` vem do marcador 'X' do desenho; o chão é o da sala.
+   */
+  gate: {
+    width: 72,
+    height: 116,
+    /** Vão do arco (px dentro do quadro): largura, topo e fundo (acima da soleira). */
+    opening: { width: 40, top: 16, bottom: 112 },
+    /** Quadros da energia e o tempo de cada um. */
+    portalFrames: 4,
+    portalFrameMs: 150,
+    /** Região em que o herói entra no portal: meia largura e altura (px) a partir do chão. */
+    trigger: { halfWidth: 14, height: 84 },
+    light: { radius: 150, strength: 1 },
+    glowAlpha: 0.38,
+    glowPulseMs: 2200,
+    /** Letreiro acima do arco ("ATO II") e a altura dele acima do topo do arco. */
+    labelDy: 10,
+    sparks: { frequencyMs: 130, lifespanMs: 1700, speedY: { min: -22, max: -8 }, alpha: 0.85 },
+  },
+  depth: {
+    pillar: -5.4,
+    window: -5.2,
+    shaft: -3,
+    runes: -3.4,
+    banner: -4.6,
+    floorDecor: 0.04,
+    portal: -3.2,
+    gate: -3.1,
+  },
+} as const;

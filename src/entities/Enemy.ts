@@ -164,6 +164,11 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
       .setDepth(7);
   }
 
+  /** Identificador do tipo de inimigo (o mesmo de src/data/enemies.ts). */
+  get enemyId(): string {
+    return this.def.id;
+  }
+
   /** É o chefe da fortaleza (a barra de vida e a vitória dependem disso)? */
   get isBoss(): boolean {
     return false;

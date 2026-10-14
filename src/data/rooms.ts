@@ -31,3 +31,21 @@ export const ROOM_TRANSITION = {
   /** Cor (RGB) do clarão da fase 2. */
   phaseFlashColor: { r: 255, g: 196, b: 107 },
 } as const;
+
+/**
+ * A estátua do santuário (anjo caído), que vive na sala própria do santuário (data/sanctuaryRoom.ts).
+ * Medidas em px.
+ */
+export const SHRINE = {
+  /** Aviso que aparece quando o herói chega perto (sobre a estátua). */
+  label: 'SANTUÁRIO',
+  /** Altura (px) do aviso acima do chão da estátua. */
+  promptDy: { name: 80, key: 91 },
+  /** Altura (px) da região em que o herói consegue usar a estátua, e quanto ela desce abaixo do pedestal (os degraus). */
+  boxHeight: 46,
+  boxBelow: 40,
+  /** Folga lateral (px) da região de uso. */
+  reachX: 26,
+  /** Altura (px) do centro do brilho acima do chão. */
+  glowDy: 30,
+} as const;

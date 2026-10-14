@@ -29,11 +29,16 @@ export class DamageNumbers {
 
   /** Mostra um número em (x, y). Se o pool estiver cheio, reaproveita o mais antigo. */
   spawn(x: number, y: number, value: number, color: number, size = 1): void {
+    this.spawnLabel(x, y, String(value), color, size);
+  }
+
+  /** Mostra um texto curto qualquer (ex.: "+3") no lugar de um número. */
+  spawnLabel(x: number, y: number, label: string, color: number, size = 1): void {
     const i = this.next;
     this.next = (this.next + 1) % this.texts.length;
     const text = this.texts[i];
     if (!text) return;
-    text.setText(String(value));
+    text.setText(label);
     text.setTint(color);
     text.setScale(size); // sempre inteiro: o pixel do texto tem o mesmo tamanho do resto
     text.setPosition(x, y);

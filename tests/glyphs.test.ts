@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { GUARDIAO } from '../src/data/boss';
 import { BIOME_NAMES } from '../src/data/mapRules';
 import { RELIC_IDS, RELICS } from '../src/data/relics';
-import { BANNER, DEATH_SCREEN, HUD, RELIC_CHOICE, VICTORY_SCREEN } from '../src/data/ui';
+import { UPGRADE_NODES } from '../src/data/meta';
+import { BANNER, DEATH_SCREEN, HUD, RELIC_CHOICE, SANCTUARY, VICTORY_SCREEN } from '../src/data/ui';
+import { SHRINE } from '../src/data/rooms';
 import { GLYPH_SET, unsupportedChars } from '../src/logic/glyphs';
 
 describe('unsupportedChars', () => {
@@ -34,9 +36,20 @@ describe('os textos do jogo só usam glifos que a fonte tem', () => {
       RELIC_CHOICE.hint,
     ].join(' '),
     dicas: HUD.hints.items.map((item) => `${item.keys.join('')}${item.label}`).join(' '),
-    faixa: `${BANNER.actLabel} ${BANNER.acts.join(' ')}`,
+    faixa: `${BANNER.actLabel} ${BANNER.acts.join(' ')} ${Object.values(BANNER.sanctuary).join(' ')}`,
     biomas: Object.values(BIOME_NAMES).join(' '),
     chefe: GUARDIAO.name.toUpperCase(),
+    santuario: [
+      SANCTUARY.title,
+      SHRINE.label,
+      SANCTUARY.startLabel,
+      SANCTUARY.startHelp,
+      SANCTUARY.hint,
+      ...Object.values(SANCTUARY.columns),
+      ...Object.values(SANCTUARY.status),
+      ...UPGRADE_NODES.flatMap((node) => [node.name, node.description]),
+    ].join(' '),
+    bioma: `${BANNER.bankedLabel} ${DEATH_SCREEN.keptLabel} ${DEATH_SCREEN.lostLabel} ${VICTORY_SCREEN.bankedLabel}`,
     reliquias: RELIC_IDS.map((id) => {
       const relic = RELICS[id];
       return `${relic.name} ${relic.summary.basic} ${relic.summary.special} ${relic.passiveText}`;

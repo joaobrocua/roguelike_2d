@@ -11,7 +11,7 @@ Dead Cells, Skul, Astral Ascent, Have a Nice Death, Blasphemous e Hollow Knight 
 - [x] 3. Inimigos (Carniçal, Arqueiro Oco, Vulto e Cão de Ossos; o chefe vem na etapa 5)
 - [x] 4. Relíquias
 - [x] 5. Salas procedurais (fortaleza em 3 biomas, minimapa e o chefe Guardião Partido)
-- [ ] 6. Progressão permanente
+- [x] 6. Progressão permanente (almas, Santuário e árvore de melhorias salva no navegador)
 - [ ] 7. Polimento e deploy
 
 ## Prints e GIFs
@@ -119,14 +119,24 @@ Flechas também podem ser esquivadas com a esquiva perfeita. Inimigos derrotados
 
 ## A fortaleza (etapa 5)
 
-Uma run atravessa **3 biomas**, cada um um mapa interligado de salas gerado por semente: **Muralhas e Pátio**, **Salões e Capela** e **Catacumbas e Masmorra**. Cada mapa tem sala inicial, salas de combate, uma fogueira de descanso, um baú, uma sala secreta e uma **porta de saída** para o bioma seguinte; o último termina na arena do chefe.
+Uma run atravessa **3 biomas**, cada um um mapa interligado de salas gerado por semente: **Muralhas e Pátio**, **Salões e Capela** e **Catacumbas e Masmorra**. Cada mapa tem sala inicial, salas de combate, uma fogueira de descanso, um baú e uma **porta de saída** para o bioma seguinte; o último termina na arena do chefe.
 
 - **Salas:** desenhos em texto (`src/data/templates`), em células de 30x17 blocos, com portas nas quatro direções. Antes de entrar no jogo, todo desenho é validado: as portas se alcançam com os pulos do herói e nada fica fora de alcance (`src/logic/map`).
 - **Geração:** `generateBiomeMap` monta o grafo de salas numa grade, com ligações extras para criar voltas, e sorteia os desenhos pela semente. A mesma semente dá a mesma run.
-- **Viagem:** as portas abertas levam à sala vizinha; as sem ligação são fechadas por parede. O minimapa (canto da tela) mostra as salas visitadas e as vizinhas; a sala secreta só aparece depois de visitada.
+- **Viagem:** as portas abertas levam à sala vizinha; as sem ligação são fechadas por parede. O minimapa (canto da tela) mostra as salas visitadas e as vizinhas; as salas secretas (liberadas na árvore com _Passagens_) só aparecem depois de visitadas.
 - **Fogueira:** cura tudo uma vez. **Baú:** solta uma relíquia. **Porta de saída:** abre o próximo bioma.
 - **Guardião Partido:** o chefe também **pula**: salta o obstáculo que o barra, sobe com um pulo alto até quem está num balcão e dá um salto comprido quando você está longe (poeira e tremor ao pousar; valores em `src/data/boss.ts`). Ele tem três ataques (pancada, investida e tremor) e entra numa fase 2 mais agressiva com metade da vida. Ao cair, solta uma relíquia e a tela de vitória aparece. Dados em `src/data/boss.ts`, IA em `src/logic/ai/boss.ts`.
 - Cada bioma tem a sua escuridão e névoa (`BIOME_DARKNESS`).
+
+## Progressão permanente (etapa 6)
+
+Cada run rende **almas**, e o **Santuário** — uma sala própria, toda voltada para a estátua de um anjo caído, que o herói atravessa ao passar de um bioma para o outro e onde acorda depois de morrer ou vencer — troca almas por melhorias permanentes numa árvore de 10 nós, seguindo o modelo do documento de design (20% atributos básicos, 40% agência e consistência, 40% expansão de conteúdo).
+
+- **Almas:** cada inimigo derrotado rende almas (o chefe rende bastante) e elas ficam **carregadas** (contador sob a barra de vida). Só são **guardadas** ao passar para o próximo bioma ou ao vencer o chefe (que ainda dá um prêmio). Se o herói morre, as não guardadas **se perdem**, exceto a fração que a **Retenção** protege.
+- **Árvore:** _Vigor_ e _Força_ (atributos, com teto de +50% de vida e +25% de dano); _Retenção_, _Sorte_, _Colheita_ e _Reflexo_ (agência, até +30 ms na esquiva perfeita); _Arsenal I e II_ (liberam as 5 armas novas), _Passagens_ (uma sala secreta por bioma) e _Mestre_ (escolher a relíquia inicial). Os pré-requisitos são respeitados e o custo do nível _n_ é `custoBase × multiplicador^(n−1)`, com multiplicador entre 1,15 e 1,35. Tudo em `src/data/meta.ts`.
+- **Jogo base vencível sem upgrades:** com o save zerado os efeitos são neutros (4 armas originais, nenhuma sala secreta, nenhum bônus), e os tetos garantem que a árvore nunca passa de 1,5x a 2x dos atributos iniciais (há testes para isso).
+- **Save:** `localStorage` do navegador, versionado e validado ao carregar (save corrompido ou editado nunca derruba o jogo; níveis acima do máximo, nós desconhecidos e pré-requisitos faltando são corrigidos). A gravação é em etapas, com cópia de segurança, para uma queda no meio não corromper o progresso. Se o navegador não permitir `localStorage`, o jogo continua com o progresso só daquela sessão. Lógica em `src/logic/meta`.
+- **Controles do Santuário:** **E** (ou RT) diante da estátua abre a janela de melhorias, que também guarda as almas carregadas. A sala veste o bioma (pedra, fundo, luz e a cor do fogo, dos estandartes e das runas), tem vitral com feixe de luz, colunas, braseiros e velas, e um portal gigante à direita, com a energia da cor do bioma de destino, leva adiante. Dentro dela, setas ou WASD escolhem, **J** compra e **E** ou Esc fecha. As melhorias valem na hora, mas _Passagens_ e a relíquia inicial só mudam a próxima run.
 
 ## Decisões técnicas
 

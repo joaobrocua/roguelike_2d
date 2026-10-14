@@ -1,4 +1,3 @@
-import { PERFECT_DODGE } from '../data/combat';
 import type { SwapStrikeDef } from '../data/relics';
 import type { HitData } from '../logic/attack';
 import { boxesOverlap, createBox } from '../logic/geometry';
@@ -159,7 +158,7 @@ export class CombatSystem {
   private resolveHit(sourceX: number, hit: HitData): boolean {
     const player = this.player;
     if (player.isRollInvulnerable()) {
-      if (isPerfectDodge(player.rollElapsedMs, true, PERFECT_DODGE.windowMs)) {
+      if (isPerfectDodge(player.rollElapsedMs, true, player.dodgeWindowMs)) {
         this.events.onPerfectDodge();
       }
       return false;
