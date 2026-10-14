@@ -28,6 +28,7 @@ import {
   type SwapStrikeDef,
 } from '../data/relics';
 import {
+  canCancelRecovery,
   cancelAttack,
   createAttackState,
   isHitboxActive,
@@ -42,6 +43,14 @@ import {
   resetCombo,
   updateCombo,
 } from '../logic/combo';
+import {
+  clearInputBuffer,
+  consumePress,
+  createInputBuffer,
+  isBuffered,
+  rememberPress,
+  tickInputBuffer,
+} from '../logic/inputBuffer';
 import {
   cooldownFraction,
   createCooldown,
@@ -123,6 +132,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   private readonly jump = createJumpState();
   private readonly combo = createCombo();
+  /** Apertos feitos um pouco antes de poder agir (ataque, especial, rolagem). */
+  private readonly inputBuffer = createInputBuffer();
   private readonly dodgeBonus = createDodgeBonus();
   private readonly slash: SlashVisual;
   private readonly bonusMarker: Phaser.GameObjects.Image;
@@ -282,6 +293,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     if (!hit) return 0;
     cancelAttack(this.attack);
     resetCombo(this.combo);
+    clearInputBuffer(this.inputBuffer);
     cancelRoll(this.roll, ROLL);
     resetJump(this.jump); // sem coyote/pulo pendente depois do knockback
     const dir = directionAway(sourceX, this.x);
@@ -319,6 +331,15 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.lastVelY = body.velocity.y;
     const stunned = isStunned(this.health);
 
+    // Aperto adiantado: fica guardado por um instante e vale quando o jogador puder agir
+    tickInputBuffer(this.inputBuffer, dtMs);
+    if (intent.attackPressed)
+      rememberPress(this.inputBuffer, 'attack', PLAYER_COMBAT.inputBufferMs);
+    if (intent.specialPressed) {
+      rememberPress(this.inputBuffer, 'special', PLAYER_COMBAT.inputBufferMs);
+    }
+    if (intent.rollPressed) rememberPress(this.inputBuffer, 'roll', PLAYER_COMBAT.inputBufferMs);
+
     updateRoll(this.roll, dtMs, ROLL);
 
     if (stunned) {
@@ -332,13 +353,15 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       else if (intent.slotPressed >= 0 && intent.slotPressed !== this.loadout.active)
         this.swapRelic();
       const attackPhase = this.attack.phase;
-      if (intent.moveX !== 0 && attackPhase === 'idle') this.facing = intent.moveX;
+      // Dá para virar até o golpe começar de verdade (preparação e recuperação), não só parado
+      if (intent.moveX !== 0 && attackPhase !== 'active') this.facing = intent.moveX;
 
-      // Rolagem: só fora de um golpe ativo (pode cancelar a recuperação do ataque).
-      if (!this.roll.active && (attackPhase === 'idle' || attackPhase === 'recovery')) {
+      // Rolagem: só fora de um golpe ativo (cancela a preparação e a recuperação do ataque).
+      if (!this.roll.active && attackPhase !== 'active') {
         // Rola para onde o jogador segura; sem direção, para onde olha (mesmo saindo de um golpe).
         const rollDir = intent.moveX !== 0 ? intent.moveX : this.facing;
-        if (tryStartRoll(this.roll, intent.rollPressed, rollDir, grounded)) {
+        if (tryStartRoll(this.roll, isBuffered(this.inputBuffer, 'roll'), rollDir, grounded)) {
+          consumePress(this.inputBuffer, 'roll');
           this.facing = rollDir;
           cancelAttack(this.attack);
           resetCombo(this.combo);
@@ -347,10 +370,24 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       }
 
       // Ataque básico ou especial: não durante a rolagem nem no meio de outro golpe.
-      if (!this.roll.active && this.attack.phase === 'idle') {
-        if (intent.specialPressed && isReady(this.cooldowns[this.loadout.active])) {
-          this.beginAttack(true);
-        } else if (intent.attackPressed) {
+      if (!this.roll.active) {
+        if (this.attack.phase === 'idle') {
+          if (
+            isBuffered(this.inputBuffer, 'special') &&
+            isReady(this.cooldowns[this.loadout.active])
+          ) {
+            consumePress(this.inputBuffer, 'special');
+            consumePress(this.inputBuffer, 'attack');
+            this.beginAttack(true);
+          } else if (isBuffered(this.inputBuffer, 'attack')) {
+            consumePress(this.inputBuffer, 'attack');
+            this.beginAttack(false);
+          }
+        } else if (this.canChainFromRecovery()) {
+          // Combo mais fluido: o próximo golpe entra por cima da metade final da recuperação
+          consumePress(this.inputBuffer, 'attack');
+          cancelAttack(this.attack);
+          openComboWindow(this.combo, this.relic.basic.comboWindowMs);
           this.beginAttack(false);
         }
       }
@@ -378,6 +415,14 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.barrier.update(dtMs, this.x, this.y, this.barrierFacing, this.barrierOffsetX);
     this.refreshBoxes(body);
     this.updateVisuals();
+  }
+
+  /** Há um aperto guardado e o golpe básico atual pode ser encadeado antes de a recuperação acabar? */
+  private canChainFromRecovery(): boolean {
+    if (this.currentIsSpecial || !isBuffered(this.inputBuffer, 'attack')) return false;
+    const steps = this.relic.basic.steps.length;
+    if (this.combo.step < 0 || this.combo.step + 1 >= steps) return false; // não há próximo passo
+    return canCancelRecovery(this.attack, this.currentAttack, PLAYER_COMBAT.comboCancelFraction);
   }
 
   /** Inicia o golpe básico (combo) ou o especial da relíquia ativa. */
@@ -459,7 +504,16 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       return;
     }
     const factor = attacking ? def.moveFactor : 1;
-    this.setVelocityX(intent.moveX * PLAYER.moveSpeed * this.passive.moveSpeedMult * factor);
+    const walk = intent.moveX * PLAYER.moveSpeed * this.passive.moveSpeedMult * factor;
+    // Passo à frente: golpes corpo a corpo avançam um pouco na preparação e no golpe, parado ou não,
+    // o que ajuda a alcançar o inimigo sem o jogador ter que andar até ele
+    const stepping =
+      def.shape === 'front' &&
+      !def.projectile &&
+      (this.attack.phase === 'windup' || this.attack.phase === 'active');
+    this.setVelocityX(
+      stepping && intent.moveX === 0 ? this.facing * PLAYER_COMBAT.attackStepSpeed : walk,
+    );
   }
 
   private refreshBoxes(body: Phaser.Physics.Arcade.Body): void {

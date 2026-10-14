@@ -49,6 +49,8 @@ npm run build      # build de produção
 
 - **Ataque** em três fases (preparação, golpe ativo, recuperação), com hitbox e knockback. Rolar cancela a recuperação.
 - **Esquiva perfeita:** rolar até 150 ms antes de um golpe acertar dá câmera lenta, um anel de luz e dobra o dano do seu próximo ataque. A janela fica em `src/data/combat.ts`.
+- **Fluidez:** os apertos de ataque, especial e rolagem feitos até 120 ms antes de poder agir ficam guardados (_input buffer_) e valem assim que der. A rolagem cancela a preparação e a recuperação do golpe; o próximo golpe do combo entra por cima da metade final da recuperação; dá para virar durante a preparação e a recuperação; e os golpes corpo a corpo dão um passo à frente. Valores em `src/data/combat.ts`.
+- **Peso do golpe:** o congelamento, o tremor e as faíscas crescem com o dano (golpe leve da adaga ≈ 30 ms; martelo ≈ 80 ms; golpe dobrado da esquiva ≈ 155 ms). Ver `HIT_WEIGHT` em `src/data/fx.ts`.
 - **Sensação de impacto:** hit stop, tremor de câmera, faíscas, números de dano e arco do golpe. Todos os valores ficam em `src/data/fx.ts`.
 - Ao morrer, a tela "Você caiu" reinicia a run (J, Espaço ou botão A/X do controle).
 

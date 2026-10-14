@@ -108,6 +108,19 @@ export function updateAttack(state: AttackState, dtMs: number, cfg: AttackConfig
   state.elapsedMs = 0;
 }
 
+/**
+ * A recuperação já andou o bastante (`fraction` da duração dela) para o próximo golpe do combo
+ * poder começar por cima? Só vale na fase de recuperação.
+ */
+export function canCancelRecovery(
+  state: AttackState,
+  cfg: AttackConfig,
+  fraction: number,
+): boolean {
+  if (state.phase !== 'recovery') return false;
+  return state.elapsedMs >= cfg.recoveryMs * Math.min(1, Math.max(0, fraction));
+}
+
 /** Interrompe o golpe (ex.: tomou dano ou rolou) e volta a idle. */
 export function cancelAttack(state: AttackState): void {
   state.phase = 'idle';

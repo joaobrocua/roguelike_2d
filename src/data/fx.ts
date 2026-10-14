@@ -22,6 +22,12 @@ export const HIT_FEEDBACK = {
   playerHit: { hitStopMs: 90, shakeMs: 180, shakeIntensity: 0.008, sparks: 10 },
 } as const satisfies Record<string, HitFeedback>;
 
+/**
+ * Peso do golpe: o feedback acima é para um golpe "médio"; golpes mais fracos usam menos e os
+ * mais pesados usam mais (congelamento, tremor e faíscas). `damage*` é o dano que vale cada ponta.
+ */
+export const HIT_WEIGHT = { damageMin: 5, damageMax: 28, scaleMin: 0.55, scaleMax: 1.55 } as const;
+
 export const SPARK_FX = {
   lifespanMs: 300,
   speedMin: 40,

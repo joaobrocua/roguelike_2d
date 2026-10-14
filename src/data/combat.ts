@@ -12,6 +12,12 @@ export const PLAYER_COMBAT = {
   hitStunMs: 220,
   /** Atrito do knockback (px/s perdidos por segundo). */
   knockbackFriction: 600,
+  /** Um aperto de ataque, especial ou rolagem feito até este tempo antes de poder agir fica guardado. */
+  inputBufferMs: 120,
+  /** O próximo golpe do combo pode começar quando esta fração da recuperação já passou. */
+  comboCancelFraction: 0.45,
+  /** Passo à frente (px/s) nos golpes corpo a corpo, na preparação e no golpe: ajuda a alcançar o inimigo. */
+  attackStepSpeed: 55,
 } as const;
 
 /** Esquiva perfeita: rolar no último instante antes do golpe inimigo acertar. */

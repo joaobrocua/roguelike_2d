@@ -6,6 +6,7 @@ import {
   startAttack,
   updateAttack,
   type AttackConfig,
+  canCancelRecovery,
 } from '../src/logic/attack';
 
 const cfg: AttackConfig = {
@@ -211,5 +212,38 @@ describe('isHitboxActive', () => {
     expect(isHitboxActive(s)).toBe(false); // recovery
     updateAttack(s, 200, cfg);
     expect(isHitboxActive(s)).toBe(false); // idle
+  });
+});
+
+describe('canCancelRecovery', () => {
+  const cfg = {
+    windupMs: 100,
+    activeMs: 100,
+    recoveryMs: 200,
+    damage: 1,
+    knockbackX: 0,
+    knockbackY: 0,
+    hitbox: { width: 1, height: 1, offsetY: 0 },
+  };
+
+  it('só vale na recuperação, depois da fração pedida', () => {
+    const state = createAttackState();
+    expect(canCancelRecovery(state, cfg, 0.5)).toBe(false); // parado
+    startAttack(state);
+    updateAttack(state, 50, cfg);
+    expect(canCancelRecovery(state, cfg, 0)).toBe(false); // na preparação
+    updateAttack(state, 150, cfg); // entra na recuperação (0 ms nela)
+    expect(state.phase).toBe('recovery');
+    expect(canCancelRecovery(state, cfg, 0.5)).toBe(false);
+    updateAttack(state, 100, cfg); // 100 de 200 ms
+    expect(canCancelRecovery(state, cfg, 0.5)).toBe(true);
+  });
+
+  it('limita a fração a 0..1', () => {
+    const state = createAttackState();
+    startAttack(state);
+    updateAttack(state, 250, cfg);
+    expect(canCancelRecovery(state, cfg, -3)).toBe(true);
+    expect(canCancelRecovery(state, cfg, 9)).toBe(false);
   });
 });

@@ -3,6 +3,7 @@ import {
   DAMAGE_NUMBER_FX,
   DODGE_RING,
   HIT_FEEDBACK,
+  HIT_WEIGHT,
   SPARK_FX,
   SWAP_FX,
   DUST_FX,
@@ -11,6 +12,7 @@ import {
 import { DEPTH } from '../data/atmosphere';
 import { PALETTE } from '../data/palette';
 import { createHitStop, triggerHitStop, updateHitStop } from '../logic/hitStop';
+import { scaleHitFeedback } from '../logic/hitWeight';
 import { DamageNumbers } from './DamageNumbers';
 import { TEXTURE } from './textures';
 
@@ -21,6 +23,13 @@ import { TEXTURE } from './textures';
  */
 export class FxSystem {
   private readonly hitStop = createHitStop();
+  /** Feedback do golpe depois de ajustado pelo peso (objeto reaproveitado a cada acerto). */
+  private readonly weighted: HitFeedback = {
+    hitStopMs: 0,
+    shakeMs: 0,
+    shakeIntensity: 0,
+    sparks: 0,
+  };
   private readonly numbers: DamageNumbers;
   private readonly enemySparks: Phaser.GameObjects.Particles.ParticleEmitter;
   private readonly empoweredSparks: Phaser.GameObjects.Particles.ParticleEmitter;
@@ -59,7 +68,9 @@ export class FxSystem {
 
   /** O jogador acertou um inimigo. `empowered` = golpe com dano dobrado. */
   enemyHit(x: number, y: number, damage: number, empowered: boolean): void {
-    const feedback = empowered ? HIT_FEEDBACK.empoweredHit : HIT_FEEDBACK.enemyHit;
+    // Quanto mais pesado o golpe (dano), mais congela, treme e solta faísca
+    const base = empowered ? HIT_FEEDBACK.empoweredHit : HIT_FEEDBACK.enemyHit;
+    const feedback = scaleHitFeedback(this.weighted, base, damage, HIT_WEIGHT);
     this.applyFeedback(feedback);
     (empowered ? this.empoweredSparks : this.enemySparks).explode(feedback.sparks, x, y);
     this.numbers.spawn(
