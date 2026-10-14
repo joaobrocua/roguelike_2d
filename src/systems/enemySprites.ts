@@ -1,0 +1,476 @@
+import type Phaser from 'phaser';
+import { GUARDIAO } from '../data/boss';
+import { ENEMY_BODIES, type EnemyBody } from '../data/enemies';
+import {
+  ARQUEIRO_SHEET,
+  CAO_SHEET,
+  CARNICAL_SHEET,
+  GUARDIAO_SHEET,
+  VULTO_SHEET,
+  type ArcherPose,
+  type EnemySheet,
+  type GhoulPose,
+  type HoundPose,
+  ENEMY_ANIM_STATES,
+  type WraithPose,
+} from '../data/enemySprites';
+import { PALETTE } from '../data/palette';
+import { enemyAnimKey } from '../logic/enemyAnim';
+import { drawGuardian } from './bossSprite';
+import { createSpriteSheet, fillPx, linePx, type SheetFrame } from './pixelSheet';
+
+/**
+ * Desenha os inimigos em pixel art, quadro a quadro, a partir das poses de
+ * src/data/enemySprites.ts. Cada um tem a sua silhueta: o Carniçal encurvado de trapos
+ * vermelhos, o Arqueiro Oco encapuzado com o arco de osso, o Vulto que flutua em fiapos e o
+ * Cão de Ossos de costelas à mostra. O contorno de 1 px é automático (pixelSheet).
+ */
+
+type Ctx = CanvasRenderingContext2D;
+type Point = { x: number; y: number };
+
+const OUTLINE = PALETTE.void;
+
+/**
+ * Gira o desenho em torno dos pés (para cair deitado), deixando as costas apoiadas no chão. Ao
+ * deitar, o corpo anda `slide` px para a direita: a cabeça cai para trás e precisa de espaço.
+ */
+function withFall(
+  ctx: Ctx,
+  rotation: number,
+  centerX: number,
+  ground: number,
+  half: number,
+  slide: number,
+): void {
+  if (rotation === 0) return;
+  const lying = Math.sin(Math.min(Math.abs(rotation), Math.PI / 2));
+  ctx.translate(centerX + Math.round(slide * lying), ground - half);
+  ctx.rotate(rotation);
+  ctx.translate(-centerX, -ground);
+}
+
+// --- Carniçal ----------------------------------------------------------------------------
+
+/** Pele de cadáver esverdeada (tons só deste inimigo, fora da paleta principal). */
+const SKIN = 0x7f9470;
+const SKIN_LIGHT = 0xa6b88c;
+const SKIN_SHADE = 0x546a4e;
+const RAG = PALETTE.bloodDark;
+const RAG_LIGHT = PALETTE.blood;
+
+function drawLimb(ctx: Ctx, from: Point, to: Point, color: number, thick: number): void {
+  linePx(ctx, color, from.x, from.y, to.x, to.y, thick);
+}
+
+function drawGhoul(ctx: Ctx, p: GhoulPose): void {
+  const cx = 13; // o desenho fica no centro do corpo de colisão, não do quadro
+  const ground = 28;
+  ctx.save();
+  withFall(ctx, p.rotation, cx, ground, 3, 9);
+
+  const hipY = 20 - p.bob;
+  const torsoTop = 12 - p.bob;
+  const x0 = cx - 3 + p.lean; // tronco curvado: o topo avança com `lean`
+  const shoulderF: Point = { x: x0 + 5, y: torsoTop + 2 };
+  const shoulderB: Point = { x: x0 + 1, y: torsoTop + 2 };
+
+  const leg = (hipX: number, off: number, lift: number, color: number): void => {
+    const foot: Point = { x: hipX + off, y: ground - 2 - lift };
+    const knee: Point = {
+      x: Math.round((hipX + foot.x) / 2) + 1,
+      y: Math.round((hipY + foot.y) / 2),
+    };
+    drawLimb(ctx, { x: hipX, y: hipY }, knee, color, 2);
+    drawLimb(ctx, knee, foot, color, 2);
+    fillPx(ctx, PALETTE.bone, foot.x, ground - 1 - lift, 4, 1); // pé com dedos longos
+  };
+  const claws = (hand: Point): void => {
+    fillPx(ctx, PALETTE.bone, hand.x + 1, hand.y + 2, 1, 2);
+    fillPx(ctx, PALETTE.bone, hand.x + 2, hand.y + 2, 1, 3);
+    fillPx(ctx, PALETTE.bone, hand.x + 3, hand.y + 1, 1, 2);
+  };
+
+  // Perna e braço de trás (mais escuros)
+  leg(cx - 2, p.legB, p.liftB, SKIN_SHADE);
+  const handB: Point = { x: shoulderB.x + p.armB.dx, y: shoulderB.y + p.armB.dy };
+  drawLimb(ctx, shoulderB, handB, SKIN_SHADE, 2);
+  fillPx(ctx, SKIN_SHADE, handB.x, handB.y + 1, 2, 3);
+
+  // Tronco: trapos vermelhos sobre a pele, barra rasgada
+  fillPx(ctx, RAG, x0, torsoTop, 7, hipY - torsoTop + 1);
+  fillPx(ctx, RAG_LIGHT, x0, torsoTop, 7, 1);
+  fillPx(ctx, SKIN, x0 + 3, torsoTop + 1, 4, 3); // peito à mostra
+  fillPx(ctx, SKIN_SHADE, x0 + 4, torsoTop + 2, 1, 1); // costela
+  fillPx(ctx, RAG_LIGHT, x0 + 1, torsoTop + 5, 1, 3);
+  for (let i = 0; i < 7; i += 2) fillPx(ctx, RAG, x0 + i, hipY + 1, 1, 2 + (i % 4 === 0 ? 1 : 0));
+
+  leg(cx + 1, p.legF, p.liftF, SKIN);
+
+  // Cabeça adiantada de cadáver: bochechas fundas, olhos de brasa, nariz de caveira e dentes
+  const hx = x0 + 3;
+  const hy = torsoTop - 5;
+  fillPx(ctx, SKIN, hx, hy, 6, 6);
+  fillPx(ctx, SKIN_LIGHT, hx + 1, hy, 3, 1);
+  fillPx(ctx, SKIN_SHADE, hx, hy + 4, 3, 2); // bochecha funda
+  fillPx(ctx, SKIN_SHADE, hx - 1, hy + 1, 1, 3); // nuca e cabelos ralos
+  fillPx(ctx, PALETTE.stoneDark, hx - 1, hy + 2, 1, 2);
+  fillPx(ctx, OUTLINE, hx + 3, hy + 1, 3, 2); // órbita
+  fillPx(ctx, PALETTE.glow, hx + 4, hy + 2, 1, 1);
+  fillPx(ctx, PALETTE.ember, hx + 5, hy + 2, 1, 1);
+  if (p.glare) fillPx(ctx, PALETTE.glow, hx + 3, hy + 1, 3, 1, 0.6);
+  fillPx(ctx, OUTLINE, hx + 5, hy + 3, 1, 1); // narina
+  if (p.mouth) {
+    fillPx(ctx, OUTLINE, hx + 2, hy + 4, 4, 2);
+    fillPx(ctx, PALETTE.bone, hx + 2, hy + 4, 1, 1);
+    fillPx(ctx, PALETTE.bone, hx + 4, hy + 4, 1, 1);
+    fillPx(ctx, PALETTE.bone, hx + 3, hy + 5, 1, 1);
+  } else {
+    fillPx(ctx, OUTLINE, hx + 2, hy + 4, 4, 1);
+    fillPx(ctx, PALETTE.bone, hx + 3, hy + 4, 1, 1);
+  }
+
+  // Braço da frente, comprido, com garras
+  const handF: Point = { x: shoulderF.x + p.armF.dx, y: shoulderF.y + p.armF.dy };
+  drawLimb(ctx, shoulderF, handF, SKIN, 2);
+  fillPx(ctx, SKIN_SHADE, shoulderF.x - 1, shoulderF.y - 1, 3, 2); // ombro ossudo
+  fillPx(ctx, SKIN, handF.x, handF.y, 2, 2);
+  claws(handF);
+  ctx.restore();
+}
+
+// --- Arqueiro Oco ------------------------------------------------------------------------
+
+const CLOAK = PALETTE.stone;
+const CLOAK_DARK = PALETTE.stoneDark;
+const CLOAK_LIGHT = PALETTE.stoneLight;
+const BONE = PALETTE.bone;
+const BONE_SHADE = PALETTE.mist;
+const EYE_GREEN = PALETTE.venom;
+
+function drawArcher(ctx: Ctx, p: ArcherPose): void {
+  const cx = 15;
+  const ground = 26;
+  ctx.save();
+  withFall(ctx, p.rotation, cx, ground, 4, 9);
+
+  const headTop = 4 - p.bob;
+  const shoulderY = headTop + 6;
+  const hemY = ground - 5;
+  const lean = p.lean;
+
+  // Pés de osso saindo da barra do manto
+  const foot = (x: number, lift: number): void => {
+    fillPx(ctx, BONE_SHADE, x, hemY, 1, ground - hemY - 2 - lift);
+    fillPx(ctx, BONE, x, ground - 2 - lift, 3, 2);
+  };
+  foot(cx - 3 + p.legB, p.liftB);
+  foot(cx + 1 + p.legF, p.liftF);
+
+  // Manto: afunila nos ombros e abre na barra, que balança e é toda esfarrapada
+  for (let y = shoulderY; y < hemY; y++) {
+    const t = (y - shoulderY) / (hemY - shoulderY);
+    const half = 3 + Math.round(t * 3);
+    const left = cx - half + Math.round(lean * (1 - t));
+    const width = half * 2 + 1;
+    fillPx(ctx, CLOAK, left, y, width, 1);
+    fillPx(ctx, CLOAK_DARK, left, y, 2, 1);
+    fillPx(ctx, CLOAK_LIGHT, left + width - 1, y, 1, 1);
+  }
+  for (let i = 0; i < 6; i++) {
+    const x = cx - 5 + i * 2 + Math.round(p.sway * (i % 2 === 0 ? 1 : -1));
+    fillPx(ctx, CLOAK, x, hemY, 1, 1 + (i % 3));
+    fillPx(ctx, CLOAK_DARK, x, hemY, 1, 1);
+  }
+
+  // "Oco": a barriga do manto é um buraco por onde se veem as costelas
+  const holeX = cx - 1 + Math.round(lean * 0.6);
+  fillPx(ctx, OUTLINE, holeX, shoulderY + 2, 4, 6);
+  fillPx(ctx, BONE_SHADE, holeX, shoulderY + 3, 4, 1);
+  fillPx(ctx, BONE_SHADE, holeX, shoulderY + 5, 4, 1);
+  fillPx(ctx, BONE, holeX + 1, shoulderY + 2, 1, 6);
+  fillPx(ctx, EYE_GREEN, holeX + 3, shoulderY + 7, 1, 1); // brasa verde no vazio
+
+  // Capuz com a face vazia e os olhos verdes
+  const hx = cx - 3 + lean;
+  fillPx(ctx, CLOAK, hx + 2, headTop, 3, 1);
+  fillPx(ctx, CLOAK, hx + 1, headTop + 1, 5, 1);
+  fillPx(ctx, CLOAK, hx, headTop + 2, 7, 5);
+  fillPx(ctx, CLOAK_DARK, hx, headTop + 2, 2, 5);
+  fillPx(ctx, CLOAK_LIGHT, hx + 2, headTop, 2, 1);
+  fillPx(ctx, OUTLINE, hx + 3, headTop + 2, 4, 4);
+  fillPx(ctx, EYE_GREEN, hx + 3, headTop + 3, 1, 1);
+  fillPx(ctx, EYE_GREEN, hx + 5, headTop + 3, 1, 1);
+  fillPx(ctx, BONE_SHADE, hx + 4, headTop + 5, 2, 1); // mandíbula
+
+  // Arco de osso na frente e a corda; a mão de trás puxa a corda e a flecha
+  const bowX = cx + 8 + lean;
+  const bowY = shoulderY + 3 + p.bowDy;
+  const reach = Math.round(p.draw * 8);
+  const nockX = bowX - reach;
+  for (let dy = -7; dy <= 7; dy++) {
+    const bend = Math.round((dy * dy) / 22) + Math.round(p.draw);
+    fillPx(ctx, BONE, bowX - bend, bowY + dy, 1, 1);
+    if (Math.abs(dy) < 6) fillPx(ctx, BONE_SHADE, bowX - bend - 1, bowY + dy, 1, 1);
+  }
+  const tipX = bowX - Math.round(49 / 22) - Math.round(p.draw);
+  const stringMid = p.twang ? bowX + 2 : nockX;
+  linePx(ctx, BONE_SHADE, tipX, bowY - 7, stringMid, bowY, 1);
+  linePx(ctx, BONE_SHADE, stringMid, bowY, tipX, bowY + 7, 1);
+  if (p.nocked) {
+    linePx(ctx, BONE, nockX, bowY, bowX + 4, bowY, 1);
+    fillPx(ctx, PALETTE.ember, bowX + 3, bowY, 2, 1);
+    fillPx(ctx, EYE_GREEN, nockX, bowY - 1, 2, 1);
+    fillPx(ctx, EYE_GREEN, nockX, bowY + 1, 2, 1);
+  }
+  // Braços de osso
+  const shoulderF: Point = { x: cx + 3 + lean, y: shoulderY + 1 };
+  const shoulderB: Point = { x: cx - 2 + lean, y: shoulderY + 1 };
+  linePx(ctx, BONE, shoulderF.x, shoulderF.y, bowX - 1, bowY, 1);
+  fillPx(ctx, BONE, bowX - 2, bowY - 1, 2, 3);
+  const handB: Point = p.draw > 0 ? { x: nockX, y: bowY } : { x: cx - 4 + lean, y: shoulderY + 8 };
+  linePx(ctx, BONE_SHADE, shoulderB.x, shoulderB.y, handB.x, handB.y, 1);
+  fillPx(ctx, BONE, handB.x - 1, handB.y - 1, 2, 2);
+  ctx.restore();
+}
+
+// --- Vulto -------------------------------------------------------------------------------
+
+function drawWraith(ctx: Ctx, p: WraithPose): void {
+  const cx = 15;
+  const px = (color: number, x: number, y: number, w: number, h: number, a = 1): void =>
+    fillPx(ctx, color, x, y, w, h, a * p.alpha);
+  ctx.save();
+  if (p.inverted) {
+    ctx.translate(0, 28);
+    ctx.scale(1, -1);
+  }
+
+  const top = 6 + Math.round(p.squash / 2) - p.bob;
+  const bodyH = Math.max(5, 11 - p.squash);
+  for (let r = 0; r < bodyH; r++) {
+    const w = r === 0 ? 4 : r === 1 ? 6 : Math.min(10, 8 + Math.floor((r - 2) / 2));
+    const shift = Math.round(p.lean * (1 - r / bodyH));
+    const x0 = cx - Math.floor(w / 2) + shift;
+    px(PALETTE.wraith, x0, top + r, w, 1);
+    px(PALETTE.deep, x0, top + r, Math.max(1, Math.floor(w / 4)), 1, 0.5); // lado de trás na sombra
+    px(PALETTE.playerAccent, x0 + w - 1, top + r, 1, 1, 0.35); // luz na frente
+  }
+  px(PALETTE.playerAccent, cx - 1 + p.lean, top, 2, 1, 0.5); // brilho no alto do capuz
+
+  // Capuz: o rosto é um vazio com os olhos acesos
+  const fx = cx - 1 + p.lean;
+  px(OUTLINE, fx, top + 2, 6, 3);
+  if (p.eyes === 'closed') {
+    px(PALETTE.mist, fx + 1, top + 3, 4, 1, 0.8);
+  } else {
+    const eye = p.eyes === 'bright' ? PALETTE.glow : PALETTE.playerAccent;
+    px(eye, fx + 1, top + 3, 1, 1);
+    px(eye, fx + 4, top + 3, 1, 1);
+    if (p.eyes === 'bright') {
+      px(PALETTE.ember, fx, top + 3, 1, 1, 0.8);
+      px(PALETTE.ember, fx + 5, top + 3, 1, 1, 0.8);
+      px(PALETTE.glow, fx + 1, top + 2, 1, 1, 0.4);
+      px(PALETTE.glow, fx + 4, top + 2, 1, 1, 0.4);
+    }
+  }
+
+  // Fiapos soltos embaixo: cada um mais fino e mais transparente que o anterior
+  const baseY = top + bodyH;
+  for (const [i, dx] of [-4, -1, 2, 5].entries()) {
+    const len = p.tailLen + (i % 2) * 2 + 1;
+    for (let j = 0; j < len; j++) {
+      const sway = Math.round(((p.tailSway * j) / Math.max(1, len)) * (i % 2 === 0 ? 1 : -1));
+      px(PALETTE.wraith, cx + dx + sway, baseY + j, 2 - (j > len - 2 ? 1 : 0), 1, 0.85 - j * 0.12);
+    }
+  }
+  // Poeira da morte
+  const dust: readonly Point[] = [
+    { x: -7, y: 3 },
+    { x: 6, y: -2 },
+    { x: -3, y: 9 },
+    { x: 8, y: 7 },
+    { x: 1, y: -5 },
+    { x: -8, y: -3 },
+  ];
+  for (const [i, d] of dust.entries()) {
+    if (i < p.scatter) px(PALETTE.wraith, cx + d.x, 14 + d.y, 1, 1, 0.7);
+  }
+  ctx.restore();
+}
+
+// --- Cão de Ossos ------------------------------------------------------------------------
+
+function drawHoundPile(ctx: Ctx): void {
+  const g = 17;
+  // Costelas abertas no chão, crânio rolado para a frente, ossos soltos
+  for (let i = 0; i < 5; i++) {
+    fillPx(ctx, BONE, 12 + i * 2, g - 1 - (i % 2), 1, 1 + (i % 2));
+    fillPx(ctx, BONE_SHADE, 13 + i * 2, g, 1, 1);
+  }
+  fillPx(ctx, BONE, 10, g, 12, 1);
+  fillPx(ctx, BONE_SHADE, 9, g - 1, 2, 1);
+  fillPx(ctx, BONE, 24, g - 3, 5, 3); // crânio
+  fillPx(ctx, BONE, 28, g - 2, 3, 2);
+  fillPx(ctx, OUTLINE, 26, g - 2, 1, 1);
+  fillPx(ctx, PALETTE.ember, 26, g - 2, 1, 1, 0.7);
+  linePx(ctx, BONE, 6, g, 9, g - 1, 1); // osso de perna solto
+  fillPx(ctx, BONE, 22, g, 3, 1);
+  fillPx(ctx, BONE_SHADE, 14, g - 3, 2, 1);
+}
+
+function drawHound(ctx: Ctx, p: HoundPose): void {
+  if (p.scatter >= 3) {
+    drawHoundPile(ctx);
+    return;
+  }
+  const cx = 18;
+  const ground = 18;
+  const lift = p.air;
+  const top = 7 + p.crouch - p.bob - lift; // linha da coluna
+  const hipX = cx - 6;
+  const shoulderX = cx + 3;
+
+  const leg = (x: number, off: number, liftBy: number, color: number, y: number): void => {
+    const foot: Point = { x: x + off, y: ground - 2 - liftBy - lift };
+    const knee: Point = { x: Math.round((x + foot.x) / 2) - 1, y: Math.round((y + foot.y) / 2) };
+    drawLimb(ctx, { x, y }, knee, color, 1);
+    drawLimb(ctx, knee, foot, color, 1);
+    fillPx(ctx, color, foot.x, foot.y + 1, 3, 1);
+  };
+
+  // Patas do lado de longe (mais escuras), depois o corpo, depois as de perto
+  leg(hipX + 1, p.hindB, p.liftHind, BONE_SHADE, top + 3);
+  leg(shoulderX + 1, p.frontB, p.liftFront, BONE_SHADE, top + 3);
+
+  // Coluna, bacia e costelas com vãos escuros
+  fillPx(ctx, BONE, hipX - 2, top, cx - hipX + 9, 1);
+  fillPx(ctx, BONE_SHADE, hipX - 2, top + 1, 4, 3); // bacia
+  fillPx(ctx, BONE, hipX - 2, top, 4, 1);
+  for (let x = cx - 3; x <= cx + 5; x += 2) {
+    fillPx(ctx, BONE, x, top + 1, 1, 5);
+    fillPx(ctx, OUTLINE, x + 1, top + 1, 1, 5);
+  }
+  fillPx(ctx, BONE_SHADE, cx - 3, top + 5, 9, 1); // linha da barriga
+
+  leg(hipX - 1, p.hindA, p.liftHind, BONE, top + 3);
+  leg(shoulderX, p.frontA, p.liftFront, BONE, top + 3);
+
+  // Rabo de ossinhos
+  linePx(ctx, BONE, hipX - 2, top, hipX - 6, top + p.tail, 1);
+  fillPx(ctx, BONE_SHADE, hipX - 7, top + p.tail, 1, 1);
+
+  // Pescoço e crânio
+  const sx = cx + 5 + p.head;
+  const sy = top - 2 + p.headDy;
+  linePx(ctx, BONE_SHADE, cx + 5, top, sx + 1, sy + 2, 2);
+  fillPx(ctx, BONE, sx, sy, 6, 5); // crânio
+  fillPx(ctx, BONE_SHADE, sx, sy + 3, 6, 2);
+  fillPx(ctx, BONE, sx + 1, sy - 2, 1, 2); // orelhas pontudas
+  fillPx(ctx, BONE, sx + 3, sy - 1, 1, 1);
+  fillPx(ctx, BONE, sx + 5, sy + 1, 4, 2); // focinho
+  fillPx(ctx, OUTLINE, sx + 3, sy + 1, 2, 2); // órbita
+  fillPx(ctx, PALETTE.ember, sx + 4, sy + 2, 1, 1);
+  fillPx(ctx, PALETTE.glow, sx + 4, sy + 1, 1, 1, 0.6);
+  // Mandíbula: abre `jaw` px, com dentes
+  fillPx(ctx, BONE_SHADE, sx + 4, sy + 3 + p.jaw, 4, 1);
+  if (p.jaw > 0) {
+    fillPx(ctx, OUTLINE, sx + 5, sy + 3, 4, p.jaw);
+    fillPx(ctx, BONE, sx + 5, sy + 3, 1, 1);
+    fillPx(ctx, BONE, sx + 7, sy + 3, 1, 1);
+    fillPx(ctx, BONE, sx + 6, sy + 2 + p.jaw, 1, 1);
+  } else {
+    fillPx(ctx, BONE, sx + 6, sy + 3, 1, 1);
+  }
+}
+
+// --- Criação das texturas e animações ----------------------------------------------------
+
+function sheetCell(def: EnemyBody, sheet: EnemySheet<unknown>): { width: number; height: number } {
+  return { width: def.width + sheet.pad.x * 2, height: def.height + sheet.pad.y * 2 };
+}
+
+function buildSheet<P>(
+  scene: Phaser.Scene,
+  def: EnemyBody,
+  sheet: EnemySheet<P>,
+  draw: (ctx: Ctx, pose: P) => void,
+): void {
+  const cell = sheetCell(def, sheet);
+  const frames: SheetFrame[] = sheet.frames.map(({ name, pose }) => ({
+    name,
+    draw: (ctx) => draw(ctx, pose),
+  }));
+  createSpriteSheet(scene, sheet.id, cell.width, frames, OUTLINE, cell.height);
+}
+
+function enemyDef(id: string): EnemyBody {
+  const def = ENEMY_BODIES.find((body) => body.id === id);
+  if (!def) throw new Error(`Inimigo ${id} não existe em src/data/enemies.ts.`);
+  return def;
+}
+
+/** Folga do quadro em volta do corpo de colisão, por inimigo (a entidade posiciona o corpo com isto). */
+export function enemyFramePad(id: string): { x: number; y: number } | undefined {
+  return SHEETS.find((sheet) => sheet.id === id)?.pad;
+}
+
+const SHEETS: readonly EnemySheet<unknown>[] = [
+  CARNICAL_SHEET,
+  ARQUEIRO_SHEET,
+  VULTO_SHEET,
+  CAO_SHEET,
+  GUARDIAO_SHEET,
+];
+
+/** O desenho de um inimigo: a folha de poses, o corpo de colisão e a função que pinta um quadro. */
+export interface EnemyDrawer {
+  sheet: EnemySheet<never>;
+  body: EnemyBody;
+  draw: (ctx: Ctx, pose: never) => void;
+}
+
+/** Todos os inimigos desenhados em código (também usado pelos testes de enquadramento). */
+export function enemyDrawers(): readonly EnemyDrawer[] {
+  return [
+    { sheet: CARNICAL_SHEET, body: enemyDef('carnical'), draw: drawGhoul },
+    { sheet: ARQUEIRO_SHEET, body: enemyDef('arqueiro'), draw: drawArcher },
+    { sheet: VULTO_SHEET, body: enemyDef('vulto'), draw: drawWraith },
+    { sheet: CAO_SHEET, body: enemyDef('cao'), draw: drawHound },
+    { sheet: GUARDIAO_SHEET, body: GUARDIAO, draw: drawGuardian },
+  ] as unknown as readonly EnemyDrawer[];
+}
+
+/** Tamanho do quadro de um inimigo: o corpo de colisão mais a folga dos dois lados. */
+export function enemyCellSize(drawer: EnemyDrawer): { width: number; height: number } {
+  return sheetCell(drawer.body, drawer.sheet);
+}
+
+/** Cria as texturas de todos os inimigos com sprites (um quadro por pose). */
+export function createEnemySheets(scene: Phaser.Scene): void {
+  for (const drawer of enemyDrawers()) {
+    buildSheet(
+      scene,
+      drawer.body,
+      drawer.sheet as EnemySheet<unknown>,
+      drawer.draw as (ctx: Ctx, pose: unknown) => void,
+    );
+  }
+}
+
+/** Registra as animações de cada inimigo (`<id>-<estado>`). */
+export function createEnemyAnimations(scene: Phaser.Scene): void {
+  for (const sheet of SHEETS) {
+    for (const state of ENEMY_ANIM_STATES) {
+      const key = enemyAnimKey(sheet.id, state);
+      if (scene.anims.exists(key)) continue;
+      const animation = sheet.animations[state];
+      scene.anims.create({
+        key,
+        frames: animation.frames.map((frame) => ({ key: sheet.id, frame })),
+        frameRate: animation.fps,
+        repeat: animation.loop ? -1 : 0,
+      });
+    }
+  }
+}
