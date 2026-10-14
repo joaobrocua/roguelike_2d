@@ -13,6 +13,8 @@ export interface InputIntent {
   swapPressed: boolean;
   /** Interagir (pegar a relíquia do chão). */
   interactPressed: boolean;
+  /** Pausar o jogo (Esc, P ou Start). */
+  pausePressed: boolean;
   /** Casa de relíquia pedida pelas teclas 1 e 2 (0 ou 1); -1 = nenhuma. */
   slotPressed: number;
 }
@@ -28,6 +30,7 @@ const ACTIONS: readonly InputAction[] = [
   'interact',
   'slot1',
   'slot2',
+  'pause',
 ];
 
 /**
@@ -43,6 +46,7 @@ export class InputSystem {
     specialPressed: false,
     swapPressed: false,
     interactPressed: false,
+    pausePressed: false,
     slotPressed: -1,
   };
 
@@ -94,6 +98,7 @@ export class InputSystem {
     intent.specialPressed = this.pressed('special', pad, padOn, padEdges);
     intent.swapPressed = this.pressed('swap', pad, padOn, padEdges);
     intent.interactPressed = this.pressed('interact', pad, padOn, padEdges);
+    intent.pausePressed = this.pressed('pause', pad, padOn, padEdges);
     const slot1 = this.pressed('slot1', pad, padOn, padEdges);
     const slot2 = this.pressed('slot2', pad, padOn, padEdges);
     intent.slotPressed = slot1 ? 0 : slot2 ? 1 : -1;

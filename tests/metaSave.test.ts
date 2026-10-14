@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { META_STORAGE, UPGRADE_NODES } from '../src/data/meta';
 import type { UpgradeNode } from '../src/data/meta';
 import {
+  clearMetaSave,
   createMetaSave,
   readMetaSave,
   sanitizeMetaSave,
@@ -448,5 +449,40 @@ describe('writeMetaSave', () => {
     };
     expect(writeMetaSave(storage, saveWith({}, { souls: 12 }))).toBe(true);
     expect(readMetaSave(base).souls).toBe(12);
+  });
+});
+
+describe('clearMetaSave', () => {
+  it('apaga o save principal e as cópias', () => {
+    const storage = memoryStorage();
+    storage.data.set(KEY, '1');
+    storage.data.set(KEY + '.backup', '2');
+    storage.data.set(KEY + '.tmp', '3');
+    storage.data.set('outra-chave', 'fica');
+    expect(clearMetaSave(storage)).toBe(true);
+    expect([...storage.data.keys()]).toEqual(['outra-chave']);
+  });
+
+  it('apaga também um save de versão futura (é um pedido explícito do jogador)', () => {
+    const storage = memoryStorage();
+    storage.data.set(KEY, JSON.stringify({ version: META_STORAGE.version + 1, souls: 9 }));
+    expect(clearMetaSave(storage)).toBe(true);
+    expect(storage.data.has(KEY)).toBe(false);
+  });
+
+  it('segue apagando as outras chaves quando uma falha e devolve false', () => {
+    const storage = memoryStorage();
+    storage.data.set(KEY, '1');
+    storage.data.set(KEY + '.backup', '2');
+    storage.data.set(KEY + '.tmp', '3');
+    const remove = storage.removeItem.bind(storage);
+    storage.removeItem = (key: string) => {
+      if (key === KEY + '.backup') throw new Error('bloqueado');
+      remove(key);
+    };
+    expect(clearMetaSave(storage)).toBe(false);
+    expect(storage.data.has(KEY)).toBe(false);
+    expect(storage.data.has(KEY + '.backup')).toBe(true);
+    expect(storage.data.has(KEY + '.tmp')).toBe(false);
   });
 });

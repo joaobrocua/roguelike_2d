@@ -1,6 +1,6 @@
 # Licenças de assets
 
-Por enquanto, todos os gráficos do jogo são placeholders criados em código. Os sons também serão sintetizados em código. O único asset de terceiros é a fonte pixel dos textos, registrada abaixo.
+Todos os gráficos do jogo são desenhados em código e todos os sons (efeitos e trilhas) são sintetizados em código por WebAudio, sem arquivos de arte ou áudio. O único asset de terceiros é a fonte pixel dos textos, registrada abaixo.
 
 ## Registro de assets
 

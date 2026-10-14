@@ -5,6 +5,7 @@ import { PALETTE } from '../data/palette';
 import { TEXT_COLORS, VICTORY_SCREEN } from '../data/ui';
 import { InputSystem } from '../systems/InputSystem';
 import { pixelText } from '../systems/pixelFont';
+import { getAudio, sfx } from '../systems/AudioSystem';
 import { pulse, UI_TEXTURE } from '../systems/uiArt';
 import type { GameSceneData } from './GameScene';
 
@@ -28,6 +29,8 @@ export class VictoryScene extends Phaser.Scene {
   create(data: VictoryData): void {
     this.lockMs = VICTORY_SCREEN.inputLockMs;
     this.biome = data?.biome ?? 'catacumbas';
+    getAudio().stopMusic();
+    sfx('victory');
     this.inputSystem = new InputSystem(this);
 
     this.add

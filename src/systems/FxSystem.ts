@@ -1,3 +1,4 @@
+import { sfx } from './AudioSystem';
 import Phaser from 'phaser';
 import {
   DAMAGE_NUMBER_FX,
@@ -70,6 +71,7 @@ export class FxSystem {
 
   /** O jogador acertou um inimigo. `empowered` = golpe com dano dobrado. */
   enemyHit(x: number, y: number, damage: number, empowered: boolean): void {
+    sfx('hit');
     // Quanto mais pesado o golpe (dano), mais congela, treme e solta faísca
     const base = empowered ? HIT_FEEDBACK.empoweredHit : HIT_FEEDBACK.enemyHit;
     const feedback = scaleHitFeedback(this.weighted, base, damage, HIT_WEIGHT);
@@ -86,6 +88,7 @@ export class FxSystem {
 
   /** O jogador levou um golpe. */
   playerHit(x: number, y: number, damage: number): void {
+    sfx('hurt');
     this.applyFeedback(HIT_FEEDBACK.playerHit);
     this.playerSparks.explode(HIT_FEEDBACK.playerHit.sparks, x, y);
     this.numbers.spawn(x, y - 14, damage, DAMAGE_NUMBER_FX.playerColor);
@@ -93,6 +96,7 @@ export class FxSystem {
 
   /** Esquiva perfeita: anel de luz e uma rajada de faíscas no jogador. */
   perfectDodge(x: number, y: number): void {
+    sfx('dodge');
     this.dodgeSparks.explode(SPARK_FX.dodgeBurst, x, y);
     const ring = this.scene.add
       .circle(x, y, DODGE_RING.radius)
@@ -108,6 +112,7 @@ export class FxSystem {
 
   /** Golpe de troca: anel de luz na cor da nova relíquia, com um tremor curto. */
   swapStrike(x: number, y: number, color: number, radius: number): void {
+    sfx('swap');
     this.applyFeedback(HIT_FEEDBACK.enemyHit);
     const ring = this.scene.add.circle(x, y, SWAP_FX.ringStart).setStrokeStyle(2, color);
     this.scene.tweens.add({
@@ -121,12 +126,14 @@ export class FxSystem {
 
   /** Almas ganhas ao derrotar um inimigo: "+N" na cor da alma e faíscas subindo. */
   soulGain(x: number, y: number, amount: number): void {
+    sfx('soul');
     this.numbers.spawnLabel(x, y - 8, `+${amount}`, DAMAGE_NUMBER_FX.soulColor);
     this.soulSparks.explode(SPARK_FX.soulBurst, x, y);
   }
 
   /** Cura: número verde e faíscas de alma subindo do jogador. */
   heal(x: number, y: number, amount: number): void {
+    sfx('heal');
     this.numbers.spawn(x, y - 14, Math.round(amount), DAMAGE_NUMBER_FX.healColor);
     this.dodgeSparks.explode(SPARK_FX.blockBurst, x, y);
   }
@@ -138,6 +145,7 @@ export class FxSystem {
 
   /** A barreira parou um projétil: rajada curta de faíscas. */
   projectileBlocked(x: number, y: number): void {
+    sfx('blocked');
     this.dodgeSparks.explode(SPARK_FX.blockBurst, x, y);
   }
 

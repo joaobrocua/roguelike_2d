@@ -2,8 +2,16 @@ import { PLAYER_COMBAT } from '../data/combat';
 import { META_STORAGE, UPGRADE_NODES } from '../data/meta';
 import type { RelicId } from '../data/relics';
 import { effectsFor, type MetaEffects } from '../logic/meta/effects';
-import { readMetaSave, writeMetaSave, type MetaSave, type StorageLike } from '../logic/meta/save';
+import {
+  clearMetaSave,
+  createMetaSave,
+  readMetaSave,
+  writeMetaSave,
+  type MetaSave,
+  type StorageLike,
+} from '../logic/meta/save';
 import { unlockedRelicIds } from '../logic/meta/tree';
+import { browserStorage } from './safeStorage';
 
 /**
  * O progresso permanente do jogador no navegador: o save (almas, níveis da árvore, relíquia
@@ -31,6 +39,17 @@ export class MetaStore {
     return writeMetaSave(this.storage, this.save);
   }
 
+  /**
+   * Zera todo o progresso (almas, árvore, relíquia inicial e estatísticas), inclusive as cópias
+   * guardadas. Devolve false se o navegador não deixou apagar o que estava salvo.
+   */
+  reset(): boolean {
+    const cleared = clearMetaSave(this.storage);
+    this.save = createMetaSave();
+    this.refresh();
+    return cleared;
+  }
+
   /** Escolhe a relíquia inicial (só vale se o nó do Mestre foi comprado e ela está liberada). */
   setStartRelic(id: RelicId | null): void {
     const allowed = this.effects.canChooseStart && (id === null || this.unlocked().includes(id));
@@ -48,36 +67,10 @@ export class MetaStore {
   }
 }
 
-/** Memória simples usada quando o navegador não oferece localStorage. */
-class MemoryStorage implements StorageLike {
-  private readonly data = new Map<string, string>();
-  getItem(key: string): string | null {
-    return this.data.get(key) ?? null;
-  }
-  setItem(key: string, value: string): void {
-    this.data.set(key, value);
-  }
-  removeItem(key: string): void {
-    this.data.delete(key);
-  }
-}
-
-function browserStorage(): StorageLike {
-  try {
-    // Só confere se dá para LER: com a cota cheia o progresso salvo continua legível, e a
-    // gravação que falhar é tratada em writeMetaSave (devolve false), sem esconder o save.
-    const storage = window.localStorage;
-    storage.getItem(META_STORAGE.key);
-    return storage;
-  } catch {
-    return new MemoryStorage();
-  }
-}
-
 let instance: MetaStore | null = null;
 
 /** O progresso do jogador (um só por página). */
 export function getMetaStore(): MetaStore {
-  instance ??= new MetaStore(browserStorage());
+  instance ??= new MetaStore(browserStorage(META_STORAGE.key));
   return instance;
 }

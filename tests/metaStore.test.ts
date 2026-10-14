@@ -74,4 +74,33 @@ describe('MetaStore', () => {
     expect(store.commit()).toBe(false);
     expect(storage.data.get(META_STORAGE.key)).toBe(future);
   });
+
+  it('reset apaga o save e as cópias e volta ao zero', () => {
+    const storage = new FakeStorage();
+    const store = new MetaStore(storage);
+    store.save.souls = 77;
+    store.save.levels.vigor = 3;
+    store.save.stats.runs = 4;
+    store.commit();
+    storage.data.set(META_STORAGE.key + '.backup', 'x');
+    storage.data.set(META_STORAGE.key + '.tmp', 'y');
+    expect(store.reset()).toBe(true);
+    expect(store.save.souls).toBe(0);
+    expect(store.save.levels).toEqual({});
+    expect(store.save.stats.runs).toBe(0);
+    expect(store.effects.maxHpBonus).toBe(0);
+    expect([...storage.data.keys()]).toEqual([]);
+    expect(new MetaStore(storage).save.souls).toBe(0);
+  });
+
+  it('reset devolve false quando o navegador não deixa apagar, mas zera a memória', () => {
+    const storage = new FakeStorage();
+    const store = new MetaStore(storage);
+    store.save.souls = 5;
+    storage.removeItem = () => {
+      throw new Error('bloqueado');
+    };
+    expect(store.reset()).toBe(false);
+    expect(store.save.souls).toBe(0);
+  });
 });

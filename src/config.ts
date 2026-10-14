@@ -5,7 +5,9 @@ import { BootScene } from './scenes/BootScene';
 import { DeathScene } from './scenes/DeathScene';
 import { GameScene } from './scenes/GameScene';
 import { RelicChoiceScene } from './scenes/RelicChoiceScene';
+import { PauseScene } from './scenes/PauseScene';
 import { SanctuaryScene } from './scenes/SanctuaryScene';
+import { TitleScene } from './scenes/TitleScene';
 import { VictoryScene } from './scenes/VictoryScene';
 
 export const gameConfig: Phaser.Types.Core.GameConfig = {
@@ -29,6 +31,15 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
   // Necessário para o Phaser expor o controle (this.input.gamepad)
   input: { gamepad: true },
   // A ordem é a de desenho: as telas que abrem por cima do jogo (morte, troca de relíquia,
-  // santuário, vitória) vêm depois dele
-  scene: [BootScene, GameScene, DeathScene, RelicChoiceScene, SanctuaryScene, VictoryScene],
+  // santuário, vitória, pausa) vêm depois dele
+  scene: [
+    BootScene,
+    TitleScene,
+    GameScene,
+    DeathScene,
+    RelicChoiceScene,
+    SanctuaryScene,
+    VictoryScene,
+    PauseScene,
+  ],
 };

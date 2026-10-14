@@ -5,6 +5,7 @@ import { PALETTE } from '../data/palette';
 import { DEATH_SCREEN, TEXT_COLORS } from '../data/ui';
 import { InputSystem } from '../systems/InputSystem';
 import { pixelText } from '../systems/pixelFont';
+import { getAudio, sfx } from '../systems/AudioSystem';
 import { pulse, UI_TEXTURE } from '../systems/uiArt';
 import type { GameSceneData } from './GameScene';
 
@@ -29,6 +30,8 @@ export class DeathScene extends Phaser.Scene {
   create(data: DeathData): void {
     this.lockMs = DEATH_SCREEN.inputLockMs;
     this.biome = data?.biome ?? 'muralhas';
+    getAudio().stopMusic();
+    sfx('death');
     this.inputSystem = new InputSystem(this);
 
     this.add

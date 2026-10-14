@@ -238,3 +238,98 @@ export const SANCTUARY = {
     pip: { size: 4, gap: 2 },
   },
 } as const;
+
+/** Teclas e botões do jogo, para as telas de controles (rótulo, teclado / controle). */
+export const CONTROLS_HELP: readonly (readonly [string, string])[] = [
+  ['MOVER', 'SETAS OU A D'],
+  ['PULAR', 'ESPAÇO OU W  (A)'],
+  ['ATACAR', 'J  (X)'],
+  ['ESPECIAL', 'K  (Y)'],
+  ['ROLAR', 'L OU SHIFT  (B)'],
+  ['TROCAR RELÍQUIA', 'Q  (LB)'],
+  ['INTERAGIR', 'E  (RT)'],
+  ['RELÍQUIAS', '1 E 2'],
+  ['PAUSAR', 'ESC OU P  (START)'],
+  ['SOM LIGA/MUDO', 'M'],
+];
+
+/** Textos e medidas da tela de título. */
+export const TITLE_SCREEN = {
+  name: ['RUÍNAS', 'ESQUECIDAS'],
+  tagline: 'Desça. Caia. Volte mais forte.',
+  menu: { play: 'JOGAR', options: 'OPÇÕES', controls: 'CONTROLES', reset: 'ZERAR PROGRESSO' },
+  back: 'VOLTAR',
+  sound: { music: 'MÚSICA', sfx: 'EFEITOS', mute: 'SOM', on: 'LIGADO', off: 'MUDO' },
+  reset: {
+    question: 'APAGAR TODO O PROGRESSO?',
+    warning: 'Almas, melhorias e estatísticas voltam a zero.',
+    no: 'NÃO, VOLTAR',
+    yes: 'SIM, APAGAR TUDO',
+    done: 'PROGRESSO APAGADO',
+    failed: 'NÃO FOI POSSÍVEL APAGAR TUDO',
+  },
+  stats: { souls: 'ALMAS', runs: 'DESCIDAS', victories: 'VITÓRIAS' },
+  hint: 'SETAS ESCOLHER   J CONFIRMAR   ESC VOLTAR',
+  version: 'v0.1.0',
+  fadeInMs: 900,
+  inputLockMs: 250,
+  /** Fundo: transparência da escuridão sobre o cenário e do anjo ao fundo. */
+  fx: {
+    shadeAlpha: 0.42,
+    angelAlpha: 0.5,
+    angelTint: 0x8f9bc8,
+    emberFrequencyMs: 220,
+    embers: {
+      lifespanMs: 5200,
+      speedY: { min: -26, max: -10 },
+      speedX: 8,
+      startScale: 1.2,
+      alpha: 0.9,
+    },
+    fadeOutMs: 500,
+    noticeHoldMs: 1800,
+    noticeFadeMs: 600,
+  },
+  layout: {
+    titleY: 42,
+    lineGap: 30,
+    titleSize: 3,
+    taglineY: 112,
+    menuY: 144,
+    menuStep: 16,
+    statsY: 236,
+    /** Pergunta e aviso da confirmação, acima das linhas do menu (px em relação a menuY). */
+    confirmDy: { question: -22, warning: -10 },
+    /** O aviso de "progresso apagado" fica abaixo da quinta linha do menu. */
+    noticeRow: 5,
+    panel: { width: 330, height: 146, y: 98 },
+    controls: { x: 90, y: 108, step: 13, valueX: 226 },
+  },
+} as const;
+
+/** Textos do menu de pausa. */
+export const PAUSE_SCREEN = {
+  title: 'PAUSA',
+  resume: 'CONTINUAR',
+  controls: 'CONTROLES',
+  quit: 'DESISTIR DA DESCIDA',
+  quitConfirm: {
+    question: 'DESISTIR DESTA DESCIDA?',
+    warning: 'Você perde as almas carregadas.',
+    warning2: 'A Retenção protege uma parte.',
+    no: 'NÃO, CONTINUAR',
+    yes: 'SIM, DESISTIR',
+  },
+  hint: 'SETAS ESCOLHER  J OK  ESC VOLTAR',
+  overlayAlpha: 0.7,
+  inputLockMs: 200,
+  layout: {
+    panel: { width: 300, height: 170 },
+    titleDy: 14,
+    menuDy: 44,
+    menuStep: 16,
+    hintDy: 10,
+    /** Confirmação de desistir: alturas (px, a partir do topo do painel) da pergunta, dos dois avisos e das linhas. */
+    confirm: { questionDy: 34, warningDy: 48, warning2Dy: 59, menuDy: 82 },
+  },
+} as const;

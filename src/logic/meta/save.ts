@@ -162,6 +162,22 @@ function isNewerSave(text: string | null): boolean {
 }
 
 /**
+ * Apaga o save e as cópias (principal, .backup e .tmp). Devolve false se o navegador não deixou
+ * apagar tudo (aí o jogador ainda pode ter o progresso antigo guardado).
+ */
+export function clearMetaSave(storage: StorageLike, key: string = META_STORAGE.key): boolean {
+  let ok = true;
+  for (const name of [key, key + BACKUP_SUFFIX, key + TEMP_SUFFIX]) {
+    try {
+      storage.removeItem(name);
+    } catch {
+      ok = false;
+    }
+  }
+  return ok;
+}
+
+/**
  * Grava o save em etapas: (a) escreve `.tmp` e confere lendo de volta; (b) copia o save atual
  * (se legível) para `.backup`; (c) grava o principal; (d) remove o `.tmp`. Qualquer exceção
  * (cota cheia, modo privado) devolve false; se a falha vem antes do passo (c) o principal fica

@@ -12,7 +12,7 @@ Dead Cells, Skul, Astral Ascent, Have a Nice Death, Blasphemous e Hollow Knight 
 - [x] 4. Relíquias
 - [x] 5. Salas procedurais (fortaleza em 3 biomas, minimapa e o chefe Guardião Partido)
 - [x] 6. Progressão permanente (almas, Santuário e árvore de melhorias salva no navegador)
-- [ ] 7. Polimento e deploy
+- [x] 7. Polimento e deploy (áudio sintetizado, título, pausa, opções e build pronto para publicar)
 
 ## Prints e GIFs
 
@@ -33,17 +33,18 @@ npm run build      # build de produção
 
 ## Controles
 
-| Ação            | Teclado        | Controle                         |
-| --------------- | -------------- | -------------------------------- |
-| Andar           | Setas ou A/D   | Analógico esquerdo ou direcional |
-| Pular           | Espaço ou W    | Botão A (índice 0)               |
-| Rolar           | L ou Shift     | Botão B (índice 1) ou RB         |
-| Atacar          | J              | Botão X (índice 2)               |
-| Especial        | K              | Botão Y (índice 3)               |
-| Trocar relíquia | Q              | LB (índice 4)                    |
-| Relíquia 1 / 2  | 1 / 2          | —                                |
-| Pegar do chão   | E              | RT (índice 7)                    |
-| Pausa           | Esc (em breve) | em breve                         |
+| Ação            | Teclado      | Controle                         |
+| --------------- | ------------ | -------------------------------- |
+| Andar           | Setas ou A/D | Analógico esquerdo ou direcional |
+| Pular           | Espaço ou W  | Botão A (índice 0)               |
+| Rolar           | L ou Shift   | Botão B (índice 1) ou RB         |
+| Atacar          | J            | Botão X (índice 2)               |
+| Especial        | K            | Botão Y (índice 3)               |
+| Trocar relíquia | Q            | LB (índice 4)                    |
+| Relíquia 1 / 2  | 1 / 2        | —                                |
+| Pegar do chão   | E            | RT (índice 7)                    |
+| Pausa           | Esc ou P     | Start (índice 9)                 |
+| Som liga/mudo   | M            | —                                |
 
 ## Combate (etapa 2)
 
@@ -52,7 +53,7 @@ npm run build      # build de produção
 - **Fluidez:** os apertos de ataque, especial e rolagem feitos até 120 ms antes de poder agir ficam guardados (_input buffer_) e valem assim que der. A rolagem cancela a preparação e a recuperação do golpe; o próximo golpe do combo entra por cima da metade final da recuperação; dá para virar durante a preparação e a recuperação; e os golpes corpo a corpo dão um passo à frente. Valores em `src/data/combat.ts`.
 - **Peso do golpe:** o congelamento, o tremor e as faíscas crescem com o dano (golpe leve da adaga ≈ 30 ms; martelo ≈ 80 ms; golpe dobrado da esquiva ≈ 155 ms). Ver `HIT_WEIGHT` em `src/data/fx.ts`.
 - **Sensação de impacto:** hit stop, tremor de câmera, faíscas, números de dano e arco do golpe. Todos os valores ficam em `src/data/fx.ts`.
-- Ao morrer, a tela "Você caiu" reinicia a run (J, Espaço ou botão A/X do controle).
+- Ao morrer, a tela "Você caiu" leva o herói a acordar no santuário (J, Espaço ou botão A/X do controle), de onde começa uma nova descida.
 
 ## Atmosfera e direção de arte (pixel art em código)
 
@@ -138,6 +139,35 @@ Cada run rende **almas**, e o **Santuário** — uma sala própria, toda voltada
 - **Save:** `localStorage` do navegador, versionado e validado ao carregar (save corrompido ou editado nunca derruba o jogo; níveis acima do máximo, nós desconhecidos e pré-requisitos faltando são corrigidos). A gravação é em etapas, com cópia de segurança, para uma queda no meio não corromper o progresso. Se o navegador não permitir `localStorage`, o jogo continua com o progresso só daquela sessão. Lógica em `src/logic/meta`.
 - **Controles do Santuário:** **E** (ou RT) diante do altar abre a janela de melhorias, que também guarda as almas carregadas. A sala veste o bioma (pedra, fundo, luz e a cor do fogo, dos estandartes e das runas), tem o anjo colossal sob um feixe de luz, colunas, braseiros e velas, e um portal gigante à direita, com a energia da cor do bioma de destino, leva adiante. Dentro dela, setas ou WASD escolhem, **J** compra e **E** ou Esc fecha. As melhorias valem na hora, mas _Passagens_ e a relíquia inicial só mudam a próxima run.
 
+## Título, pausa e opções (etapa 7)
+
+- **Tela de título:** o anjo colossal ao fundo, o nome do jogo e o menu: _Jogar_, _Opções_ (música, efeitos e liga/mudo), _Controles_ e _Zerar progresso_ (pede confirmação, com "Não" já selecionado, e apaga o save e as cópias). Mostra as almas guardadas, as descidas e as vitórias.
+- **Pausa:** Esc, P ou Start abre o menu sobre o jogo parado: continuar, ajustar o som, ver os controles ou _desistir da descida_ (com confirmação; conta como run perdida e as almas carregadas se perdem, menos a parte que a Retenção protege).
+- **Menus com teclado e controle:** o mesmo leitor de botões (`src/systems/MenuInput.ts`) e a mesma lista de linhas (`MenuList.ts`) servem ao título e à pausa. Textos e medidas em `src/data/ui.ts`.
+
+## Áudio (etapa 7)
+
+Todo o som é **sintetizado por WebAudio**, sem nenhum arquivo de áudio.
+
+- **Efeitos:** cada som é uma _receita_ em `src/data/audio.ts` (osciladores que deslizam de uma frequência a outra e ruído filtrado, com envelope), tocada por `src/systems/AudioSystem.ts`: golpes, impactos, dano, rolagem, esquiva perfeita, pulo e pouso, almas, cura, relíquias, baú, fogueira, altar, portal, chefe, interface, morte e vitória. Um intervalo mínimo por som evita estourar com golpes em série.
+- **Trilha:** gerada compasso a compasso (`src/logic/audio/music.ts`, lógica pura e determinística, com testes): acordes lentos, baixo e uma melodia esparsa com eco. Cada bioma tem a sua escala e andamento (menor natural, menor harmônico, frígio), e há trilhas próprias para o título, o santuário e o chefe. Ao mudar de sala a trilha só troca se for outra.
+- **Volume:** música, efeitos e liga/mudo nas opções e na pausa; **M** liga e desliga o som em qualquer tela. As escolhas ficam salvas no navegador (`src/logic/audio/settings.ts`, validadas ao carregar).
+- O navegador só libera áudio depois de um clique ou tecla, então o som começa no primeiro aperto de botão; a aba escondida suspende o áudio.
+
+## Publicar o jogo (build)
+
+```bash
+npm run build      # confere os tipos e gera a pasta dist/
+npm run preview    # abre o build de produção para testar
+```
+
+A pasta `dist/` é o jogo inteiro (HTML, JavaScript e a fonte), com caminhos relativos (`base: './'` em `vite.config.ts`), então funciona em qualquer hospedagem estática, na raiz ou numa subpasta:
+
+- **itch.io:** compacte o _conteúdo_ de `dist/` num `.zip` (o `index.html` fica na raiz do zip), crie um projeto do tipo _HTML_ e marque "This file will be played in the browser".
+- **GitHub Pages, Vercel ou Netlify:** publique a pasta `dist/` (ou rode o build no serviço com o comando `npm run build` e a saída `dist`).
+- Abrir o `index.html` direto do disco (`file://`) não funciona, porque os navegadores bloqueiam módulos de arquivo local; use `npm run preview` ou uma hospedagem.
+- O progresso (almas, melhorias, volume) fica no `localStorage` do navegador, separado por endereço: mudar de domínio começa um save novo.
+
 ## Decisões técnicas
 
 - **Phaser 3 + Arcade Physics** para renderização e colisões.
@@ -147,7 +177,7 @@ Cada run rende **almas**, e o **Santuário** — uma sala própria, toda voltada
 - **Resolução 480x270 com escala inteira**, para manter o pixel art nítido.
 - **Coyote time e jump buffer** para um pulo mais tolerante e responsivo.
 - **Sem alocação no `update`:** objetos pré-alocados e reutilizados para evitar pausas do coletor de lixo.
-- **Placeholders criados em código:** nenhum arquivo de arte externo por enquanto.
+- **Arte e som criados em código:** nenhum arquivo de arte ou áudio externo; o único asset de terceiros é a fonte.
 - **Fonte pixel (Press Start 2P, OFL) em bitmap:** os glifos são desenhados uma vez num atlas, sem meios-tons e com contorno escuro de 1 px já no desenho, e viram uma fonte de bitmap do Phaser. O texto fica nítido em qualquer escala inteira (o texto comum de canvas borrava nas bordas e no contorno).
 
 ## Estrutura de pastas

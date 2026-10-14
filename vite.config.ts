@@ -4,7 +4,7 @@ export default defineConfig({
   // Caminho relativo: funciona em GitHub Pages (subpasta) e Vercel (raiz)
   base: './',
   build: {
-    chunkSizeWarningLimit: 1500, // o Phaser sozinho passa de 1 MB
+    chunkSizeWarningLimit: 2000, // o Phaser sozinho passa de 1 MB
   },
   test: {
     // Lógica pura roda em Node; nada em src/logic pode importar Phaser

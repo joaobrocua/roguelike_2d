@@ -9,6 +9,7 @@ import { nextCost, nodeLevel, purchaseBlock, purchaseUpgrade } from '../logic/me
 import { ensurePanelTexture } from '../systems/hudArt';
 import { getMetaStore } from '../systems/metaStore';
 import { pixelText } from '../systems/pixelFont';
+import { sfx } from '../systems/AudioSystem';
 import { ensureSoulGem } from '../systems/SoulCounter';
 
 /** Evento (em `game.events`) que avisa o jogo de que a janela do santuário foi fechada. */
@@ -448,7 +449,10 @@ export class SanctuaryScene extends Phaser.Scene {
       }
       if (dy < 0) next = this.nodeAt(this.lastColumn, this.columnLength(this.lastColumn) - 1);
     }
-    if (next >= 0 && next !== this.focus) this.focus = next;
+    if (next >= 0 && next !== this.focus) {
+      this.focus = next;
+      sfx('uiMove');
+    }
     this.refresh();
   }
 
@@ -457,6 +461,7 @@ export class SanctuaryScene extends Phaser.Scene {
     const list = meta.unlocked();
     if (list.length === 0) return;
     this.startIndex = (this.startIndex + step + list.length) % list.length;
+    sfx('uiMove');
     meta.setStartRelic(list[this.startIndex] ?? null);
     this.refresh();
   }
@@ -469,9 +474,11 @@ export class SanctuaryScene extends Phaser.Scene {
       const saved = meta.commit();
       this.status = saved ? UI.status.bought : UI.status.notSaved;
       this.flashCard(item.card);
+      sfx('uiBuy');
       this.ensureStartRow(); // o Mestre libera a linha da relíquia inicial na hora
     } else {
       this.status = null;
+      sfx('uiDenied');
     }
     this.refresh();
   }
@@ -483,6 +490,7 @@ export class SanctuaryScene extends Phaser.Scene {
 
   /** Fecha a janela: quem a abriu (o jogo) escuta o evento, retoma e aplica as melhorias. */
   private close(): void {
+    sfx('uiBack');
     this.game.events.emit(EVENT_SANCTUARY_CLOSED);
   }
 }

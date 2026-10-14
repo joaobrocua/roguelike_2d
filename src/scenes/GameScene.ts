@@ -15,6 +15,7 @@ import {
   type EnemyType,
 } from '../data/enemies';
 import { BIOME_DARKNESS, DECOR_MARKERS, TILE_VARIANTS } from '../data/atmosphere';
+import { type MusicTrackId } from '../data/audio';
 import { BIOME_NAMES, BIOME_ORDER, type BiomeId } from '../data/mapRules';
 import { BANNER } from '../data/ui';
 import { PALETTE } from '../data/palette';
@@ -74,6 +75,7 @@ import { MiniMap } from '../systems/MiniMap';
 import { ProjectileSystem } from '../systems/ProjectileSystem';
 import { showBiomeBanner } from '../systems/BiomeBanner';
 import { getMetaStore, type MetaStore } from '../systems/metaStore';
+import { getAudio, sfx } from '../systems/AudioSystem';
 import { SanctuaryDecor } from '../systems/SanctuaryDecor';
 import { SanctuaryGate } from '../systems/SanctuaryGate';
 import { SoulCounter } from '../systems/SoulCounter';
@@ -83,6 +85,7 @@ import { RelicHud, type RelicSlotView } from '../systems/RelicHud';
 import { TEXTURE } from '../systems/textures';
 import { createRng, type Rng } from '../utils/rng';
 import { EVENT_DONE, type RelicChoiceData, type RelicChoiceResult } from './RelicChoiceScene';
+import { EVENT_PAUSE_DONE, type PauseChoice } from './PauseScene';
 import { EVENT_SANCTUARY_CLOSED } from './SanctuaryScene';
 
 /** Índices dos dois slots de relíquia (constante: o update não pode alocar arrays). */
@@ -174,6 +177,53 @@ export class GameScene extends Phaser.Scene {
     this.savedPlayer = data.snapshot ?? null;
   }
 
+  /** A trilha que combina com a sala: santuário, chefe ou o bioma do mapa. */
+  private musicTrack(): MusicTrackId {
+    if (this.run.sanctuary) return 'sanctuary';
+    if (this.placed?.kind === 'boss') return 'boss';
+    return this.run.map.biome;
+  }
+
+  /** Dá para pausar agora? Não com outra tela aberta, morto ou no fim da run. */
+  private canPause(): boolean {
+    return !this.choiceOpen && !this.player.isDead() && !this.victoryQueued && !this.deathShown;
+  }
+
+  /** Abre o menu de pausa sobre o jogo parado; ao fechar, continua ou desiste da descida. */
+  private openPause(): void {
+    this.choiceOpen = true;
+    const onDone = (choice: PauseChoice): void => {
+      this.events.off('shutdown', cleanup);
+      this.scene.stop('Pause');
+      if (choice === 'quit') {
+        this.abandonRun();
+        return;
+      }
+      this.scene.resume('Game');
+      this.inputSystem.resync(); // o botão que fechou a pausa não vira pulo/ataque no jogo
+      this.choiceOpen = false;
+    };
+    // Se a cena for encerrada com a pausa aberta, solta o ouvinte
+    const cleanup = (): void => {
+      this.game.events.off(EVENT_PAUSE_DONE, onDone);
+    };
+    this.game.events.once(EVENT_PAUSE_DONE, onDone);
+    this.events.once('shutdown', cleanup);
+    this.scene.pause();
+    this.scene.launch('Pause');
+  }
+
+  /** Desistir da descida: conta como run perdida (as almas carregadas se perdem) e volta ao título. */
+  private abandonRun(): void {
+    if (this.run.sanctuary?.leadsTo !== 'start') {
+      loseSoulsOnDeath(this.run, this.meta.save, this.meta.effects.soulRetention);
+      recordRunEnd(this.meta.save, false);
+      this.meta.commit();
+    }
+    getAudio().stopMusic();
+    this.scene.start('Title');
+  }
+
   /** Uma run nova com o que a árvore de melhorias libera hoje. */
   private newRun(): RunState {
     return createRun(Date.now(), CATALOG.infos, { secretRooms: this.meta.effects.secretRooms });
@@ -222,6 +272,7 @@ export class GameScene extends Phaser.Scene {
       layout = sealUnusedExits(template.layout, usedExits(run.map, run.roomId));
     }
     const room = parseRoom(layout);
+    getAudio().playMusic(this.musicTrack());
     this.roomData = room;
     this.roomWidthPx = room.cols * TILE_SIZE;
     this.roomHeightPx = room.rows * TILE_SIZE;
@@ -337,6 +388,10 @@ export class GameScene extends Phaser.Scene {
       const dt = delta * timeScale;
 
       this.inputSystem.update();
+      if (this.inputSystem.intent.pausePressed && this.canPause()) {
+        this.openPause();
+        return;
+      }
       this.player.update(dt, this.inputSystem.intent);
 
       this.target.x = this.player.x;
@@ -599,6 +654,7 @@ export class GameScene extends Phaser.Scene {
 
   /** O chefe pousou de um salto: nuvem de poeira e um tremor curto. */
   private onBossLand(x: number, y: number): void {
+    sfx('bossLand');
     const { landShakeMs, landShakeIntensity, landDustCount } = ROOM_TRANSITION;
     this.fx.puffDust(x, y, landDustCount);
     this.cameras.main.shake(landShakeMs, landShakeIntensity, true);
@@ -606,12 +662,14 @@ export class GameScene extends Phaser.Scene {
 
   /** O chefe entrou na fase 2: a tela treme e dá um clarão. */
   private onBossPhase(): void {
+    sfx('bossPhase');
     const { phaseShakeMs, phaseShakeIntensity, phaseFlashMs, phaseFlashColor } = ROOM_TRANSITION;
     this.cameras.main.shake(phaseShakeMs, phaseShakeIntensity, true);
     this.cameras.main.flash(phaseFlashMs, phaseFlashColor.r, phaseFlashColor.g, phaseFlashColor.b);
   }
 
   private onEnemyKilled(enemy: Enemy): void {
+    sfx('kill');
     if (enemy.isBoss) {
       this.onBossDefeated(enemy);
       return;
@@ -755,6 +813,7 @@ export class GameScene extends Phaser.Scene {
 
   /** Baú: solta uma relíquia nova (se ainda houver uma que o jogador não carrega) ou cura. */
   private openChest(prop: Prop): void {
+    sfx('chest');
     this.markPropUsed(prop);
     this.fx.puffDust(prop.x, prop.y + 8, 6);
     const id = rollRelicDrop(
@@ -774,6 +833,7 @@ export class GameScene extends Phaser.Scene {
 
   /** Fogueira de descanso: cura tudo uma vez e apaga. */
   private restAtFire(prop: Prop): void {
+    sfx('fire');
     const healed = this.player.heal(this.player.health.maxHp);
     this.markPropUsed(prop);
     this.fx.heal(this.player.x, this.player.y - 6, healed);
@@ -791,6 +851,7 @@ export class GameScene extends Phaser.Scene {
     this.run.lastBanked = bankSouls(this.run, this.meta.save);
     this.meta.commit();
     // ...e o herói passa antes pelo santuário
+    sfx('portal');
     enterSanctuaryBetweenBiomes(this.run);
     this.leave(null);
   }
@@ -798,6 +859,7 @@ export class GameScene extends Phaser.Scene {
   /** Porta do santuário: segue para o próximo bioma ou, no despertar, começa a run nova. */
   private leaveSanctuaryRoom(): void {
     const awakening = this.run.sanctuary?.leadsTo === 'start';
+    sfx('portal');
     // As "Passagens" compradas agora valem já no mapa do próximo bioma
     this.run.secretRooms = this.meta.effects.secretRooms;
     leaveSanctuary(this.run, CATALOG.infos);
@@ -824,6 +886,7 @@ export class GameScene extends Phaser.Scene {
   /** Larga uma relíquia: ela cai até o chão sob (x, y) e fica ali esperando ser pega. */
   private spawnPickup(x: number, y: number, id: RelicId, lifetimeMs?: number): void {
     const floorY = floorYAt(this.roomData, x, y, TILE_SIZE);
+    sfx('relicDrop');
     this.pickups.push(new RelicPickup(this, x, y, floorY, id, lifetimeMs));
   }
 
@@ -879,6 +942,7 @@ export class GameScene extends Phaser.Scene {
    * estátua (ficam guardadas e podem ser gastas); ao fechar, as melhorias valem na hora.
    */
   private openSanctuary(): void {
+    sfx('altar');
     this.choiceOpen = true;
     bankSouls(this.run, this.meta.save);
     this.meta.commit();
@@ -917,6 +981,7 @@ export class GameScene extends Phaser.Scene {
       this.choiceOpen = false;
       if (result.discardSlot === null) return; // deixou no chão: continua lá para pegar depois
       this.player.equipRelic(result.discardSlot, pickup.relicId);
+      sfx('relic');
       this.pickups.splice(this.pickups.indexOf(pickup), 1);
       pickup.destroy();
     };

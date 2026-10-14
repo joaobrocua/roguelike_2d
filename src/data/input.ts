@@ -14,7 +14,8 @@ export type InputAction =
   | 'swap'
   | 'interact'
   | 'slot1'
-  | 'slot2';
+  | 'slot2'
+  | 'pause';
 
 export const KEY_BINDINGS: Record<InputAction, readonly string[]> = {
   left: ['LEFT', 'A'],
@@ -27,6 +28,7 @@ export const KEY_BINDINGS: Record<InputAction, readonly string[]> = {
   interact: ['E'],
   slot1: ['ONE', 'NUMPAD_ONE'],
   slot2: ['TWO', 'NUMPAD_TWO'],
+  pause: ['ESC', 'P'],
 };
 
 export const GAMEPAD_BINDINGS: Record<InputAction, readonly number[]> = {
@@ -40,6 +42,7 @@ export const GAMEPAD_BINDINGS: Record<InputAction, readonly number[]> = {
   interact: [7], // RT (gatilho direito)
   slot1: [],
   slot2: [],
+  pause: [9], // Start
 };
 
 /** Zona morta do analógico esquerdo (0 a 1). */

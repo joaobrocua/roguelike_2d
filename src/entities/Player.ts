@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { sfx } from '../systems/AudioSystem';
 import { INVULNERABLE_FX, JUMP_FORGIVENESS, PLAYER, ROLL } from '../data/balance';
 import { PERFECT_DODGE, PLAYER_COMBAT } from '../data/combat';
 import {
@@ -361,6 +362,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const grounded = body.blocked.down;
     if (grounded && !this.wasGrounded && this.lastVelY > DUST_FX.landMinSpeed) {
       this.onDust?.(body.center.x, body.bottom, DUST_FX.landCount);
+      sfx('land');
     }
     this.wasGrounded = grounded;
     this.lastVelY = body.velocity.y;
@@ -401,6 +403,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
           cancelAttack(this.attack);
           resetCombo(this.combo);
           this.onDust?.(body.center.x, body.bottom, DUST_FX.rollCount);
+          sfx('roll');
         }
       }
 
@@ -435,6 +438,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         this.moveOrLunge(intent);
         if (updateJump(this.jump, dtMs, grounded, intent.jumpPressed, JUMP_FORGIVENESS)) {
           this.setVelocityY(PLAYER.jumpVelocity);
+          sfx('jump');
         }
       }
     }
@@ -504,6 +508,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     if (this.currentIsSpecial) {
       startCooldown(this.cooldowns[this.loadout.active], relic.special.cooldownMs);
     }
+    sfx(this.currentIsSpecial ? 'special' : 'swing');
     // A esquiva perfeita dobra o dano do golpe; a barreira (sem dano) não gasta o bônus
     if (def.damage > 0 || def.projectile) {
       const dodgeMultiplier = consumeDodgeBonus(this.dodgeBonus, PERFECT_DODGE.damageMultiplier);
