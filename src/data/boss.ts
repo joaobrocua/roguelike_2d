@@ -90,6 +90,18 @@ export const GUARDIAO = {
     quakeChance: 0.35,
     introMs: 1500,
     phaseChangeMs: 1100,
+    // Pula o pilar que o barra (até 3 blocos), sobe até quem está nos balcões e salta de longe
+    hopVelocity: -340,
+    hopSpeed: 70,
+    climbVelocity: -440,
+    climbSpeed: 90,
+    climbMinDy: 52,
+    climbRangeX: 130,
+    leapVelocity: -300,
+    leapSpeed: 190,
+    leapMinDx: 170,
+    leapCooldownMs: 3200,
+    jumpCooldownMs: 700,
   } satisfies BossConfig,
 } as const;
 

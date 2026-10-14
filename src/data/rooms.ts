@@ -24,6 +24,10 @@ export const ROOM_TRANSITION = {
   phaseShakeMs: 500,
   phaseFlashMs: 300,
   phaseShakeIntensity: 0.012,
+  /** Pouso do chefe depois de um salto. */
+  landShakeMs: 160,
+  landShakeIntensity: 0.006,
+  landDustCount: 8,
   /** Cor (RGB) do clarão da fase 2. */
   phaseFlashColor: { r: 255, g: 196, b: 107 },
 } as const;

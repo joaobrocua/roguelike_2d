@@ -13,6 +13,7 @@ import type { EnemyAnimState } from '../logic/enemyAnim';
 export const ENEMY_ANIM_STATES: readonly EnemyAnimState[] = [
   'idle',
   'walk',
+  'jump',
   'windup',
   'strike',
   'recover',
@@ -168,6 +169,7 @@ export const CARNICAL_SHEET: EnemySheet<GhoulPose> = {
   animations: {
     idle: { frames: ['idle0', 'idle1'], fps: 2.5, loop: true },
     walk: { frames: ['walk0', 'walk1', 'walk2', 'walk3'], fps: 7, loop: true },
+    jump: { frames: ['idle0'], fps: 1, loop: false },
     windup: { frames: ['windup0', 'windup1'], fps: 6, loop: false },
     strike: { frames: ['strike'], fps: 1, loop: false },
     recover: { frames: ['recover'], fps: 1, loop: false },
@@ -237,6 +239,7 @@ export const ARQUEIRO_SHEET: EnemySheet<ArcherPose> = {
   animations: {
     idle: { frames: ['idle0', 'idle1'], fps: 2.5, loop: true },
     walk: { frames: ['walk0', 'walk1', 'walk2', 'walk3'], fps: 6, loop: true },
+    jump: { frames: ['idle0'], fps: 1, loop: false },
     windup: { frames: ['windup0', 'windup1', 'windup2'], fps: 4.6, loop: false },
     strike: { frames: ['strike'], fps: 1, loop: false },
     recover: { frames: ['recover'], fps: 1, loop: false },
@@ -308,6 +311,7 @@ export const VULTO_SHEET: EnemySheet<WraithPose> = {
   animations: {
     idle: { frames: ['float0', 'float1', 'float2', 'float3'], fps: 5, loop: true },
     walk: { frames: ['float0', 'float1', 'float2', 'float3'], fps: 8, loop: true },
+    jump: { frames: ['float0'], fps: 1, loop: false },
     windup: { frames: ['windup0', 'windup1'], fps: 8, loop: true },
     strike: { frames: ['dive'], fps: 1, loop: false },
     recover: { frames: ['recover'], fps: 1, loop: false },
@@ -468,6 +472,7 @@ export const CAO_SHEET: EnemySheet<HoundPose> = {
   animations: {
     idle: { frames: ['idle0', 'idle1'], fps: 2.5, loop: true },
     walk: { frames: ['run0', 'run1', 'run2', 'run3'], fps: 11, loop: true },
+    jump: { frames: ['strike'], fps: 1, loop: false },
     windup: { frames: ['windup0', 'windup1'], fps: 8, loop: false },
     strike: { frames: ['strike'], fps: 1, loop: false },
     recover: { frames: ['recover'], fps: 1, loop: false },
@@ -549,6 +554,20 @@ export const GUARDIAO_SHEET: EnemySheet<GuardianPose> = {
       pose: guardian({ bob: 2, armF: { dx: 1, dy: -13 }, armB: { dx: 0, dy: -12 }, glow: 2 }),
     },
     {
+      name: 'jump',
+      pose: guardian({
+        bob: 2,
+        lean: 1,
+        legF: 2,
+        legB: -2,
+        liftF: 4,
+        liftB: 3,
+        armF: { dx: 1, dy: 4 },
+        armB: { dx: 0, dy: 3 },
+        glow: 2,
+      }),
+    },
+    {
       name: 'strike',
       pose: guardian({
         lean: 2,
@@ -592,6 +611,7 @@ export const GUARDIAO_SHEET: EnemySheet<GuardianPose> = {
   animations: {
     idle: { frames: ['idle0', 'idle1'], fps: 1.8, loop: true },
     walk: { frames: ['walk0', 'walk1', 'walk2', 'walk3'], fps: 4.5, loop: true },
+    jump: { frames: ['jump'], fps: 1, loop: false },
     windup: { frames: ['windup0', 'windup1', 'windup2'], fps: 4.5, loop: false },
     strike: { frames: ['strike'], fps: 1, loop: false },
     recover: { frames: ['recover'], fps: 1, loop: false },

@@ -172,17 +172,19 @@ describe('planDecor: áreas protegidas', () => {
   });
 
   it('em todos os modelos nada nasce perto de marcadores', () => {
+    // Junta as violações e confere uma vez só (um expect por item deixava o teste lento)
+    const violations: string[] = [];
     for (const { room, items, id } of allPlans()) {
       for (const item of items) {
         const cell = visualCell(item);
         for (const m of room.markers) {
           const dist = Math.max(Math.abs(cell.col - m.col), Math.abs(cell.row - m.row));
-          expect(dist, `${id}: ${item.kind} perto de '${m.char}'`).toBeGreaterThan(
-            DECOR_CLEAR_RADIUS_TILES,
-          );
+          if (dist <= DECOR_CLEAR_RADIUS_TILES)
+            violations.push(`${id}: ${item.kind} perto de '${m.char}'`);
         }
       }
     }
+    expect(violations).toEqual([]);
   });
 
   it('nenhum item na faixa das portas', () => {
@@ -203,41 +205,41 @@ describe('planDecor: áreas protegidas', () => {
   });
 
   it('em todos os modelos nada nasce na faixa das portas', () => {
+    const violations: string[] = [];
     for (const { room, items, id } of allPlans()) {
       for (const item of items) {
         if (item.col === 0 || item.col === room.cols - 1) {
-          expect(item.row >= 12 && item.row <= 14, `${id}: lateral`).toBe(false);
+          if (item.row >= 12 && item.row <= 14) violations.push(`${id}: lateral`);
         }
         if (item.row === 0 || item.row === room.rows - 1) {
           const inCell = item.col % CELL.cols;
-          expect(inCell >= 13 && inCell <= 16, `${id}: topo/base`).toBe(false);
+          if (inCell >= 13 && inCell <= 16) violations.push(`${id}: topo/base`);
         }
       }
     }
+    expect(violations).toEqual([]);
   });
 });
 
 describe('planDecor: distância mínima', () => {
   it('dois itens do mesmo tipo na mesma linha ou coluna ficam a pelo menos o mínimo', () => {
+    const violations: string[] = [];
     for (const { items, id } of allPlans()) {
       for (let i = 0; i < items.length; i++) {
         const a = items[i] as DecorItem;
         for (let j = i + 1; j < items.length; j++) {
           const b = items[j] as DecorItem;
           if (a.kind !== b.kind) continue;
-          if (a.row === b.row) {
-            expect(Math.abs(a.col - b.col), `${id}: ${a.kind} na linha`).toBeGreaterThanOrEqual(
-              DECOR_MIN_GAP_TILES,
-            );
+          if (a.row === b.row && Math.abs(a.col - b.col) < DECOR_MIN_GAP_TILES) {
+            violations.push(`${id}: ${a.kind} na linha`);
           }
-          if (a.col === b.col) {
-            expect(Math.abs(a.row - b.row), `${id}: ${a.kind} na coluna`).toBeGreaterThanOrEqual(
-              DECOR_MIN_GAP_TILES,
-            );
+          if (a.col === b.col && Math.abs(a.row - b.row) < DECOR_MIN_GAP_TILES) {
+            violations.push(`${id}: ${a.kind} na coluna`);
           }
         }
       }
     }
+    expect(violations).toEqual([]);
   });
 
   it('chão comprido recebe vários tufos, e nunca em blocos vizinhos', () => {

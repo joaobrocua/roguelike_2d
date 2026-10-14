@@ -13,6 +13,7 @@ function input(overrides: Partial<EnemyAnimInput> = {}): EnemyAnimInput {
     velX: 0,
     velY: 0,
     flying: false,
+    airborne: false,
     attackPhase: 'idle',
     stunned: false,
     dead: false,
@@ -135,5 +136,37 @@ describe('enemyAnimKey', () => {
       'dead',
     ];
     for (const s of states) expect(enemyAnimKey('x', s)).toBe(`x-${s}`);
+  });
+});
+
+describe('estado de pulo', () => {
+  const at = (overrides: Partial<EnemyAnimInput>): EnemyAnimState =>
+    enemyAnimState(
+      {
+        velX: 0,
+        velY: 0,
+        flying: false,
+        airborne: false,
+        attackPhase: 'idle',
+        stunned: false,
+        dead: false,
+        ...overrides,
+      },
+      10,
+    );
+
+  it('no ar, sem voar: jump (mesmo andando)', () => {
+    expect(at({ airborne: true })).toBe('jump');
+    expect(at({ airborne: true, velX: 80 })).toBe('jump');
+  });
+
+  it('quem voa nunca fica em jump', () => {
+    expect(at({ airborne: true, flying: true })).toBe('idle');
+  });
+
+  it('dano e golpe valem mais que estar no ar', () => {
+    expect(at({ airborne: true, stunned: true })).toBe('hurt');
+    expect(at({ airborne: true, attackPhase: 'windup' })).toBe('windup');
+    expect(at({ airborne: true, dead: true })).toBe('dead');
   });
 });

@@ -49,6 +49,8 @@ const BAR_OFFSET_Y = 6;
 /** Folga (px) além do corpo para os sensores de parede e de beira. */
 const SENSE_MARGIN = 2;
 const LEDGE_DEPTH = 4;
+/** Quanto acima dos pés (px) fica o sensor baixo de parede: pega degraus de um bloco. */
+const LOW_WALL_PROBE = 3;
 
 /** O que o inimigo sabe do alvo (o jogador). */
 export interface EnemyTarget {
@@ -63,6 +65,8 @@ export interface EnemyWorld {
   arrows: ProjectileSystem;
   /** O chefe entrou na fase 2 (a cena treme a tela e faz um clarão). */
   onBossPhase?: () => void;
+  /** O chefe pousou de um salto (poeira e tremor). */
+  onBossLand?: (x: number, y: number) => void;
 }
 
 export interface EnemyOptions {
@@ -103,6 +107,8 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
   /** Estado da animação em curso: só troca de animação quando ele muda. */
   private animState: EnemyAnimState | null = null;
   private fadeTween: Phaser.Tweens.Tween | null = null;
+  /** Estava no chão no frame anterior (para detectar o pouso de um salto). */
+  private wasGrounded = true;
   private readonly shadow: ActorShadow | null;
 
   protected constructor(
@@ -137,6 +143,7 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
       velX: 0,
       velY: 0,
       flying: def.flying,
+      airborne: false,
       attackPhase: 'idle',
       stunned: false,
       dead: false,
@@ -233,6 +240,9 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
 
       if (this.def.flying) this.setVelocity(this.out.velX, this.out.velY);
       else this.setVelocityX(this.out.velX);
+      // Pulo pedido pela IA (só do chão)
+      if (this.out.jumpVelocity < 0 && this.sense.grounded)
+        this.setVelocityY(this.out.jumpVelocity);
     }
 
     const phaseBefore = this.attack.phase;
@@ -242,6 +252,11 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.refreshBoxes(body);
     this.updateVisuals();
     this.shadow?.update(body.center.x, body.bottom, body.blocked.down, true);
+    // O chefe pousando de um salto bate no chão
+    if (this.isBoss && body.blocked.down && !this.wasGrounded) {
+      this.world.onBossLand?.(body.center.x, body.bottom);
+    }
+    this.wasGrounded = body.blocked.down;
   }
 
   /** Cada tipo chama a sua IA pura aqui: lê `this.sense` e preenche `this.out`. */
@@ -290,7 +305,12 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
     const aheadX = this.x + this.facing * reach;
     // "Atrás" = o lado oposto ao alvo, que é para onde um recuo iria
     const behindX = this.x - (sense.dx >= 0 ? 1 : -1) * reach;
-    sense.wallAhead = isSolidAt(room, aheadX, this.y, TILE_SIZE);
+    // Parede à frente: no peito, nos pés (degrau de um bloco) ou o corpo já está encostado nela
+    const lowY = this.y + this.def.height / 2 - LOW_WALL_PROBE;
+    sense.wallAhead =
+      isSolidAt(room, aheadX, this.y, TILE_SIZE) ||
+      isSolidAt(room, aheadX, lowY, TILE_SIZE) ||
+      (this.facing > 0 ? body.blocked.right : body.blocked.left);
     sense.ledgeAhead = !isSolidAt(room, aheadX, feetY, TILE_SIZE);
     sense.wallBehind = isSolidAt(room, behindX, this.y, TILE_SIZE);
     sense.ledgeBehind = !isSolidAt(room, behindX, feetY, TILE_SIZE);
@@ -371,6 +391,7 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
     input.velY = body.velocity.y;
     input.attackPhase = this.attack.phase;
     input.stunned = isStunned(this.health);
+    input.airborne = !this.def.flying && !body.blocked.down;
     input.dead = false;
     const state = enemyAnimState(input, ENEMY_WALK_THRESHOLD);
     // Uma animação sem repetição que terminou não pode ser reiniciada por tocar de novo

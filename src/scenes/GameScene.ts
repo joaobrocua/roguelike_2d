@@ -204,7 +204,12 @@ export class GameScene extends Phaser.Scene {
     this.arrows = new ProjectileSystem(this, room, TEXTURE.arrow, PROJECTILE_POOL.arrows);
     this.spawnEnemies(
       room,
-      { room, arrows: this.arrows, onBossPhase: () => this.onBossPhase() },
+      {
+        room,
+        arrows: this.arrows,
+        onBossPhase: () => this.onBossPhase(),
+        onBossLand: (x, y) => this.onBossLand(x, y),
+      },
       solids,
     );
     this.spawnProps(room);
@@ -450,6 +455,13 @@ export class GameScene extends Phaser.Scene {
     prop.key = propKey(this.run.roomId, col, -1);
     if (this.run.usedProps.has(prop.key)) prop.markUsed();
     this.props.push(prop);
+  }
+
+  /** O chefe pousou de um salto: nuvem de poeira e um tremor curto. */
+  private onBossLand(x: number, y: number): void {
+    const { landShakeMs, landShakeIntensity, landDustCount } = ROOM_TRANSITION;
+    this.fx.puffDust(x, y, landDustCount);
+    this.cameras.main.shake(landShakeMs, landShakeIntensity, true);
   }
 
   /** O chefe entrou na fase 2: a tela treme e dá um clarão. */

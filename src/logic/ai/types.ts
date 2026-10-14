@@ -35,10 +35,20 @@ export interface AiOutput {
   startAttack: boolean;
   /** Arqueiro: soltar o projétil neste frame. */
   fire: boolean;
+  /** Pulo pedido neste frame: velocidade vertical (negativa = para cima); 0 = sem pulo. Só vale no chão. */
+  jumpVelocity: number;
 }
 
 export function createAiOutput(): AiOutput {
-  return { velX: 0, velY: 0, controlsY: false, facing: 1, startAttack: false, fire: false };
+  return {
+    velX: 0,
+    velY: 0,
+    controlsY: false,
+    facing: 1,
+    startAttack: false,
+    fire: false,
+    jumpVelocity: 0,
+  };
 }
 
 /** Zera a decisão do frame, mantendo `facing`. As funções de IA chamam isto no começo. */
@@ -48,6 +58,7 @@ export function resetAiOutput(out: AiOutput): void {
   out.controlsY = false;
   out.startAttack = false;
   out.fire = false;
+  out.jumpVelocity = 0;
 }
 
 export function createAiSense(): AiSense {

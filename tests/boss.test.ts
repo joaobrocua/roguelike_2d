@@ -14,6 +14,17 @@ const cfg: BossConfig = {
   quakeChance: 0.4,
   introMs: 2000,
   phaseChangeMs: 1500,
+  hopVelocity: -340,
+  hopSpeed: 70,
+  climbVelocity: -440,
+  climbSpeed: 90,
+  climbMinDy: 52,
+  climbRangeX: 130,
+  leapVelocity: -300,
+  leapSpeed: 190,
+  leapMinDx: 600,
+  leapCooldownMs: 3000,
+  jumpCooldownMs: 700,
 };
 
 const DT = 16;
@@ -71,6 +82,8 @@ describe('createBoss', () => {
       timerMs: 1234,
       attackKind: 'slam',
       phase: 1,
+      jumpCooldownMs: 0,
+      airSpeed: 0,
     });
   });
 });
@@ -632,5 +645,101 @@ describe('mutação sem alocar', () => {
     s.sense.dx = 500;
     step(s);
     expect(s.out.startAttack).toBe(false);
+  });
+});
+
+describe('pulos do chefe', () => {
+  it('pula o obstáculo que o barra, com o alvo do outro lado', () => {
+    const s = approaching();
+    s.sense.dx = 150;
+    s.sense.wallAhead = true;
+    step(s);
+    expect(s.out.jumpVelocity).toBe(cfg.hopVelocity);
+    expect(s.out.velX).toBeCloseTo(s.out.facing * cfg.hopSpeed);
+    expect(s.state.jumpCooldownMs).toBeGreaterThan(0);
+  });
+
+  it('não pula na cara do alvo: encostado nele, o obstáculo não conta', () => {
+    const s = approaching();
+    s.sense.dx = 20;
+    s.sense.wallAhead = true;
+    step(s);
+    expect(s.out.jumpVelocity).toBe(0);
+  });
+
+  it('sobe com pulo alto até quem está numa plataforma logo acima', () => {
+    const s = approaching();
+    s.sense.dx = 60;
+    s.sense.dy = -100; // alvo 100 px acima
+    step(s);
+    expect(s.out.jumpVelocity).toBe(cfg.climbVelocity);
+    expect(s.out.velX).toBeCloseTo(s.out.facing * cfg.climbSpeed);
+  });
+
+  it('obstáculo com o alvo também mais alto usa o pulo alto', () => {
+    const s = approaching();
+    s.sense.dx = 150;
+    s.sense.dy = -40; // acima o bastante (>= metade do mínimo)
+    s.sense.wallAhead = true;
+    step(s);
+    expect(s.out.jumpVelocity).toBe(cfg.climbVelocity);
+  });
+
+  it('de longe dá um salto comprido, com pausa variável entre um e outro', () => {
+    const s = approaching(fakeRng(0.5));
+    s.sense.dx = 700;
+    step(s);
+    expect(s.out.jumpVelocity).toBe(cfg.leapVelocity);
+    expect(s.out.velX).toBeCloseTo(s.out.facing * cfg.leapSpeed);
+    expect(s.state.jumpCooldownMs).toBeCloseTo(cfg.leapCooldownMs * (0.7 + 0.6 * 0.5));
+  });
+
+  it('na fase 2 o salto é mais rápido e a pausa menor', () => {
+    const s = approaching(fakeRng(0.5));
+    s.state.phase = 2;
+    s.sense.hpFraction = 0.3;
+    s.sense.dx = 700;
+    step(s);
+    expect(s.out.velX).toBeCloseTo(s.out.facing * cfg.leapSpeed * cfg.phase2SpeedMult);
+    expect(s.state.jumpCooldownMs).toBeLessThan(cfg.leapCooldownMs);
+  });
+
+  it('durante a pausa não pula de novo; passada a pausa, pula', () => {
+    const s = approaching(fakeRng(0.5));
+    s.sense.dx = 700;
+    step(s);
+    s.sense.grounded = true;
+    step(s);
+    expect(s.out.jumpVelocity).toBe(0);
+    step(s, 5000);
+    expect(s.out.jumpVelocity).toBe(cfg.leapVelocity);
+  });
+
+  it('no ar mantém a velocidade horizontal do salto, não pede pulo nem ataque', () => {
+    const s = approaching(fakeRng(0.5));
+    s.sense.dx = 700;
+    step(s); // decola
+    s.sense.grounded = false;
+    s.sense.dx = 100; // dentro do alcance de ataque, mas ainda no ar
+    step(s);
+    expect(s.out.velX).toBeCloseTo(s.out.facing * cfg.leapSpeed);
+    expect(s.out.jumpVelocity).toBe(0);
+    expect(s.out.startAttack).toBe(false);
+  });
+
+  it('só ataca com os pés no chão', () => {
+    const s = approaching();
+    s.sense.dx = 40;
+    s.sense.grounded = false;
+    step(s);
+    expect(s.out.startAttack).toBe(false);
+  });
+
+  it('com o alvo morto não pula', () => {
+    const s = approaching();
+    s.sense.targetAlive = false;
+    s.sense.dx = 700;
+    step(s);
+    expect(s.out.jumpVelocity).toBe(0);
   });
 });
