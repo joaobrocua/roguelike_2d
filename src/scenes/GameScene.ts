@@ -17,7 +17,7 @@ import {
 import { BIOME_DARKNESS, DECOR_MARKERS, TILE_VARIANTS } from '../data/atmosphere';
 import { BIOME_NAMES } from '../data/mapRules';
 import { PALETTE } from '../data/palette';
-import { RELIC_DROP, RELIC_IDS } from '../data/relics';
+import { RELIC_DROP, RELIC_IDS, type RelicId } from '../data/relics';
 import { PROP_MARKERS, ROOM_TRANSITION, TILE_SIZE } from '../data/rooms';
 import { GUARDIAO, VICTORY_DELAY_MS } from '../data/boss';
 import { ROOM_TEMPLATES } from '../data/roomTemplates';
@@ -45,6 +45,7 @@ import {
 } from '../logic/map/roomRuntime';
 import type { PlacedRoom, Side } from '../logic/map/types';
 import { advanceBiome, createRun, enterRoom, propKey, type RunState } from '../logic/run';
+import { floorYAt } from '../logic/pickupDrop';
 import { isSolidTile, parseRoom, type ParsedRoom, type RoomMarker } from '../logic/roomParser';
 import { createSlowMo, triggerSlowMo, updateSlowMo } from '../logic/slowMo';
 import { planDecor } from '../logic/decor';
@@ -111,6 +112,8 @@ export class GameScene extends Phaser.Scene {
   private relicHud!: RelicHud;
   private rng!: Rng;
   private pickups: RelicPickup[] = [];
+  /** A sala em que estamos (para achar o chão sob uma relíquia que cai). */
+  private roomData!: ParsedRoom;
   private choiceOpen = false;
   /** Dados da HUD de relíquias, reaproveitados a cada frame. */
   private readonly slotViews: [RelicSlotView, RelicSlotView] = [
@@ -168,6 +171,7 @@ export class GameScene extends Phaser.Scene {
     // Portas sem ligação no mapa viram parede
     const layout = sealUnusedExits(template.layout, usedExits(run.map, run.roomId));
     const room = parseRoom(layout);
+    this.roomData = room;
     this.roomWidthPx = room.cols * TILE_SIZE;
     this.roomHeightPx = room.rows * TILE_SIZE;
     this.roomSize.widthPx = this.roomWidthPx;
@@ -466,7 +470,7 @@ export class GameScene extends Phaser.Scene {
   /** O chefe caiu: solta uma relíquia e, depois de um instante, mostra a tela de vitória. */
   private onBossDefeated(boss: Enemy): void {
     const id = rollRelicDrop(this.rng, 1, RELIC_IDS, this.player.loadout.slots);
-    if (id) this.pickups.push(new RelicPickup(this, boss.x, boss.y - 6, id));
+    if (id) this.spawnPickup(boss.x, boss.y - 6, id);
     if (this.victoryQueued) return;
     this.victoryQueued = true;
     this.run.finished = true; // a vitória não se perde se o jogador sair da arena antes dela
@@ -572,7 +576,7 @@ export class GameScene extends Phaser.Scene {
     const id = rollRelicDrop(this.rng, 1, RELIC_IDS, this.player.loadout.slots);
     const taken = id !== null && this.pickups.some((pickup) => pickup.relicId === id);
     if (id && !taken) {
-      this.pickups.push(new RelicPickup(this, prop.x, prop.y - 10, id));
+      this.spawnPickup(prop.x, prop.y - 10, id);
       return;
     }
     const amount = PLAYER_COMBAT.maxHp * PLAYER_COMBAT.chestHealFraction;
@@ -601,7 +605,13 @@ export class GameScene extends Phaser.Scene {
     const loadout = this.player.loadout;
     const id = rollRelicDrop(this.rng, RELIC_DROP.chance, RELIC_IDS, loadout.slots);
     if (!id || this.pickups.some((pickup) => pickup.relicId === id)) return;
-    this.pickups.push(new RelicPickup(this, x, y - 6, id, RELIC_DROP.lifetimeMs));
+    this.spawnPickup(x, y - 6, id, RELIC_DROP.lifetimeMs);
+  }
+
+  /** Larga uma relíquia: ela cai até o chão sob (x, y) e fica ali esperando ser pega. */
+  private spawnPickup(x: number, y: number, id: RelicId, lifetimeMs?: number): void {
+    const floorY = floorYAt(this.roomData, x, y, TILE_SIZE);
+    this.pickups.push(new RelicPickup(this, x, y, floorY, id, lifetimeMs));
   }
 
   /** Atualiza as relíquias do chão e remove as que o tempo esgotou. */
@@ -617,19 +627,19 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  /** O jogador encostou numa relíquia do chão? Abre a escolha de qual descartar. */
+  /**
+   * O jogador está perto de uma relíquia do chão? Aparece o aviso "[E] nome" nela; apertar o botão
+   * de interagir abre a tela de troca. Só a mais próxima de quem chegou primeiro mostra o aviso.
+   */
   private checkPickups(): void {
-    if (this.choiceOpen || this.player.isDead()) return;
+    const canUse = !this.choiceOpen && !this.player.isDead() && !this.transitioning;
+    let target: RelicPickup | null = null;
     for (const pickup of this.pickups) {
-      const touching = boxesOverlap(pickup.box, this.player.hurtBox);
-      if (!touching) {
-        pickup.refused = false; // saiu de cima: pode abrir a escolha de novo
-        continue;
-      }
-      if (pickup.refused) continue;
-      this.openRelicChoice(pickup);
-      return;
+      const near = canUse && target === null && boxesOverlap(pickup.box, this.player.hurtBox);
+      pickup.setNear(near);
+      if (near) target = pickup;
     }
+    if (target && this.inputSystem.intent.interactPressed) this.openRelicChoice(target);
   }
 
   private openRelicChoice(pickup: RelicPickup): void {
@@ -645,10 +655,7 @@ export class GameScene extends Phaser.Scene {
       this.scene.resume('Game');
       this.inputSystem.resync(); // o botão de confirmar não vira pulo/ataque no jogo
       this.choiceOpen = false;
-      if (result.discardSlot === null) {
-        pickup.refused = true;
-        return;
-      }
+      if (result.discardSlot === null) return; // deixou no chão: continua lá para pegar depois
       this.player.equipRelic(result.discardSlot, pickup.relicId);
       this.pickups.splice(this.pickups.indexOf(pickup), 1);
       pickup.destroy();

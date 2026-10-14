@@ -2,7 +2,7 @@ import type Phaser from 'phaser';
 import { DEPTH } from '../data/atmosphere';
 import { GAME_SIZE } from '../data/balance';
 import { HUD, PIXEL_FONT, TEXT_COLORS } from '../data/ui';
-import { KEYCAP_KEY } from './hudArt';
+import { ensureKeycap } from './hudArt';
 import { pixelText } from './pixelFont';
 
 /**
@@ -20,16 +20,11 @@ export class KeyHints {
     let x = left;
     for (const item of items) {
       for (const key of item.keys) {
-        children.push(scene.add.image(x, y, KEYCAP_KEY).setOrigin(0, 0));
-        children.push(
-          pixelText(scene, x + 3, y + 2, key, { color: TEXT_COLORS.keycap, fixed: true }),
-        );
+        children.push(scene.add.image(x, y, ensureKeycap(scene, key)).setOrigin(0, 0));
         x += size + keyGap;
       }
       x += labelGap - keyGap;
-      children.push(
-        pixelText(scene, x, y + 2, item.label, { color: TEXT_COLORS.dim, fixed: true }),
-      );
+      children.push(pixelText(scene, x, y, item.label, { color: TEXT_COLORS.dim, fixed: true }));
       x += item.label.length * PIXEL_FONT.glyphSize + itemGap;
     }
     this.container = scene.add.container(0, 0, children).setScrollFactor(0).setDepth(DEPTH.hud);

@@ -41,6 +41,8 @@ npm run build      # build de produção
 | Atacar          | J              | Botão X (índice 2)               |
 | Especial        | K              | Botão Y (índice 3)               |
 | Trocar relíquia | Q              | LB (índice 4)                    |
+| Relíquia 1 / 2  | 1 / 2          | —                                |
+| Pegar do chão   | E              | RT (índice 7)                    |
 | Pausa           | Esc (em breve) | em breve                         |
 
 ## Combate (etapa 2)
@@ -68,11 +70,11 @@ Os desenhos ficam em `src/systems/biomeBackgrounds.ts`, `tileArt.ts`, `decorArt.
 
 Toda a interface usa o mesmo estilo de painéis de pedra e ferro (`src/systems/hudArt.ts`) e a fonte de pixels (`src/systems/pixelFont.ts`). Os valores ficam em `src/data/ui.ts`.
 
-- **Vida:** painel no canto superior esquerdo com o coração, a barra com marcas e brilho, os números e um rastro claro que mostra o tamanho do dano; com pouca vida a barra pulsa.
+- **Vida:** painel compacto no canto superior esquerdo com o coração, a barra com marcas e brilho e um rastro claro que mostra o tamanho do dano; com pouca vida a barra pulsa.
 - **Relíquias:** duas casas no canto inferior esquerdo. A ativa tem moldura na cor da relíquia, brilho e a tecla do especial (K); a outra fica apagada com a tecla de troca (Q). A recarga sobe como uma cortina e a casa pisca quando o especial volta.
 - **Minimapa:** painel no canto superior direito com as salas em relevo, a sala atual pulsando e três losangos que mostram em qual bioma você está.
 - **Chefe:** painel no pé da tela com o nome, a barra com um traço onde começa a fase 2 e o rastro do último golpe.
-- **Dica de controles:** teclas desenhadas como teclas, na primeira sala, sumindo sozinhas.
+- **Dica de controles:** teclas desenhadas como teclas (com letras de 3x5 pixels), na primeira sala, sumindo sozinhas.
 - **Nome do bioma ("ATO I"), números de dano e telas** de morte, vitória e escolha de relíquia também usam a fonte de pixels.
 
 ## O Último Vigia (pixel art em código)
@@ -96,7 +98,7 @@ Existem **9 relíquias**; o jogador carrega **duas** e alterna entre elas com **
 | Mangual Cinéreo   | Golpe e giro em volta    | Rodopio que empurra                 | -25% de recarga dos especiais |
 
 - **Golpe de troca:** trocar de relíquia até 0,7 s depois de acertar um inimigo dispara um golpe curto em área (cada acerto vale um golpe de troca).
-- **Novas relíquias** caem de inimigos derrotados; ao pegar uma, você escolhe qual das duas descartar (ou deixa no chão). A relíquia largada por um inimigo **some depois de 14 s** (pisca nos últimos 4 s); as de baús e do chefe esperam para sempre. Os baús das salas de tesouro sempre soltam uma relíquia (ou curam, se não houver nenhuma nova).
+- **Novas relíquias** caem de inimigos derrotados e ficam **no chão, deitadas**, como a arma de verdade. Chegue perto, aperte **E** (ou RT) e escolha qual das duas descartar (**J** ou as teclas **1**, **2** e **3**; a 3 deixa no chão). As teclas **1** e **2** também trocam direto de relíquia em jogo. A relíquia largada por um inimigo **some depois de 14 s** (pisca nos últimos 4 s); as de baús e do chefe esperam para sempre. Os baús das salas de tesouro sempre soltam uma relíquia (ou curam, se não houver nenhuma nova).
 
 ## Inimigos (etapa 3)
 

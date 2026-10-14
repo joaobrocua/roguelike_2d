@@ -327,7 +327,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         approachZero(body.velocity.x, PLAYER_COMBAT.knockbackFriction * (dtMs / 1000)),
       );
     } else {
+      // Q alterna; 1 e 2 vão direto para a casa pedida (se já é a ativa, nada acontece)
       if (intent.swapPressed) this.swapRelic();
+      else if (intent.slotPressed >= 0 && intent.slotPressed !== this.loadout.active)
+        this.swapRelic();
       const attackPhase = this.attack.phase;
       if (intent.moveX !== 0 && attackPhase === 'idle') this.facing = intent.moveX;
 

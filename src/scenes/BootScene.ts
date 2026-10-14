@@ -3,7 +3,6 @@ import { FONT } from '../data/ui';
 import { createEnvironmentTextures } from '../systems/environmentTextures';
 import { createEnemyAnimations, createEnemySheets } from '../systems/enemySprites';
 import { createHeroAnimations, createHeroSheet } from '../systems/heroSprites';
-import { createHudTextures } from '../systems/hudArt';
 import { createPixelFont } from '../systems/pixelFont';
 import { createPropSheet } from '../systems/propTextures';
 import { createRelicIcons } from '../systems/relicIcons';
@@ -23,7 +22,6 @@ export class BootScene extends Phaser.Scene {
     createEnvironmentTextures(this);
     createRelicIcons(this);
     createUiTextures(this);
-    createHudTextures(this);
     createHeroSheet(this);
     createHeroAnimations(this);
     createPropSheet(this);

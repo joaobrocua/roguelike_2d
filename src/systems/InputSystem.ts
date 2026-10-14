@@ -11,6 +11,10 @@ export interface InputIntent {
   attackPressed: boolean;
   specialPressed: boolean;
   swapPressed: boolean;
+  /** Interagir (pegar a relíquia do chão). */
+  interactPressed: boolean;
+  /** Casa de relíquia pedida pelas teclas 1 e 2 (0 ou 1); -1 = nenhuma. */
+  slotPressed: number;
 }
 
 const ACTIONS: readonly InputAction[] = [
@@ -21,6 +25,9 @@ const ACTIONS: readonly InputAction[] = [
   'attack',
   'special',
   'swap',
+  'interact',
+  'slot1',
+  'slot2',
 ];
 
 /**
@@ -35,31 +42,24 @@ export class InputSystem {
     attackPressed: false,
     specialPressed: false,
     swapPressed: false,
+    interactPressed: false,
+    slotPressed: -1,
   };
 
   private readonly keys: Record<InputAction, Phaser.Input.Keyboard.Key[]>;
   /** No primeiro frame, botões já segurados (ex.: A ao reiniciar) não contam como "apertou agora". */
   private firstFrame = true;
   /** Estado do botão do controle no frame anterior, por ação. */
-  private readonly padWasDown: Record<InputAction, boolean> = {
-    left: false,
-    right: false,
-    jump: false,
-    roll: false,
-    attack: false,
-    special: false,
-    swap: false,
-  };
+  private readonly padWasDown = {} as Record<InputAction, boolean>;
 
   constructor(private readonly scene: Phaser.Scene) {
     const keyboard = scene.input.keyboard;
     if (!keyboard) throw new Error('Teclado indisponível neste ambiente.');
 
-    this.keys = { left: [], right: [], jump: [], roll: [], attack: [], special: [], swap: [] };
+    this.keys = {} as Record<InputAction, Phaser.Input.Keyboard.Key[]>;
     for (const action of ACTIONS) {
-      for (const name of KEY_BINDINGS[action]) {
-        this.keys[action].push(keyboard.addKey(name));
-      }
+      this.keys[action] = KEY_BINDINGS[action].map((name) => keyboard.addKey(name));
+      this.padWasDown[action] = false;
     }
   }
 
@@ -93,6 +93,10 @@ export class InputSystem {
     intent.attackPressed = this.pressed('attack', pad, padOn, padEdges);
     intent.specialPressed = this.pressed('special', pad, padOn, padEdges);
     intent.swapPressed = this.pressed('swap', pad, padOn, padEdges);
+    intent.interactPressed = this.pressed('interact', pad, padOn, padEdges);
+    const slot1 = this.pressed('slot1', pad, padOn, padEdges);
+    const slot2 = this.pressed('slot2', pad, padOn, padEdges);
+    intent.slotPressed = slot1 ? 0 : slot2 ? 1 : -1;
     this.firstFrame = false;
   }
 

@@ -49,3 +49,16 @@ describe('os textos do jogo só usam glifos que a fonte tem', () => {
     });
   }
 });
+
+describe('micro fonte das teclas da HUD', () => {
+  it('toda tecla usada na HUD tem letra desenhada (3x5)', async () => {
+    const { MICRO_GLYPHS, MICRO_GLYPH } = await import('../src/data/microFont');
+    const keys = [...HUD.hints.items.flatMap((item) => item.keys), 'K', 'Q'];
+    for (const key of keys) {
+      const rows = MICRO_GLYPHS[key];
+      expect(rows, key).toBeDefined();
+      expect(rows?.length, key).toBe(MICRO_GLYPH.height);
+      for (const row of rows ?? []) expect(row.length, key).toBe(MICRO_GLYPH.width);
+    }
+  });
+});

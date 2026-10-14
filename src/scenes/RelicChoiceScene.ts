@@ -1,10 +1,11 @@
 import Phaser from 'phaser';
 import { GAME_SIZE } from '../data/balance';
 import { PALETTE } from '../data/palette';
-import { MENU_PAD, STICK_DEADZONE } from '../data/input';
+import { CHOICE_SHORTCUT_KEYS, MENU_PAD, STICK_DEADZONE } from '../data/input';
 import { RELICS, relicIconKey, type RelicId } from '../data/relics';
-import { RELIC_CHOICE as UI, TEXT_COLORS } from '../data/ui';
+import { HUD, RELIC_CHOICE as UI, TEXT_COLORS } from '../data/ui';
 import { ENV_TEXTURE } from '../systems/environmentTextures';
+import { ensureKeycap } from '../systems/hudArt';
 import { pixelText } from '../systems/pixelFont';
 
 export interface RelicChoiceData {
@@ -32,6 +33,8 @@ export class RelicChoiceScene extends Phaser.Scene {
   private prevKeys: Phaser.Input.Keyboard.Key[] = [];
   private nextKeys: Phaser.Input.Keyboard.Key[] = [];
   private confirmKeys: Phaser.Input.Keyboard.Key[] = [];
+  /** Teclas 1, 2 e 3: escolhem direto a opção de mesmo número. */
+  private shortcutKeys: Phaser.Input.Keyboard.Key[] = [];
   private optionBoxes: Phaser.GameObjects.Rectangle[] = [];
   private optionNames: Phaser.GameObjects.BitmapText[] = [];
   private marker!: Phaser.GameObjects.Rectangle;
@@ -76,6 +79,8 @@ export class RelicChoiceScene extends Phaser.Scene {
     this.prevKeys = [this.keys.up, this.keys.w, this.keys.left, this.keys.a];
     this.nextKeys = [this.keys.down, this.keys.s, this.keys.right, this.keys.d];
     this.confirmKeys = [this.keys.j, this.keys.space, this.keys.enter];
+    this.shortcutKeys = CHOICE_SHORTCUT_KEYS.map((name) => kb.addKey(name));
+    for (const key of this.shortcutKeys) key.reset();
     // Descarta pressionamentos anteriores à abertura da tela.
     for (const key of Object.values(this.keys)) key.reset();
 
@@ -113,6 +118,17 @@ export class RelicChoiceScene extends Phaser.Scene {
 
     if (escape) {
       this.finish(null);
+      return;
+    }
+
+    // Atalhos 1 a 3: todas as teclas são consultadas (sem curto-circuito) para consumir o aperto
+    let shortcut = -1;
+    for (let i = 0; i < this.shortcutKeys.length; i++) {
+      const key = this.shortcutKeys[i];
+      if (key && Phaser.Input.Keyboard.JustDown(key)) shortcut = i;
+    }
+    if (shortcut >= 0 && this.lockMs <= 0) {
+      this.finish(shortcut === KEEP_INDEX ? null : shortcut === 0 ? 0 : 1);
       return;
     }
 
@@ -326,6 +342,7 @@ export class RelicChoiceScene extends Phaser.Scene {
           originY: 0.5,
         });
       }
+      this.add.image(card.x + 5, y + 5, ensureKeycap(this, String(i + 1))).setOrigin(0, 0);
       this.optionBoxes.push(box);
       this.optionNames.push(name);
       this.optionCenters.push({ x: card.x - 7, y: y + card.height / 2 });
@@ -341,6 +358,13 @@ export class RelicChoiceScene extends Phaser.Scene {
       originX: 0.5,
       originY: 0.5,
     });
+    this.add
+      .image(
+        keep.x + 5,
+        keep.y + Math.floor((keep.height - HUD.keycap.size) / 2),
+        ensureKeycap(this, '3'),
+      )
+      .setOrigin(0, 0);
     this.optionBoxes.push(keepBox);
     this.optionNames.push(keepText);
     this.optionCenters.push({ x: keep.x - 7, y: keep.y + keep.height / 2 });

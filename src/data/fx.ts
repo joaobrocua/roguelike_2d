@@ -74,9 +74,18 @@ export const BARRIER_FX = {
 
 /** Relíquia largada no chão. */
 export const PICKUP_FX = {
-  bobPx: 2,
-  bobPeriodMs: 1100,
-  refusedAlpha: 0.45,
+  /** Quanto a arma caída gira (graus) para ficar deitada; o tomo (livro) fica reto. */
+  lieAngleDeg: 58,
+  /** Distância do centro da arma ao chão quando ela já está caída (px). */
+  restOffsetY: 5,
+  /** Folga (px) em volta da arma em que dá para pegá-la. */
+  reach: 12,
+  /** Queda até o chão, com quique. */
+  dropMs: 520,
+  /** Brilho no chão: tamanho (escala da mancha de luz), opacidade e período do pulso. */
+  glow: { scaleX: 0.42, scaleY: 0.2, alpha: 0.5, pulseMs: 1400, offsetY: 3 },
+  /** Aviso "[E] nome" que aparece perto da arma: alturas acima do centro dela. */
+  prompt: { nameDy: -26, keyDy: -17 },
 } as const;
 
 /** Golpe de troca: anel de luz na cor da relíquia. */

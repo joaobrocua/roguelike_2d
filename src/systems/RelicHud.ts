@@ -3,10 +3,9 @@ import { DEPTH } from '../data/atmosphere';
 import { GAME_SIZE } from '../data/balance';
 import { PALETTE } from '../data/palette';
 import { RELICS, relicIconKey, type RelicId } from '../data/relics';
-import { HUD, TEXT_COLORS } from '../data/ui';
+import { HUD } from '../data/ui';
 import { ENV_TEXTURE } from './environmentTextures';
-import { ensurePanelTexture, KEYCAP_KEY } from './hudArt';
-import { pixelText } from './pixelFont';
+import { ensureKeycap, ensurePanelTexture } from './hudArt';
 
 export interface RelicSlotView {
   relicId: RelicId;
@@ -23,7 +22,6 @@ interface SlotParts {
   cover: Phaser.GameObjects.Rectangle;
   flash: Phaser.GameObjects.Rectangle;
   key: Phaser.GameObjects.Image;
-  keyLetter: Phaser.GameObjects.BitmapText;
   relicId: RelicId | null;
   cooling: boolean;
 }
@@ -80,15 +78,10 @@ export class RelicHud {
       const keyX = x + slot - keySize + 2;
       const keyY = y + slot - keySize + 2;
       const key = scene.add
-        .image(keyX, keyY, KEYCAP_KEY)
+        .image(keyX, keyY, ensureKeycap(scene, i === 0 ? ACTIVE_KEY : SWAP_KEY))
         .setOrigin(0, 0)
         .setScrollFactor(0)
         .setDepth(DEPTH.hud + 4);
-      const keyLetter = pixelText(scene, keyX + 3, keyY + 2, i === 0 ? ACTIVE_KEY : SWAP_KEY, {
-        color: TEXT_COLORS.keycap,
-        depth: DEPTH.hud + 5,
-        fixed: true,
-      });
       this.slots.push({
         x,
         y,
@@ -98,7 +91,6 @@ export class RelicHud {
         cover,
         flash,
         key,
-        keyLetter,
         relicId: null,
         cooling: false,
       });
@@ -132,8 +124,7 @@ export class RelicHud {
         parts.panel.setAlpha(alpha);
         parts.icon.setAlpha(alpha);
         parts.key.setAlpha(alpha);
-        parts.keyLetter.setAlpha(alpha);
-        parts.keyLetter.setText(isActive ? ACTIVE_KEY : SWAP_KEY);
+        parts.key.setTexture(ensureKeycap(this.scene, isActive ? ACTIVE_KEY : SWAP_KEY));
         parts.glow.setTint(def.color);
       }
       parts.glow.setAlpha(isActive ? 0.1 + 0.08 * pulse : 0);

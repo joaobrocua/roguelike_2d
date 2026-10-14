@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { DEPTH } from '../data/atmosphere';
 import { PALETTE } from '../data/palette';
+import { MICRO_GLYPH, MICRO_GLYPHS } from '../data/microFont';
 import { HUD, PANEL } from '../data/ui';
 import { canvasTexture, mix, rect, type Ctx } from './pixelCanvas';
 
@@ -70,21 +71,34 @@ export function panelImage(
     .setDepth(depth);
 }
 
-export const KEYCAP_KEY = 'hud-keycap';
+/** Chave da textura da tecla com a `letter` desenhada dentro. */
+export function keycapKey(letter: string): string {
+  return `hud-keycap-${letter}`;
+}
 
-function drawKeycap(ctx: Ctx): void {
+function drawKeycap(ctx: Ctx, letter: string): void {
   const s = HUD.keycap.size;
-  // Borda clara com os cantos cortados, miolo escuro (a letra clara fica bem legível) e uma
-  // "sombra" mais grossa embaixo, como num teclado de verdade
+  // Borda clara com os cantos cortados, miolo escuro e uma "sombra" embaixo, como numa tecla
   rect(ctx, PALETTE.bone, 1, 0, s - 2, s - 1);
   rect(ctx, PALETTE.bone, 0, 1, s, s - 3);
   rect(ctx, PALETTE.stoneDark, 1, 1, s - 2, s - 4);
-  rect(ctx, PALETTE.stone, 1, 1, s - 2, 1, 0.9);
   rect(ctx, PALETTE.mist, 1, s - 2, s - 2, 1);
   rect(ctx, PALETTE.void, 1, s - 1, s - 2, 1);
+  // Letra em micro pixels, centralizada no miolo
+  const rows = MICRO_GLYPHS[letter];
+  if (!rows) return;
+  const left = Math.floor((s - MICRO_GLYPH.width) / 2);
+  const top = 1 + Math.floor((s - 4 - MICRO_GLYPH.height) / 2);
+  rows.forEach((row, y) => {
+    for (let x = 0; x < row.length; x++) {
+      if (row[x] === '#') rect(ctx, PALETTE.bone, left + x, top + y, 1, 1);
+    }
+  });
 }
 
-/** Tecla (quadradinho) sob o `letter`, que o chamador escreve por cima com a fonte de pixels. */
-export function createHudTextures(scene: Phaser.Scene): void {
-  canvasTexture(scene, KEYCAP_KEY, HUD.keycap.size, HUD.keycap.size, drawKeycap);
+/** Garante a textura da tecla e devolve a chave. */
+export function ensureKeycap(scene: Phaser.Scene, letter: string): string {
+  const key = keycapKey(letter);
+  canvasTexture(scene, key, HUD.keycap.size, HUD.keycap.size, (ctx) => drawKeycap(ctx, letter));
+  return key;
 }

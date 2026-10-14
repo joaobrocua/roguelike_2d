@@ -51,14 +51,13 @@ export const PANEL = {
 } as const;
 
 /** Vida do jogador (canto superior esquerdo). */
-const HP_PLATE = { x: 6, y: 6, width: 134, height: 30 } as const;
+const HP_PLATE = { x: 4, y: 4, width: 92, height: 19 } as const;
 
 export const HUD = {
   hp: {
     plate: HP_PLATE,
-    heart: { x: HP_PLATE.x + 7, y: HP_PLATE.y + 5 },
-    bar: { x: HP_PLATE.x + 24, y: HP_PLATE.y + 4, width: 100, height: 8, border: 2 },
-    text: { x: HP_PLATE.x + 26, y: HP_PLATE.y + 19 },
+    heart: { x: HP_PLATE.x + 4, y: HP_PLATE.y + 4 },
+    bar: { x: HP_PLATE.x + 20, y: HP_PLATE.y + 4, width: 64, height: 7, border: 2 },
     /** Quanto do rastro claro some por segundo (fração da barra). */
     ghostDelayRate: 0.35,
     /** Abaixo disto a barra pulsa. */
@@ -68,10 +67,10 @@ export const HUD = {
   },
   /** Relíquias carregadas (canto inferior esquerdo). */
   relics: {
-    slot: 30,
-    gap: 6,
-    left: 6,
-    bottom: 6,
+    slot: 24,
+    gap: 4,
+    left: 4,
+    bottom: 4,
     inactiveAlpha: 0.62,
     coverAlpha: 0.74,
     /** Brilho que dispara quando o especial volta a ficar pronto. */
@@ -84,15 +83,16 @@ export const HUD = {
       { keys: ['J'], label: 'atacar' },
       { keys: ['K'], label: 'especial' },
       { keys: ['Q'], label: 'trocar' },
+      { keys: ['E'], label: 'pegar' },
       { keys: ['L'], label: 'rolar' },
     ],
-    left: 80,
-    bottom: 8,
-    itemGap: 12,
+    left: 60,
+    bottom: 4,
+    itemGap: 8,
     holdMs: 9000,
     fadeMs: 1200,
   },
-  keycap: { size: 13, labelGap: 4, keyGap: 2 },
+  keycap: { size: 9, labelGap: 4, keyGap: 1 },
 } as const;
 
 export const DEATH_SCREEN = {
@@ -114,7 +114,7 @@ export const RELIC_CHOICE = {
   keep: 'DEIXAR NO CHÃO',
   activeTag: 'EM USO',
   rows: { basic: 'BÁSICO', special: 'ESPECIAL (K)', passive: 'PASSIVA' },
-  hint: 'W/S ESCOLHER   J CONFIRMAR   ESC DEIXAR',
+  hint: 'W/S ESCOLHER   J OU 1-3 CONFIRMAR   ESC DEIXAR',
   overlayAlpha: 0.88,
   /** Ignora a confirmação por um instante ao abrir, para não escolher sem querer. */
   inputLockMs: 400,
@@ -132,12 +132,12 @@ export const RELIC_CHOICE = {
 
 /** Minimapa (canto superior direito). Medidas em pixels. */
 export const MINIMAP = {
-  cellW: 10,
-  cellH: 6,
+  cellW: 8,
+  cellH: 5,
   gap: 1,
-  margin: 6,
+  margin: 4,
   /** Folga entre a moldura e as salas. */
-  padding: 3,
+  padding: 2,
   blinkMs: 380,
   /** Cor de cada tipo de sala visitada. */
   roomColors: {
@@ -150,7 +150,7 @@ export const MINIMAP = {
     boss: PALETTE.blood,
   },
   /** Os losangos que mostram em qual dos biomas a run está. */
-  pips: { size: 5, gap: 3, offsetY: 4 },
+  pips: { size: 3, gap: 3, offsetY: 3 },
 } as const;
 
 /** Nome do bioma que aparece ao entrar nele. */

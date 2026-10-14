@@ -1,12 +1,11 @@
 import Phaser from 'phaser';
 import { DEPTH } from '../data/atmosphere';
 import { PALETTE } from '../data/palette';
-import { HUD, TEXT_COLORS } from '../data/ui';
+import { HUD } from '../data/ui';
 import { clampFraction, trailFraction } from '../logic/gauge';
 import { ensureGauge } from './gaugeArt';
 import { panelImage } from './hudArt';
 import { canvasTexture, rect } from './pixelCanvas';
-import { pixelText } from './pixelFont';
 
 /**
  * Vida do jogador, no canto superior esquerdo: painel de pedra com o coração, a barra com
@@ -56,10 +55,8 @@ export class HpBar {
   private readonly ghost: Phaser.GameObjects.Image;
   private readonly fill: Phaser.GameObjects.Image;
   private readonly heart: Phaser.GameObjects.Image;
-  private readonly numbers: Phaser.GameObjects.BitmapText;
   private ghostFraction: number;
   private clockMs = 0;
-  private shownHp = -1;
 
   /** `hp` é a vida ao criar a barra: o rastro já nasce nela (entrar numa sala não é levar dano). */
   constructor(
@@ -68,7 +65,7 @@ export class HpBar {
     hp: number,
   ) {
     this.ghostFraction = clampFraction(hp / maxHp);
-    const { plate, heart, bar, text } = HUD.hp;
+    const { plate, heart, bar } = HUD.hp;
     const keys = ensureGauge(scene, {
       prefix: 'hud-hp',
       width: bar.width,
@@ -87,12 +84,6 @@ export class HpBar {
     this.ghost = create(keys.ghost, inner.x, inner.y, DEPTH.hud + 1.1);
     this.fill = create(keys.fill, inner.x, inner.y, DEPTH.hud + 1.2);
     create(keys.marks, inner.x, inner.y, DEPTH.hud + 1.3);
-    this.numbers = pixelText(scene, text.x, text.y, `${Math.ceil(hp)}/${maxHp}`, {
-      color: TEXT_COLORS.dim,
-      depth: DEPTH.hud + 1,
-      fixed: true,
-    });
-    this.shownHp = Math.ceil(hp);
   }
 
   /** `dtMs` em tempo real (o rastro e o pulso seguem rodando em câmera lenta); `hp` é a vida atual. */
@@ -108,12 +99,5 @@ export class HpBar {
     const pulse = low ? 1 - pulseDepth * (0.5 + 0.5 * wave) : 1;
     this.fill.setAlpha(pulse);
     this.heart.setAlpha(pulse);
-
-    const whole = Math.ceil(hp);
-    if (whole !== this.shownHp) {
-      this.shownHp = whole;
-      this.numbers.setText(`${whole}/${this.maxHp}`);
-      this.numbers.setTint(low ? TEXT_COLORS.danger : TEXT_COLORS.dim);
-    }
   }
 }

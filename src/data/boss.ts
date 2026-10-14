@@ -95,17 +95,17 @@ export const GUARDIAO = {
 
 /** Barra de vida do chefe, no pé da tela, dentro de um painel com o nome. */
 export const BOSS_BAR = {
-  width: 224,
-  height: 8,
+  width: 168,
+  height: 6,
   border: 2,
   /** Folga do painel em volta da barra e do nome. */
-  padding: 8,
+  padding: 6,
   /** Altura do painel e distância dele até o pé da tela. */
-  plateHeight: 34,
-  bottomMargin: 10,
+  plateHeight: 27,
+  bottomMargin: 5,
   /** Linha do nome e da barra dentro do painel. */
-  nameY: 6,
-  barY: 18,
+  nameY: 5,
+  barY: 15,
   /** Quanto do rastro claro some por segundo (fração da barra). */
   ghostDelayRate: 0.3,
   /** O traço que marca onde começa a fase 2 (fração da vida). */
