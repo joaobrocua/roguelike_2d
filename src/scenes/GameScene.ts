@@ -16,7 +16,7 @@ import {
 } from '../data/enemies';
 import { BIOME_DARKNESS, DECOR_MARKERS, TILE_VARIANTS } from '../data/atmosphere';
 import { type MusicTrackId } from '../data/audio';
-import { BIOME_NAMES, BIOME_ORDER, type BiomeId } from '../data/mapRules';
+import { BIOME_NAMES, BIOME_SHORT_NAMES, type BiomeId } from '../data/mapRules';
 import { BANNER } from '../data/ui';
 import { PALETTE } from '../data/palette';
 import { SOUL_REWARD, VICTORY_SOUL_BONUS } from '../data/meta';
@@ -53,7 +53,7 @@ import {
   createRun,
   enterRoom,
   enterSanctuaryBetweenBiomes,
-  isLastBiome,
+  isLastStage,
   leaveSanctuary,
   propKey,
   startInSanctuary,
@@ -133,7 +133,8 @@ export class GameScene extends Phaser.Scene {
   private atmosphere!: AtmosphereSystem;
   private minimap: MiniMap | null = null;
   private sanctuaryDecor: SanctuaryDecor | null = null;
-  private sanctuaryGate: SanctuaryGate | null = null;
+  /** Os portais da sala do santuário (um por área oferecida: 1 ou 2). */
+  private sanctuaryGates: SanctuaryGate[] = [];
   private boss: Guardiao | null = null;
   private bossHud: BossHud | null = null;
   private victoryQueued = false;
@@ -225,8 +226,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   /** Uma run nova com o que a árvore de melhorias libera hoje. */
-  private newRun(): RunState {
-    return createRun(Date.now(), CATALOG.infos, { secretRooms: this.meta.effects.secretRooms });
+  private newRun(firstBiome: BiomeId | null = null): RunState {
+    return createRun(Date.now(), CATALOG.infos, {
+      secretRooms: this.meta.effects.secretRooms,
+      firstBiome,
+    });
   }
 
   create(): void {
@@ -256,7 +260,7 @@ export class GameScene extends Phaser.Scene {
     const run = this.run;
     let layout: readonly string[];
     this.sanctuaryDecor = null;
-    this.sanctuaryGate = null;
+    this.sanctuaryGates = [];
     if (run.sanctuary) {
       // A sala do santuário não está no mapa: tem desenho próprio e veste o bioma do momento
       this.placed = null;
@@ -363,10 +367,10 @@ export class GameScene extends Phaser.Scene {
     // Ao chegar a um bioma novo, mostra o nome dele
     if (run.sanctuary) {
       const caption = BANNER.sanctuary[run.sanctuary.leadsTo];
-      showBiomeBanner(this, run.biomeIndex, SHRINE.label, run.lastBanked, caption);
+      showBiomeBanner(this, run.stage, SHRINE.label, run.lastBanked, caption);
       run.lastBanked = 0;
     } else if (run.visited.size === 1 && !this.entry) {
-      showBiomeBanner(this, run.biomeIndex, BIOME_NAMES[run.map.biome], run.lastBanked);
+      showBiomeBanner(this, run.stage, BIOME_NAMES[run.map.biome], run.lastBanked);
       run.lastBanked = 0;
     }
   }
@@ -407,7 +411,7 @@ export class GameScene extends Phaser.Scene {
       this.combat.update();
       this.fx.update(dt);
       this.sanctuaryDecor?.update(dt);
-      this.sanctuaryGate?.update(dt);
+      for (const gate of this.sanctuaryGates) gate.update(dt);
       this.checkGate();
       const cam = this.cameras.main;
       this.atmosphere.update(dt, this.player.x, this.player.y, cam.scrollX, cam.scrollY);
@@ -460,8 +464,7 @@ export class GameScene extends Phaser.Scene {
    */
   private spawnDecor(room: ParsedRoom): void {
     const run = this.run;
-    const seed =
-      (Math.imul(run.seed | 0, 2654435761) + run.roomId * 977 + run.biomeIndex * 131) >>> 0;
+    const seed = (Math.imul(run.seed | 0, 2654435761) + run.roomId * 977 + run.stage * 131) >>> 0;
     for (const item of planDecor(room, seed)) {
       const image = this.add.image(0, 0, decorTextureKey(this.lookBiome, item.kind, item.variant));
       const left = item.col * TILE_SIZE;
@@ -600,35 +603,51 @@ export class GameScene extends Phaser.Scene {
   /** Luzes da sala do santuário (chamas e portal); vazio nas outras salas. */
   private sanctuaryLights(): readonly LightSource[] {
     const lights = this.sanctuaryDecor?.lights ?? [];
-    return this.sanctuaryGate ? [...lights, this.sanctuaryGate.light] : lights;
+    return [...lights, ...this.sanctuaryGates.map((gate) => gate.light)];
   }
 
   /**
-   * O portal gigante do santuário, no marcador 'X': leva ao próximo bioma ou, depois de morrer ou
-   * vencer, à run nova. A cor da energia é a do bioma de destino.
+   * Os portais gigantes do santuário: um por área oferecida (marcador 'X' à direita; com duas
+   * áreas, também o 'Y' à esquerda). Levam à próxima área ou, depois de morrer ou vencer, à run
+   * nova. A cor da energia é a da área de destino.
    */
   private spawnGate(room: ParsedRoom): void {
     const sanctuary = this.run.sanctuary;
-    const marker = room.markers.find((m) => m.char === 'X');
-    if (!sanctuary || !marker) return;
-    const destIndex = sanctuary.leadsTo === 'nextBiome' ? this.run.biomeIndex + 1 : 0;
-    const dest = BIOME_ORDER[destIndex] ?? 'muralhas';
-    const label = `${BANNER.actLabel} ${BANNER.acts[destIndex] ?? destIndex + 1}`;
-    this.sanctuaryGate = new SanctuaryGate(
-      this,
-      this.lookBiome,
-      dest,
-      marker.col * TILE_SIZE + TILE_SIZE / 2,
-      (marker.row + 1) * TILE_SIZE,
-      label,
-    );
+    if (!sanctuary) return;
+    const options = sanctuary.options;
+    // Uma área: portal à direita. Duas: a primeira à esquerda e a segunda à direita
+    const chars = options.length > 1 ? ['Y', 'X'] : ['X'];
+    chars.forEach((char, i) => {
+      const marker = room.markers.find((m) => m.char === char);
+      const dest = options[i];
+      if (!marker || !dest) return;
+      const stage = sanctuary.leadsTo === 'nextBiome' ? this.run.stage + 1 : 0;
+      const label =
+        options.length > 1
+          ? BIOME_SHORT_NAMES[dest]
+          : `${BANNER.actLabel} ${BANNER.acts[stage] ?? stage + 1}`;
+      this.sanctuaryGates.push(
+        new SanctuaryGate(
+          this,
+          this.lookBiome,
+          dest,
+          marker.col * TILE_SIZE + TILE_SIZE / 2,
+          (marker.row + 1) * TILE_SIZE,
+          label,
+        ),
+      );
+    });
   }
 
-  /** O herói entrou no portal? Segue adiante. */
+  /** O herói entrou em um portal? Segue para a área dele. */
   private checkGate(): void {
-    const gate = this.sanctuaryGate;
-    if (!gate || this.transitioning || this.player.isDead()) return;
-    if (boxesOverlap(gate.box, this.player.hurtBox)) this.useDoor();
+    if (this.transitioning || this.player.isDead()) return;
+    for (const gate of this.sanctuaryGates) {
+      if (boxesOverlap(gate.box, this.player.hurtBox)) {
+        this.leaveSanctuaryRoom(gate.dest);
+        return;
+      }
+    }
   }
 
   /** O que a árvore de melhorias muda no herói (vida, dano, esquiva e relíquia inicial). */
@@ -740,7 +759,7 @@ export class GameScene extends Phaser.Scene {
     this.hpBar = new HpBar(this, this.player.health.maxHp, this.player.health.hp);
     this.soulCounter = new SoulCounter(this, this.run.souls);
     // A dica de controles só aparece na primeira sala da run e some sozinha
-    if (!this.run.sanctuary && this.run.biomeIndex === 0 && this.run.visited.size === 1) {
+    if (!this.run.sanctuary && this.run.stage === 0 && this.run.visited.size === 1) {
       new KeyHints(this);
     }
   }
@@ -842,11 +861,8 @@ export class GameScene extends Phaser.Scene {
   /** Porta da sala de saída (leva ao santuário) ou da sala do santuário (leva adiante). */
   private useDoor(): void {
     if (this.transitioning || this.victoryQueued) return;
-    if (this.run.sanctuary) {
-      this.leaveSanctuaryRoom();
-      return;
-    }
-    if (isLastBiome(this.run.biomeIndex)) return; // último bioma: o fim da run é do chefe (sala 'boss')
+    if (this.run.sanctuary) return; // na sala do santuário quem leva adiante são os portais
+    if (isLastStage(this.run.stage)) return; // último bioma: o fim da run é do chefe (sala 'boss')
     // Ao passar de bioma, as almas carregadas são guardadas com segurança na base...
     this.run.lastBanked = bankSouls(this.run, this.meta.save);
     this.meta.commit();
@@ -856,16 +872,17 @@ export class GameScene extends Phaser.Scene {
     this.leave(null);
   }
 
-  /** Porta do santuário: segue para o próximo bioma ou, no despertar, começa a run nova. */
-  private leaveSanctuaryRoom(): void {
+  /** Portal do santuário: segue para a área escolhida ou, no despertar, começa a run nova nela. */
+  private leaveSanctuaryRoom(chosen: BiomeId): void {
+    if (this.transitioning || this.victoryQueued) return;
     const awakening = this.run.sanctuary?.leadsTo === 'start';
     sfx('portal');
     // As "Passagens" compradas agora valem já no mapa do próximo bioma
     this.run.secretRooms = this.meta.effects.secretRooms;
-    leaveSanctuary(this.run, CATALOG.infos);
+    leaveSanctuary(this.run, CATALOG.infos, chosen);
     if (awakening) {
       // A run nova nasce agora, com as melhorias que o herói comprou no santuário
-      this.run = this.newRun();
+      this.run = this.newRun(chosen);
       this.leave(null, false);
       return;
     }

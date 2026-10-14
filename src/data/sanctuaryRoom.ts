@@ -3,7 +3,8 @@
  * no despertar depois de morrer. O desenho é um só; o bioma entra com a pedra, o fundo, a
  * escuridão e as cores (SANCTUARY_LOOK). Legenda: ver data/rooms.ts, mais:
  *   'S' o altar (a coluna marca a BORDA ESQUERDA do tile: o centro dele é o eixo da sala)
- *   'X' a porta que leva adiante (ao próximo bioma ou ao começo da run)
+ *   'X' e 'Y' os portais que levam adiante (o da direita e o da esquerda; o 'Y' só existe quando
+ *   a etapa oferece duas áreas) e 'P' o ponto de nascimento do herói
  * Tudo em tiles de 16 px; a sala tem 1 célula (30 x 17), sem aberturas nas paredes.
  */
 import type { BiomeId } from './mapRules';
@@ -23,7 +24,7 @@ export const SANCTUARY_LAYOUT: readonly string[] = [
   '#..............S.............#',
   '#............####............#',
   '#..........########..........#',
-  '#..P.....############.....X..#',
+  '#..Y...P.############.....X..#',
   '##############################',
   '##############################',
 ];

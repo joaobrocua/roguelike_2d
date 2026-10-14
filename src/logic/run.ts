@@ -1,25 +1,29 @@
-import { BIOME_CONFIG, BIOME_ORDER, type BiomeId } from '../data/mapRules';
+import { BIOME_CONFIG, RUN_PLAN, type BiomeId, type RunStage } from '../data/mapRules';
 import { generateBiomeMap } from './map/generateMap';
 import type { BiomeMap, TemplateInfo } from './map/types';
 
 /**
- * A sala do santuário em que o herói está. Ela fica entre dois biomas ('nextBiome') ou no despertar
- * depois de morrer ou vencer ('start': a porta leva ao começo de uma run nova). `biome` é o bioma
- * cujo visual a sala veste.
+ * A sala do santuário em que o herói está. Ela fica entre duas áreas ('nextBiome') ou no despertar
+ * depois de morrer ou vencer ('start': os portais levam ao começo de uma run nova). `biome` é a
+ * área cujo visual a sala veste; `options` são as áreas que os portais oferecem (1 ou 2).
  */
 export interface SanctuaryState {
   biome: BiomeId;
   leadsTo: 'start' | 'nextBiome';
+  options: readonly BiomeId[];
 }
 
 /**
- * Estado de uma run (do começo ao fim da fortaleza): o mapa do bioma atual, a sala em que
+ * Estado de uma run (do começo ao fim do reino): o mapa da área atual, a sala em que
  * o jogador está e o que já foi feito em cada sala. A cena do jogo é recriada a cada sala;
  * este objeto é o que sobrevive de uma sala para a outra.
  */
 export interface RunState {
   seed: number;
-  biomeIndex: number;
+  /** Etapa da jornada (índice em RUN_PLAN): 0 é a primeira área, a última é a do chefe. */
+  stage: number;
+  /** As áreas já visitadas, uma por etapa (a última é a atual). */
+  route: BiomeId[];
   map: BiomeMap;
   roomId: number;
   visited: Set<number>;
@@ -29,46 +33,70 @@ export interface RunState {
   usedProps: Set<string>;
   /** A run terminou (o chefe caiu): as portas deixam de funcionar e a tela final vem a seguir. */
   finished: boolean;
-  /** Almas carregadas, ainda não guardadas (só vão para a base ao passar de bioma ou vencer). */
+  /** Almas carregadas, ainda não guardadas (só vão para a base ao passar de área ou vencer). */
   souls: number;
-  /** Salas secretas por bioma nesta run (vêm dos upgrades permanentes). */
+  /** Salas secretas por área nesta run (vêm dos upgrades permanentes). */
   secretRooms: number;
-  /** Almas que acabaram de ser guardadas ao passar de bioma (só para avisar na tela). */
+  /** Almas que acabaram de ser guardadas ao passar de área (só para avisar na tela). */
   lastBanked: number;
   /** Está na sala do santuário (e não numa sala do mapa)? */
   sanctuary: SanctuaryState | null;
 }
 
-/** Opções da run vindas da meta-progressão. */
+/** Opções da run vindas da meta-progressão e da escolha do primeiro caminho. */
 export interface RunOptions {
   secretRooms: number;
+  /** Área escolhida no portal do despertar (se o plano oferece mais de uma na primeira etapa). */
+  firstBiome?: BiomeId | null;
 }
 
-/** Semente de cada bioma: derivada da semente da run, então a run toda é reproduzível. */
-export function biomeSeed(runSeed: number, biomeIndex: number): number {
-  return (Math.imul(runSeed | 0, 2654435761) + biomeIndex * 40503) >>> 0;
+/** Semente de cada etapa: derivada da semente da run, então a run toda é reproduzível. */
+export function biomeSeed(runSeed: number, stage: number): number {
+  return (Math.imul(runSeed | 0, 2654435761) + stage * 40503) >>> 0;
 }
 
-export function biomeAt(index: number): BiomeId {
-  const biome = BIOME_ORDER[index];
-  if (!biome) throw new Error(`Bioma ${index} não existe.`);
-  return biome;
+export function stageCount(plan: readonly RunStage[] = RUN_PLAN): number {
+  return plan.length;
 }
 
-export function isLastBiome(index: number): boolean {
-  return index >= BIOME_ORDER.length - 1;
+/** A etapa é a última da jornada (a do chefe)? */
+export function isLastStage(stage: number, plan: readonly RunStage[] = RUN_PLAN): boolean {
+  return stage >= plan.length - 1;
+}
+
+/**
+ * As áreas que o jogador pode escolher ao chegar à etapa `stage`: as do plano, menos as que já
+ * visitou nesta run. Se não sobrar nenhuma (plano com áreas repetidas), vale a lista inteira.
+ * Etapa fora do plano: lista vazia.
+ */
+export function areaOptions(
+  stage: number,
+  route: readonly BiomeId[],
+  plan: readonly RunStage[] = RUN_PLAN,
+): readonly BiomeId[] {
+  const options = plan[stage]?.options ?? [];
+  const fresh = options.filter((biome) => !route.includes(biome));
+  return fresh.length > 0 ? fresh : options;
+}
+
+/** A área escolhida, se for uma das ofertadas; senão a primeira. */
+export function pickArea(options: readonly BiomeId[], chosen?: BiomeId | null): BiomeId {
+  const first = options[0];
+  if (first === undefined) throw new Error('Etapa sem áreas para escolher.');
+  return chosen && options.includes(chosen) ? chosen : first;
 }
 
 function mapFor(
   runSeed: number,
-  index: number,
+  stage: number,
+  biome: BiomeId,
   catalog: readonly TemplateInfo[],
   secretRooms: number,
+  plan: readonly RunStage[],
 ): BiomeMap {
-  const biome = biomeAt(index);
   const config = { ...BIOME_CONFIG[biome], secrets: secretRooms };
-  return generateBiomeMap(biomeSeed(runSeed, index), biome, catalog, config, {
-    final: isLastBiome(index),
+  return generateBiomeMap(biomeSeed(runSeed, stage), biome, catalog, config, {
+    final: isLastStage(stage, plan),
   });
 }
 
@@ -76,11 +104,14 @@ export function createRun(
   seed: number,
   catalog: readonly TemplateInfo[],
   options: RunOptions = { secretRooms: 0 },
+  plan: readonly RunStage[] = RUN_PLAN,
 ): RunState {
-  const map = mapFor(seed, 0, catalog, options.secretRooms);
+  const biome = pickArea(areaOptions(0, [], plan), options.firstBiome);
+  const map = mapFor(seed, 0, biome, catalog, options.secretRooms, plan);
   return {
     seed,
-    biomeIndex: 0,
+    stage: 0,
+    route: [biome],
     map,
     roomId: map.startId,
     visited: new Set([map.startId]),
@@ -101,16 +132,25 @@ export function enterRoom(run: RunState, roomId: number): void {
 }
 
 /**
- * Passa para o próximo bioma (porta de saída). Devolve false se o atual era o último
- * (a run termina). Os registros de sala são zerados: cada bioma tem as suas salas.
+ * Passa para a próxima etapa, na área `chosen` (se não for uma das ofertadas, vale a primeira).
+ * Devolve false se a etapa atual era a última (a run termina). Os registros de sala são zerados:
+ * cada área tem as suas salas.
  */
-export function advanceBiome(run: RunState, catalog: readonly TemplateInfo[]): boolean {
-  if (isLastBiome(run.biomeIndex)) {
+export function advanceBiome(
+  run: RunState,
+  catalog: readonly TemplateInfo[],
+  chosen?: BiomeId | null,
+  plan: readonly RunStage[] = RUN_PLAN,
+): boolean {
+  if (isLastStage(run.stage, plan)) {
     run.finished = true;
     return false;
   }
-  run.biomeIndex += 1;
-  run.map = mapFor(run.seed, run.biomeIndex, catalog, run.secretRooms);
+  const next = run.stage + 1;
+  const biome = pickArea(areaOptions(next, run.route, plan), chosen);
+  run.stage = next;
+  run.route.push(biome);
+  run.map = mapFor(run.seed, next, biome, catalog, run.secretRooms, plan);
   run.roomId = run.map.startId;
   run.visited = new Set([run.map.startId]);
   run.cleared = new Set();
@@ -118,27 +158,47 @@ export function advanceBiome(run: RunState, catalog: readonly TemplateInfo[]): b
   return true;
 }
 
-/** Entra no santuário entre dois biomas: a sala veste o bioma que acabou de ser vencido. */
-export function enterSanctuaryBetweenBiomes(run: RunState): void {
-  run.sanctuary = { biome: run.map.biome, leadsTo: 'nextBiome' };
+export function propKey(roomId: number, col: number, row: number): string {
+  return `${roomId}:${col},${row}`;
 }
 
-/** Faz a run começar no santuário (despertar depois de morrer ou vencer), vestindo o bioma `biome`. */
-export function startInSanctuary(run: RunState, biome: BiomeId): void {
-  run.sanctuary = { biome, leadsTo: 'start' };
+/** Entra no santuário entre duas áreas: a sala veste a área que acabou e os portais oferecem as próximas. */
+export function enterSanctuaryBetweenBiomes(
+  run: RunState,
+  plan: readonly RunStage[] = RUN_PLAN,
+): void {
+  run.sanctuary = {
+    biome: run.map.biome,
+    leadsTo: 'nextBiome',
+    options: areaOptions(run.stage + 1, run.route, plan),
+  };
 }
 
 /**
- * Sai do santuário pela porta. Entre biomas passa para o próximo (devolve false se não há); no
- * despertar só marca que o herói saiu (a cena cria a run nova com o progresso já comprado).
+ * Faz a run começar no santuário (despertar depois de morrer ou vencer), vestindo a área `biome`;
+ * os portais oferecem as áreas da primeira etapa.
  */
-export function leaveSanctuary(run: RunState, catalog: readonly TemplateInfo[]): boolean {
-  const sanctuary = run.sanctuary;
-  run.sanctuary = null;
-  if (sanctuary?.leadsTo === 'nextBiome') return advanceBiome(run, catalog);
-  return true;
+export function startInSanctuary(
+  run: RunState,
+  biome: BiomeId,
+  plan: readonly RunStage[] = RUN_PLAN,
+): void {
+  run.sanctuary = { biome, leadsTo: 'start', options: areaOptions(0, [], plan) };
 }
 
-export function propKey(roomId: number, col: number, row: number): string {
-  return `${roomId}:${col},${row}`;
+/**
+ * Sai do santuário por um portal. Entre áreas passa para a próxima (devolve false se não há); no
+ * despertar só marca que o herói saiu (a cena cria a run nova, com o progresso já comprado e a
+ * área que o portal escolheu).
+ */
+export function leaveSanctuary(
+  run: RunState,
+  catalog: readonly TemplateInfo[],
+  chosen?: BiomeId | null,
+  plan: readonly RunStage[] = RUN_PLAN,
+): boolean {
+  const sanctuary = run.sanctuary;
+  run.sanctuary = null;
+  if (sanctuary?.leadsTo === 'nextBiome') return advanceBiome(run, catalog, chosen, plan);
+  return true;
 }

@@ -1,15 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { BIOME_ORDER } from '../src/data/mapRules';
+import { ALL_BIOMES, RUN_PLAN, type RunStage } from '../src/data/mapRules';
 import { ROOM_TEMPLATES } from '../src/data/roomTemplates';
 import { buildCatalog } from '../src/logic/map/catalog';
 import {
   advanceBiome,
-  biomeAt,
+  areaOptions,
   biomeSeed,
   createRun,
   enterRoom,
   enterSanctuaryBetweenBiomes,
-  isLastBiome,
+  isLastStage,
+  pickArea,
   leaveSanctuary,
   propKey,
   startInSanctuary,
@@ -20,8 +21,8 @@ const catalog = buildCatalog(ROOM_TEMPLATES).infos;
 describe('biomeSeed', () => {
   it('é estável e diferente por bioma', () => {
     expect(biomeSeed(123, 0)).toBe(biomeSeed(123, 0));
-    const seeds = new Set(BIOME_ORDER.map((_, i) => biomeSeed(123, i)));
-    expect(seeds.size).toBe(BIOME_ORDER.length);
+    const seeds = new Set(ALL_BIOMES.map((_, i) => biomeSeed(123, i)));
+    expect(seeds.size).toBe(ALL_BIOMES.length);
   });
 
   it('muda com a semente da run', () => {
@@ -32,8 +33,9 @@ describe('biomeSeed', () => {
 describe('createRun', () => {
   it('começa no primeiro bioma, na sala inicial, com ela já visitada', () => {
     const run = createRun(77, catalog);
-    expect(run.biomeIndex).toBe(0);
-    expect(run.map.biome).toBe(biomeAt(0));
+    expect(run.stage).toBe(0);
+    expect(run.route).toEqual([run.map.biome]);
+    expect(run.map.biome).toBe(RUN_PLAN[0]?.options[0]);
     expect(run.roomId).toBe(run.map.startId);
     expect([...run.visited]).toEqual([run.map.startId]);
     expect(run.cleared.size).toBe(0);
@@ -73,8 +75,9 @@ describe('advanceBiome', () => {
     run.usedProps.add(propKey(1, 2, 3));
 
     expect(advanceBiome(run, catalog)).toBe(true);
-    expect(run.biomeIndex).toBe(1);
-    expect(run.map.biome).toBe(biomeAt(1));
+    expect(run.stage).toBe(1);
+    expect(run.map.biome).toBe(RUN_PLAN[1]?.options[0]);
+    expect(run.route).toHaveLength(2);
     expect(run.roomId).toBe(run.map.startId);
     // Cada bioma começa limpo
     expect(run.cleared.size).toBe(0);
@@ -82,7 +85,7 @@ describe('advanceBiome', () => {
     expect([...run.visited]).toEqual([run.map.startId]);
 
     expect(advanceBiome(run, catalog)).toBe(true);
-    expect(isLastBiome(run.biomeIndex)).toBe(true);
+    expect(isLastStage(run.stage)).toBe(true);
     // O último bioma termina no chefe
     expect(run.map.rooms.some((r) => r.kind === 'boss')).toBe(true);
 
@@ -101,12 +104,6 @@ describe('propKey', () => {
   it('identifica o objeto pela sala e pela posição', () => {
     expect(propKey(2, 5, 9)).toBe('2:5,9');
     expect(propKey(2, 5, 9)).not.toBe(propKey(3, 5, 9));
-  });
-});
-
-describe('biomeAt', () => {
-  it('rejeita biomas que não existem', () => {
-    expect(() => biomeAt(99)).toThrow();
   });
 });
 
@@ -145,11 +142,15 @@ describe('santuário na run', () => {
   it('entre biomas o santuário veste o bioma que acabou e a porta leva ao próximo', () => {
     const run = createRun(2, catalog);
     enterSanctuaryBetweenBiomes(run);
-    expect(run.sanctuary).toEqual({ biome: 'muralhas', leadsTo: 'nextBiome' });
-    expect(run.biomeIndex).toBe(0); // ainda não passou de bioma
+    expect(run.sanctuary).toEqual({
+      biome: 'muralhas',
+      leadsTo: 'nextBiome',
+      options: RUN_PLAN[1]?.options,
+    });
+    expect(run.stage).toBe(0); // ainda não passou de bioma
     expect(leaveSanctuary(run, catalog)).toBe(true);
     expect(run.sanctuary).toBeNull();
-    expect(run.biomeIndex).toBe(1);
+    expect(run.stage).toBe(1);
     expect(run.map.biome).toBe('saloes');
     expect(run.roomId).toBe(run.map.startId);
   });
@@ -157,18 +158,114 @@ describe('santuário na run', () => {
   it('no despertar a porta não muda de bioma', () => {
     const run = createRun(3, catalog);
     startInSanctuary(run, 'catacumbas');
-    expect(run.sanctuary).toEqual({ biome: 'catacumbas', leadsTo: 'start' });
+    expect(run.sanctuary).toEqual({
+      biome: 'catacumbas',
+      leadsTo: 'start',
+      options: RUN_PLAN[0]?.options,
+    });
     expect(leaveSanctuary(run, catalog)).toBe(true);
     expect(run.sanctuary).toBeNull();
-    expect(run.biomeIndex).toBe(0);
+    expect(run.stage).toBe(0);
   });
 
   it('sair sem estar no santuário não faz nada, e no último bioma não há próximo', () => {
     const run = createRun(4, catalog);
     expect(leaveSanctuary(run, catalog)).toBe(true);
-    expect(run.biomeIndex).toBe(0);
-    while (!isLastBiome(run.biomeIndex)) advanceBiome(run, catalog);
+    expect(run.stage).toBe(0);
+    while (!isLastStage(run.stage)) advanceBiome(run, catalog);
     enterSanctuaryBetweenBiomes(run);
     expect(leaveSanctuary(run, catalog)).toBe(false);
+  });
+});
+
+/**
+ * Um plano de teste com escolha: duas áreas já na primeira etapa (com o que existe hoje só duas
+ * áreas têm sala de saída e só uma tem sala de chefe), a que sobrar na segunda e o chefe no fim.
+ */
+const CHOICE_PLAN: readonly RunStage[] = [
+  { options: ['muralhas', 'saloes'] },
+  { options: ['saloes', 'muralhas'] },
+  { options: ['catacumbas'] },
+];
+
+describe('escolha de área (plano com duas opções)', () => {
+  it('areaOptions tira as áreas que a run já visitou', () => {
+    expect(areaOptions(0, [], CHOICE_PLAN)).toEqual(['muralhas', 'saloes']);
+    expect(areaOptions(1, ['saloes'], CHOICE_PLAN)).toEqual(['muralhas']);
+    // Nada sobrando (plano com repetição): vale a lista inteira
+    expect(areaOptions(1, ['saloes', 'muralhas'], CHOICE_PLAN)).toEqual(['saloes', 'muralhas']);
+    expect(areaOptions(9, [], CHOICE_PLAN)).toEqual([]);
+  });
+
+  it('pickArea usa a área escolhida só se ela foi ofertada', () => {
+    expect(pickArea(['saloes', 'catacumbas'], 'catacumbas')).toBe('catacumbas');
+    expect(pickArea(['saloes', 'catacumbas'], 'muralhas')).toBe('saloes');
+    expect(pickArea(['saloes', 'catacumbas'], null)).toBe('saloes');
+    expect(() => pickArea([])).toThrow();
+  });
+
+  it('o portal escolhido define a primeira área e as seguintes sobram para as outras etapas', () => {
+    const run = createRun(5, catalog, { secretRooms: 0, firstBiome: 'saloes' }, CHOICE_PLAN);
+    expect(run.map.biome).toBe('saloes');
+    enterSanctuaryBetweenBiomes(run, CHOICE_PLAN);
+    expect(run.sanctuary?.options).toEqual(['muralhas']);
+    // Um portal que não foi ofertado cai na primeira opção
+    expect(leaveSanctuary(run, catalog, 'catacumbas', CHOICE_PLAN)).toBe(true);
+    expect(run.stage).toBe(1);
+    expect(run.map.biome).toBe('muralhas');
+    expect(run.route).toEqual(['saloes', 'muralhas']);
+    enterSanctuaryBetweenBiomes(run, CHOICE_PLAN);
+    expect(run.sanctuary?.options).toEqual(['catacumbas']);
+    expect(leaveSanctuary(run, catalog, 'catacumbas', CHOICE_PLAN)).toBe(true);
+    expect(isLastStage(run.stage, CHOICE_PLAN)).toBe(true);
+    expect(run.map.rooms.some((r) => r.kind === 'boss')).toBe(true);
+  });
+
+  it('a primeira área também é escolhida no portal do despertar', () => {
+    expect(createRun(1, catalog, { secretRooms: 0 }, CHOICE_PLAN).map.biome).toBe('muralhas');
+    const run = createRun(1, catalog, { secretRooms: 0 }, CHOICE_PLAN);
+    startInSanctuary(run, 'catacumbas', CHOICE_PLAN);
+    expect(run.sanctuary?.options).toEqual(['muralhas', 'saloes']);
+  });
+});
+
+describe('plano da jornada (dados)', () => {
+  const kindsOf = (biome: string): Set<string> =>
+    new Set(catalog.filter((t) => t.biome === biome).map((t) => t.kind));
+
+  it('cada etapa tem uma ou duas áreas que existem, sem repetir dentro da etapa', () => {
+    for (const stage of RUN_PLAN) {
+      expect(stage.options.length).toBeGreaterThanOrEqual(1);
+      expect(stage.options.length).toBeLessThanOrEqual(2);
+      expect(new Set(stage.options).size).toBe(stage.options.length);
+      for (const biome of stage.options) expect(ALL_BIOMES).toContain(biome);
+    }
+  });
+
+  it('a etapa final só oferece áreas com sala de chefe, e as outras, com sala de saída', () => {
+    RUN_PLAN.forEach((stage, index) => {
+      for (const biome of stage.options) {
+        const kinds = kindsOf(biome);
+        expect(kinds.has('start'), biome).toBe(true);
+        expect(kinds.has(isLastStage(index) ? 'boss' : 'exit'), `${biome} (etapa ${index})`).toBe(
+          true,
+        );
+      }
+    });
+  });
+
+  it('uma run sempre chega ao fim, qualquer que seja o caminho escolhido', () => {
+    // Percorre todos os caminhos possíveis do plano
+    const walk = (route: string[], stage: number): void => {
+      if (stage >= RUN_PLAN.length) return;
+      for (const biome of areaOptions(stage, route as never)) {
+        walk([...route, biome], stage + 1);
+        if (stage === RUN_PLAN.length - 1) expect([...route, biome]).toHaveLength(RUN_PLAN.length);
+      }
+    };
+    walk([], 0);
+    const run = createRun(11, catalog);
+    while (!isLastStage(run.stage)) expect(advanceBiome(run, catalog)).toBe(true);
+    expect(advanceBiome(run, catalog)).toBe(false);
   });
 });

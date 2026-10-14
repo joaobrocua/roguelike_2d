@@ -1,7 +1,7 @@
 import type Phaser from 'phaser';
 import { DEPTH } from '../data/atmosphere';
 import { GAME_SIZE } from '../data/balance';
-import { BIOME_ORDER } from '../data/mapRules';
+import { RUN_PLAN } from '../data/mapRules';
 import { PALETTE } from '../data/palette';
 import { MINIMAP } from '../data/ui';
 import { minimapLinks, minimapRooms } from '../logic/map/minimapView';
@@ -111,7 +111,7 @@ export class MiniMap {
       .setDepth(DEPTH.hud + 2);
 
     // Losangos dos biomas: cheios até o atual, vazios depois
-    const total = BIOME_ORDER.length;
+    const total = RUN_PLAN.length;
     const rowWidth = total * pips.size + (total - 1) * pips.gap;
     const pipLeft = left + width - rowWidth;
     const pipTop = top + height + pips.offsetY;
@@ -119,17 +119,14 @@ export class MiniMap {
       const x = pipLeft + i * (pips.size + pips.gap);
       const cx = x + Math.floor(pips.size / 2);
       const cy = pipTop + Math.floor(pips.size / 2);
-      const reached = i <= run.biomeIndex;
+      const reached = i <= run.stage;
       const half = Math.floor(pips.size / 2);
       g.fillStyle(PALETTE.void, 1);
       for (let d = -half - 1; d <= half + 1; d++) {
         const w = half + 1 - Math.abs(d);
         g.fillRect(cx - w, cy + d, w * 2 + 1, 1);
       }
-      g.fillStyle(
-        reached ? (i === run.biomeIndex ? PALETTE.glow : PALETTE.mist) : PALETTE.stoneDark,
-        1,
-      );
+      g.fillStyle(reached ? (i === run.stage ? PALETTE.glow : PALETTE.mist) : PALETTE.stoneDark, 1);
       for (let d = -half; d <= half; d++) {
         const w = half - Math.abs(d);
         g.fillRect(cx - w, cy + d, w * 2 + 1, 1);

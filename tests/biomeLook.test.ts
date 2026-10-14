@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { BIOME_LOOK, type StoneRamp } from '../src/data/biomeLook';
 import { DECOR_RULES } from '../src/data/decor';
-import { BIOME_ORDER } from '../src/data/mapRules';
+import { ALL_BIOMES } from '../src/data/mapRules';
 import { DECOR_SIZE } from '../src/systems/decorArt';
 import { bayer, mix } from '../src/systems/pixelCanvas';
 
@@ -19,11 +19,11 @@ function ordered(ramp: StoneRamp): number[] {
 
 describe('visual dos biomas', () => {
   it('todo bioma tem o seu visual', () => {
-    for (const biome of BIOME_ORDER) expect(BIOME_LOOK[biome], biome).toBeDefined();
+    for (const biome of ALL_BIOMES) expect(BIOME_LOOK[biome], biome).toBeDefined();
   });
 
   it('as rampas de pedra vão do escuro ao claro, sem se repetir', () => {
-    for (const biome of BIOME_ORDER) {
+    for (const biome of ALL_BIOMES) {
       const look = BIOME_LOOK[biome];
       for (const ramp of [look.stone, look.back]) {
         const tones = ordered(ramp);
@@ -35,14 +35,14 @@ describe('visual dos biomas', () => {
   });
 
   it('o fundo é mais escuro que a pedra do chão (profundidade)', () => {
-    for (const biome of BIOME_ORDER) {
+    for (const biome of ALL_BIOMES) {
       const look = BIOME_LOOK[biome];
       expect(luma(look.back.base), biome).toBeLessThan(luma(look.stone.base));
     }
   });
 
   it('o céu escurece do horizonte para o alto', () => {
-    for (const biome of BIOME_ORDER) {
+    for (const biome of ALL_BIOMES) {
       const look = BIOME_LOOK[biome];
       expect(luma(look.skyTop), biome).toBeLessThan(luma(look.skyMid));
       expect(luma(look.skyMid), biome).toBeLessThanOrEqual(luma(look.skyLow));
@@ -50,8 +50,8 @@ describe('visual dos biomas', () => {
   });
 
   it('os biomas têm climas diferentes (ninguém repete a cor da luz ambiente)', () => {
-    const ambient = new Set(BIOME_ORDER.map((biome) => BIOME_LOOK[biome].ambient));
-    expect(ambient.size).toBe(BIOME_ORDER.length);
+    const ambient = new Set(ALL_BIOMES.map((biome) => BIOME_LOOK[biome].ambient));
+    expect(ambient.size).toBe(ALL_BIOMES.length);
   });
 });
 

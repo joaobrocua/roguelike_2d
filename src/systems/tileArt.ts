@@ -2,7 +2,7 @@ import type Phaser from 'phaser';
 import { TILE_VARIANTS } from '../data/atmosphere';
 import { BIOME_LOOK, type BiomeLook } from '../data/biomeLook';
 import type { BiomeId } from '../data/mapRules';
-import { BIOME_ORDER } from '../data/mapRules';
+import { ALL_BIOMES } from '../data/mapRules';
 import { TILE_SIZE } from '../data/rooms';
 import { TILE_EDGE, type TileLook } from '../logic/tileVariant';
 import { createRng, randomInt } from '../utils/rng';
@@ -111,7 +111,7 @@ function drawTile(
 
 /** Cria todos os blocos de todos os biomas (uma textura por tipo, variação e combinação de lados). */
 export function createTileTextures(scene: Phaser.Scene): void {
-  for (const biome of BIOME_ORDER) {
+  for (const biome of ALL_BIOMES) {
     const look = BIOME_LOOK[biome];
     for (let variant = 0; variant < TILE_VARIANTS; variant++) {
       for (const kind of ['top', 'fill'] as const) {

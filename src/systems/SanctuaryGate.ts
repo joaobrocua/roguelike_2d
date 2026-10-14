@@ -17,6 +17,8 @@ const HALF_GLOW = 64; // metade da textura de brilho (128 px)
 export class SanctuaryGate {
   /** Região em que o herói "entra" no portal (o jogo troca de sala quando ele a toca). */
   readonly box: Box = createBox();
+  /** A área que fica do outro lado deste portal. */
+  readonly dest: BiomeId;
   /** Luz que o portal solta, para a escuridão da sala abrir em volta dele. */
   readonly light: LightSource & { lightRadius: number; lightStrength: number };
   private readonly portal: Phaser.GameObjects.Image;
@@ -38,6 +40,7 @@ export class SanctuaryGate {
     label: string,
   ) {
     const g = D.gate;
+    this.dest = dest;
     ensureGateTextures(scene, biome, dest);
     const look = BIOME_LOOK[dest];
     const centerY = floorY - g.height / 2;

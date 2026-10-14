@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PLAYER } from '../src/data/balance';
-import { BIOME_CONFIG, BIOME_ORDER, type BiomeId } from '../src/data/mapRules';
+import { BIOME_CONFIG, ALL_BIOMES, type BiomeId } from '../src/data/mapRules';
 import { TILE_SIZE } from '../src/data/rooms';
 import { ROOM_TEMPLATES } from '../src/data/roomTemplates';
 import { generateBiomeMap, validateMap } from '../src/logic/map/generateMap';
@@ -45,7 +45,7 @@ describe('modelos de sala: ids', () => {
   });
 });
 
-for (const biome of BIOME_ORDER) {
+for (const biome of ALL_BIOMES) {
   describe(`modelos de sala: ${biome}`, () => {
     const templates = ofBiome(biome);
     const isFinal = biome === FINAL_BIOME;

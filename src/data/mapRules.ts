@@ -21,12 +21,39 @@ export const DOOR = {
 
 export type BiomeId = 'muralhas' | 'saloes' | 'catacumbas';
 
-export const BIOME_ORDER: readonly BiomeId[] = ['muralhas', 'saloes', 'catacumbas'];
+/** Todas as áreas que existem no jogo (as texturas e os testes percorrem esta lista). */
+export const ALL_BIOMES: readonly BiomeId[] = ['muralhas', 'saloes', 'catacumbas'];
 
 export const BIOME_NAMES: Readonly<Record<BiomeId, string>> = {
   muralhas: 'Muralhas e Pátio',
   saloes: 'Salões e Capela',
   catacumbas: 'Catacumbas e Masmorra',
+};
+
+/**
+ * Uma etapa da jornada: as áreas que o jogador pode escolher ao chegar nela (os portais do
+ * santuário). Com uma só área não há escolha; com duas, o santuário mostra dois portais.
+ */
+export interface RunStage {
+  options: readonly BiomeId[];
+}
+
+/**
+ * A jornada de uma run, etapa por etapa. A última etapa é a do chefe: todas as áreas dela precisam
+ * ter uma sala de chefe, e as das outras, uma sala de saída (os testes conferem). No máximo duas
+ * áreas por etapa (o santuário só tem espaço para dois portais) e uma área não repete numa run.
+ */
+export const RUN_PLAN: readonly RunStage[] = [
+  { options: ['muralhas'] },
+  { options: ['saloes'] },
+  { options: ['catacumbas'] },
+];
+
+/** Nome curto da área (cabe no letreiro sobre o portal). */
+export const BIOME_SHORT_NAMES: Readonly<Record<BiomeId, string>> = {
+  muralhas: 'MURALHAS',
+  saloes: 'SALÕES',
+  catacumbas: 'CATACUMBAS',
 };
 
 /** Tamanho de um bioma (em salas) e o que deve existir nele. */

@@ -1,7 +1,7 @@
 import type Phaser from 'phaser';
 import { ATMOSPHERE } from '../data/atmosphere';
 import { GAME_SIZE } from '../data/balance';
-import { BIOME_ORDER, type BiomeId } from '../data/mapRules';
+import { ALL_BIOMES, type BiomeId } from '../data/mapRules';
 import { PALETTE } from '../data/palette';
 import { createRng, randomInt } from '../utils/rng';
 import { drawBackgroundLayer, type BackgroundLayer } from './biomeBackgrounds';
@@ -41,7 +41,7 @@ const TORCH_HEIGHT = 16;
 export function createEnvironmentTextures(scene: Phaser.Scene): void {
   const width = ATMOSPHERE.layerWidth;
   const height = GAME_SIZE.height;
-  for (const biome of BIOME_ORDER) {
+  for (const biome of ALL_BIOMES) {
     for (const layer of ['far', 'mid', 'near'] as const) {
       canvasTexture(scene, backgroundKey(biome, layer), width, height, (ctx) =>
         drawBackgroundLayer(ctx, biome, layer, width, height),

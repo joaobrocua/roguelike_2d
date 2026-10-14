@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BIOME_ORDER } from '../src/data/mapRules';
+import { ALL_BIOMES } from '../src/data/mapRules';
 import { SANCTUARY_DECOR, SANCTUARY_LAYOUT, SANCTUARY_LOOK } from '../src/data/sanctuaryRoom';
 import { CELL } from '../src/data/mapRules';
 import { TILE_SIZE } from '../src/data/rooms';
@@ -67,12 +67,15 @@ describe('sala do santuário', () => {
 
   it('o desenho e as velas também são espelhados, e não há inimigos nem objetos de sala', () => {
     for (const marker of room.markers) {
-      expect(['T', 'S', 'X'], marker.char).toContain(marker.char);
+      expect(['T', 'S', 'X', 'Y'], marker.char).toContain(marker.char);
       if (marker.char === 'S') continue;
       const twin = room.markers.find(
         (m) => m.row === marker.row && m.col === room.cols - 1 - marker.col,
       );
       if (marker.char === 'T') expect(twin?.char, `tocha ${marker.col}`).toBe('T');
+      // Os dois portais são espelhos um do outro
+      if (marker.char === 'X') expect(twin?.char, 'portal espelhado').toBe('Y');
+      if (marker.char === 'Y') expect(twin?.char, 'portal espelhado').toBe('X');
     }
     // As velas formam pares simétricos em torno do eixo
     const width = room.cols * TILE_SIZE;
@@ -91,12 +94,12 @@ describe('sala do santuário', () => {
   });
 
   it('todo bioma tem cores próprias para o santuário', () => {
-    for (const biome of BIOME_ORDER) {
+    for (const biome of ALL_BIOMES) {
       const look = SANCTUARY_LOOK[biome];
       expect(look.flame).toHaveLength(3);
     }
-    const banners = new Set(BIOME_ORDER.map((b) => SANCTUARY_LOOK[b].banner));
-    expect(banners.size).toBe(BIOME_ORDER.length);
+    const banners = new Set(ALL_BIOMES.map((b) => SANCTUARY_LOOK[b].banner));
+    expect(banners.size).toBe(ALL_BIOMES.length);
   });
 
   it('o portal cabe entre os braseiros e a parede e o herói o alcança pelo chão', () => {
@@ -112,5 +115,15 @@ describe('sala do santuário', () => {
     expect(g.trigger.height).toBeLessThanOrEqual(g.height - g.opening.top);
     expect(SANCTUARY_DECOR.floorY - g.height).toBeGreaterThanOrEqual(TILE_SIZE);
     expect(g.portalFrames).toBeGreaterThan(1);
+    // O portal da esquerda (quando há duas áreas) cabe entre a parede e o braseiro, e o herói
+    // nasce fora dele (senão sairia da sala no primeiro frame)
+    const left = room.markers.find((m) => m.char === 'Y');
+    if (!left || !room.spawn) throw new Error('sem portal esquerdo');
+    const lx = left.col * TILE_SIZE + TILE_SIZE / 2;
+    expect(lx - g.width / 2).toBeGreaterThanOrEqual(TILE_SIZE);
+    expect(lx + g.width / 2).toBeLessThan((SANCTUARY_DECOR.braziers[0] ?? 0) - 16 + 1);
+    const spawnX = room.spawn.col * TILE_SIZE + TILE_SIZE / 2;
+    expect(Math.abs(spawnX - lx)).toBeGreaterThan(g.trigger.halfWidth + 12);
+    expect(Math.abs(spawnX - x)).toBeGreaterThan(g.trigger.halfWidth + 12);
   });
 });

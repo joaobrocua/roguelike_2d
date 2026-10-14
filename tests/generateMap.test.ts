@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BIOME_CONFIG, BIOME_ORDER, type BiomeConfig } from '../src/data/mapRules';
+import { BIOME_CONFIG, ALL_BIOMES, type BiomeConfig } from '../src/data/mapRules';
 import { findLink, generateBiomeMap, validateMap } from '../src/logic/map/generateMap';
 import type {
   BiomeId,
@@ -83,7 +83,7 @@ function shapeOf(map: BiomeMap): string {
 
 describe('generateBiomeMap', () => {
   it('é determinístico: mesma seed, mesmo mapa', () => {
-    for (const biome of BIOME_ORDER) {
+    for (const biome of ALL_BIOMES) {
       for (const seed of [0, 1, 42, 987654321]) {
         const a = generateBiomeMap(seed, biome, CATALOG, BIOME_CONFIG[biome]);
         const b = generateBiomeMap(seed, biome, CATALOG, BIOME_CONFIG[biome]);
@@ -93,7 +93,7 @@ describe('generateBiomeMap', () => {
   });
 
   it('300 seeds x 3 biomas x final sim/não: o mapa passa em todas as regras', () => {
-    for (const biome of BIOME_ORDER) {
+    for (const biome of ALL_BIOMES) {
       for (const final of [false, true]) {
         for (let seed = 1; seed <= 300; seed++) {
           const map = generateBiomeMap(seed, biome, CATALOG, BIOME_CONFIG[biome], { final });
@@ -105,7 +105,7 @@ describe('generateBiomeMap', () => {
   });
 
   it('confere por fora do validador: contagens, posições e becos', () => {
-    for (const biome of BIOME_ORDER) {
+    for (const biome of ALL_BIOMES) {
       const cfg = BIOME_CONFIG[biome];
       for (let seed = 1; seed <= 60; seed++) {
         const final = seed % 2 === 0;
@@ -137,7 +137,7 @@ describe('generateBiomeMap', () => {
   });
 
   it('seeds diferentes geram mapas diferentes', () => {
-    for (const biome of BIOME_ORDER) {
+    for (const biome of ALL_BIOMES) {
       const shapes = new Set<string>();
       for (let seed = 1; seed <= 50; seed++) {
         shapes.add(shapeOf(generateBiomeMap(seed, biome, CATALOG, BIOME_CONFIG[biome])));

@@ -1,7 +1,7 @@
 import type Phaser from 'phaser';
 import { DECOR_RULES, type DecorKind } from '../data/decor';
 import { BIOME_LOOK, type BiomeLook } from '../data/biomeLook';
-import { BIOME_ORDER, type BiomeId } from '../data/mapRules';
+import { ALL_BIOMES, type BiomeId } from '../data/mapRules';
 import { createRng, randomInt, type Rng } from '../utils/rng';
 import { canvasTexture, disc, line, mix, rect, type Ctx } from './pixelCanvas';
 
@@ -229,7 +229,7 @@ function drawDecor(ctx: Ctx, biome: BiomeId, kind: DecorKind, variant: number): 
 
 /** Cria as texturas de decoração de todos os biomas. */
 export function createDecorTextures(scene: Phaser.Scene): void {
-  for (const biome of BIOME_ORDER) {
+  for (const biome of ALL_BIOMES) {
     for (const kind of Object.keys(DECOR_RULES) as DecorKind[]) {
       if (kind === 'banner') continue;
       const { width, height } = DECOR_SIZE[kind];
