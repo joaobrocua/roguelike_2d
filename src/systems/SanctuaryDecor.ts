@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { ATMOSPHERE, DEPTH } from '../data/atmosphere';
 import { BIOME_LOOK } from '../data/biomeLook';
+import { PALETTE } from '../data/palette';
 import type { BiomeId } from '../data/mapRules';
 import { SANCTUARY_DECOR as D, SANCTUARY_LOOK } from '../data/sanctuaryRoom';
 import type { LightSource } from './AtmosphereSystem';
@@ -47,6 +48,7 @@ export class SanctuaryDecor {
   private readonly flames: Flame[] = [];
   private readonly runes: Phaser.GameObjects.Image;
   private readonly shaft: Phaser.GameObjects.Image;
+  private readonly halo: Phaser.GameObjects.Image;
   private clockMs = 0;
 
   constructor(scene: Phaser.Scene, biome: BiomeId) {
@@ -61,12 +63,29 @@ export class SanctuaryDecor {
     for (const x of D.pillars) {
       scene.add.image(x, D.pillar.top + pillarHeight / 2, tex.pillar(biome)).setDepth(depth.pillar);
     }
+    const colossus = D.colossus;
     scene.add
-      .image(D.window.x, D.window.y + D.window.height / 2, tex.window(biome))
-      .setDepth(depth.window);
+      .image(colossus.x, colossus.top + colossus.height / 2, tex.colossus(biome))
+      .setDepth(depth.colossus);
+    // Brilho atrás da cabeça do anjo e a luz que ele solta na sala
+    const headY = colossus.top + colossus.haloY;
+    this.halo = scene.add
+      .image(colossus.x, headY, ENV_TEXTURE.glow)
+      .setTint(PALETTE.glow)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setScale(D.halo.radius / HALF_GLOW)
+      .setAlpha(D.halo.alpha)
+      .setDepth(depth.colossus + 0.1);
+    this.lights.push({
+      x: colossus.x,
+      y: D.halo.light.y,
+      visible: true,
+      lightRadius: D.halo.light.radius,
+      lightStrength: D.halo.light.strength,
+    });
     const shaft = D.shaft;
     this.shaft = scene.add
-      .image(D.window.x, (shaft.topY + shaft.bottomY) / 2, tex.shaft)
+      .image(colossus.x, (shaft.topY + shaft.bottomY) / 2, tex.shaft)
       .setDisplaySize(shaft.bottomWidth, shaft.bottomY - shaft.topY)
       .setTint(look.shaft)
       .setBlendMode(Phaser.BlendModes.ADD)
@@ -85,7 +104,7 @@ export class SanctuaryDecor {
         emitZone: {
           type: 'random',
           source: new Phaser.Geom.Rectangle(
-            D.window.x - D.motes.width / 2,
+            colossus.x - D.motes.width / 2,
             shaft.bottomY - D.motes.zoneTop,
             D.motes.width,
             D.motes.zoneHeight,
@@ -226,6 +245,9 @@ export class SanctuaryDecor {
     const pulse = 0.5 + 0.5 * Math.sin((this.clockMs / D.runes.pulseMs) * Math.PI * 2);
     const p = D.pulse;
     this.runes.setAlpha(D.runes.alpha * (p.runesBase + p.runesSwing * pulse));
+    this.halo.setAlpha(
+      D.halo.alpha * (p.shaftBase + p.shaftSwing * Math.sin(seconds * p.shaftSpeed + 1)),
+    );
     this.shaft.setAlpha(
       D.shaft.alpha * (p.shaftBase + p.shaftSwing * Math.sin(seconds * p.shaftSpeed)),
     );

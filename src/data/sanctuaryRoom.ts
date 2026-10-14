@@ -1,8 +1,8 @@
 /**
- * A sala do santuário: uma câmara só para a estátua do anjo caído, entre um bioma e o seguinte e
+ * A sala do santuário: uma câmara só para o anjo caído colossal e o altar dele, entre um bioma e o seguinte e
  * no despertar depois de morrer. O desenho é um só; o bioma entra com a pedra, o fundo, a
  * escuridão e as cores (SANCTUARY_LOOK). Legenda: ver data/rooms.ts, mais:
- *   'S' a estátua (a coluna marca a BORDA ESQUERDA do tile: o centro dela é o eixo da sala)
+ *   'S' o altar (a coluna marca a BORDA ESQUERDA do tile: o centro dele é o eixo da sala)
  *   'X' a porta que leva adiante (ao próximo bioma ou ao começo da run)
  * Tudo em tiles de 16 px; a sala tem 1 célula (30 x 17), sem aberturas nas paredes.
  */
@@ -35,7 +35,7 @@ export interface SanctuaryLook {
   /** Pano dos estandartes e o acabamento dele. */
   banner: number;
   bannerTrim: number;
-  /** Cor do círculo de runas no chão e do feixe do vitral. */
+  /** Cor do círculo de runas no chão. */
   rune: number;
 }
 
@@ -69,10 +69,16 @@ export const SANCTUARY_DECOR = {
   /** Colunas do fundo (centro x). */
   pillars: [104, 376],
   pillar: { width: 24, top: 16 },
-  /** Vitral atrás da estátua. */
-  window: { x: 240, y: 22, width: 56, height: 104 },
-  /** Feixe de luz do vitral até o chão (aditivo). */
-  shaft: { topY: 112, bottomY: 192, topWidth: 54, bottomWidth: 120, alpha: 0.26 },
+  /**
+   * O anjo caído colossal esculpido na parede do fundo: asas abertas até as colunas, cabeça baixa
+   * sob a auréola partida, mãos sobre uma espada enorme. Os degraus escondem os pés. `haloY` é a
+   * altura (no desenho) do centro da auréola.
+   */
+  colossus: { x: 240, top: 24, width: 256, height: 216, haloY: 46, haloRx: 34, haloRy: 30 },
+  /** Brilho atrás da cabeça do colosso e a luz que ele solta na escuridão da sala. */
+  halo: { radius: 150, alpha: 0.34, light: { radius: 170, strength: 0.8, y: 96 } },
+  /** Feixe de luz do teto sobre o colosso (aditivo). */
+  shaft: { topY: 16, bottomY: 200, topWidth: 36, bottomWidth: 150, alpha: 0.2 },
   /** Estandartes pendurados do teto: centro x e o comprimento. */
   banners: [176, 304],
   banner: { width: 20, height: 64, top: 16, swayDeg: 1.6, swayMs: 3200 },
@@ -144,7 +150,7 @@ export const SANCTUARY_DECOR = {
   },
   depth: {
     pillar: -5.4,
-    window: -5.2,
+    colossus: -5.2,
     shaft: -3,
     runes: -3.4,
     banner: -4.6,

@@ -62,7 +62,7 @@ describe('sala do santuário', () => {
     for (const [left, right] of pairs) {
       expect(axis - (left ?? 0), 'espelho').toBe((right ?? 0) - axis);
     }
-    expect(SANCTUARY_DECOR.window.x).toBe(axis);
+    expect(SANCTUARY_DECOR.colossus.x).toBe(axis);
   });
 
   it('o desenho e as velas também são espelhados, e não há inimigos nem objetos de sala', () => {

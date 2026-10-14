@@ -22,6 +22,13 @@ export function bayer(x: number, y: number): number {
   return ((row?.[x & 3] ?? 0) + 0.5) / 16;
 }
 
+/** Ruído repetível de 0 a 1 para um par de inteiros (sem Math.random: a arte sempre sai igual). */
+export function noise2(x: number, y: number): number {
+  let h = Math.imul(Math.floor(x) + 1, 374761393) ^ Math.imul(Math.floor(y) + 7, 668265263);
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+
 /** Retângulo de pixels (com opacidade opcional). */
 export function rect(
   ctx: Ctx,

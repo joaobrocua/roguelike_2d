@@ -146,5 +146,5 @@ export const PROP_FX = {
   fire: { radius: 78, strength: 0.9, glowAlpha: 0.32, color: 0xffc46b, pulseMs: 900 },
   door: { radius: 52, strength: 0.7, glowAlpha: 0.26, color: 0x6fe3b0, pulseMs: 1400 },
   chest: { radius: 34, strength: 0.5, glowAlpha: 0.16, color: 0xe8892d, pulseMs: 1100 },
-  shrine: { radius: 110, strength: 0.85, glowAlpha: 0.22, color: 0xffe29a, pulseMs: 1900 },
+  shrine: { radius: 74, strength: 0.75, glowAlpha: 0.3, color: 0x6fe3b0, pulseMs: 1900 },
 } as const;

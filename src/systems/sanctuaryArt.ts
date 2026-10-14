@@ -3,7 +3,8 @@ import { BIOME_LOOK } from '../data/biomeLook';
 import type { BiomeId } from '../data/mapRules';
 import { PALETTE } from '../data/palette';
 import { SANCTUARY_DECOR as D, SANCTUARY_LOOK } from '../data/sanctuaryRoom';
-import { bayer, canvasTexture, disc, line, mix, rect, type Ctx } from './pixelCanvas';
+import { bayer, canvasTexture, line, mix, noise2 as hash, rect, type Ctx } from './pixelCanvas';
+import { drawColossus } from './colossusArt';
 
 /**
  * Arte do cenário do santuário, desenhada em código (como o resto do jogo): colunas, vitral,
@@ -16,7 +17,7 @@ export const CANDLE_FRAMES = 2;
 
 export const SANCTUARY_TEXTURE = {
   pillar: (biome: BiomeId): string => `sanct-pillar-${biome}`,
-  window: (biome: BiomeId): string => `sanct-window-${biome}`,
+  colossus: (biome: BiomeId): string => `sanct-colossus-${biome}`,
   banner: (biome: BiomeId): string => `sanct-banner-${biome}`,
   brazier: (biome: BiomeId, frame: number): string => `sanct-brazier-${biome}-${frame}`,
   candle: (biome: BiomeId, frame: number): string => `sanct-candle-${biome}-${frame}`,
@@ -30,13 +31,6 @@ export const SANCTUARY_TEXTURE = {
 export const BRAZIER_SIZE = { width: 32, height: 48 } as const;
 export const CANDLE_SIZE = { width: 8, height: 12 } as const;
 const SHAFT_SIZE = 128;
-
-/** Ruído repetível (sem Math.random: a mesma textura sempre sai igual). */
-function hash(x: number, y: number): number {
-  let h = Math.imul(x + 1, 374761393) ^ Math.imul(y + 7, 668265263);
-  h = Math.imul(h ^ (h >>> 13), 1274126177);
-  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
-}
 
 function drawPillar(ctx: Ctx, biome: BiomeId): void {
   const stone = BIOME_LOOK[biome].back;
@@ -64,62 +58,6 @@ function drawPillar(ctx: Ctx, biome: BiomeId): void {
     const y = height - 16 - Math.floor(hash(i, 9) * 22);
     rect(ctx, moss, x, y, 1 + Math.floor(hash(i, 5) * 2), 1);
   }
-}
-
-/** Metade da largura do arco do vitral na linha `y` (arco redondo no alto, reto embaixo). */
-function archHalf(y: number, radius: number, centerY: number, top: number): number {
-  if (y < top) return -1;
-  if (y >= centerY) return radius;
-  const dy = centerY - y;
-  return Math.round(Math.sqrt(Math.max(0, radius * radius - dy * dy)));
-}
-
-function drawWindow(ctx: Ctx, biome: BiomeId): void {
-  const look = BIOME_LOOK[biome];
-  const { width, height } = D.window;
-  const cx = width / 2;
-  const glass = [
-    mix(look.glowSoft, look.ambient, 0.45),
-    look.glowSoft,
-    look.glow,
-    mix(look.glow, 0xffffff, 0.35),
-  ];
-  // Moldura de pedra
-  for (let y = 0; y < height; y++) {
-    const half = archHalf(y, width / 2, width / 2, 0);
-    if (half >= 0) rect(ctx, look.back.light, cx - half, y, half * 2, 1);
-  }
-  // Vidro em painéis, dentro da moldura
-  const inset = 4;
-  const innerTop = inset;
-  const innerR = width / 2 - inset;
-  for (let y = innerTop; y < height - inset - 2; y++) {
-    const half = archHalf(y, innerR, width / 2, innerTop);
-    for (let x = cx - half; x < cx + half; x++) {
-      const pane = Math.floor(hash(Math.floor(x / 7), Math.floor(y / 7)) * glass.length);
-      rect(ctx, glass[pane] ?? look.glow, x, y, 1, 1);
-    }
-  }
-  // Chumbo: caibro central (abaixo da roseta) e travessas; no alto, uma roseta de anéis
-  rect(ctx, look.back.deep, cx - 1, 44, 2, height - inset - 46);
-  for (let y = innerTop + 14; y < height - inset - 2; y += 14) {
-    if (y < 44) continue;
-    const half = archHalf(y, innerR, width / 2, innerTop);
-    rect(ctx, look.back.deep, cx - half, y, half * 2, 1);
-  }
-  disc(ctx, look.back.deep, cx, 30, 12);
-  disc(ctx, mix(look.glow, 0xffffff, 0.6), cx, 30, 10);
-  disc(ctx, look.back.deep, cx, 30, 8);
-  disc(ctx, look.glowSoft, cx, 30, 7);
-  disc(ctx, mix(look.glow, 0xffffff, 0.5), cx, 30, 3);
-  for (let deg = 0; deg < 360; deg += 60) {
-    const x = cx + Math.round(Math.cos((deg * Math.PI) / 180) * 5);
-    const y = 30 + Math.round(Math.sin((deg * Math.PI) / 180) * 5);
-    rect(ctx, look.back.deep, x, y, 1, 1);
-  }
-  // Peitoril
-  rect(ctx, look.back.highlight, 2, height - 4, width - 4, 2);
-  rect(ctx, look.back.deep, 2, height - 2, width - 4, 2);
 }
 
 function drawBanner(ctx: Ctx, biome: BiomeId): void {
@@ -462,8 +400,8 @@ export function ensureSanctuaryTextures(scene: Phaser.Scene, biome: BiomeId): vo
   canvasTexture(scene, tex.pillar(biome), D.pillar.width, D.floorY - D.pillar.top, (ctx) =>
     drawPillar(ctx, biome),
   );
-  canvasTexture(scene, tex.window(biome), D.window.width, D.window.height, (ctx) =>
-    drawWindow(ctx, biome),
+  canvasTexture(scene, tex.colossus(biome), D.colossus.width, D.colossus.height, (ctx) =>
+    drawColossus(ctx, biome),
   );
   canvasTexture(scene, tex.banner(biome), D.banner.width, D.banner.height, (ctx) =>
     drawBanner(ctx, biome),

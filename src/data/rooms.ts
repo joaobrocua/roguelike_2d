@@ -33,19 +33,21 @@ export const ROOM_TRANSITION = {
 } as const;
 
 /**
- * A estátua do santuário (anjo caído), que vive na sala própria do santuário (data/sanctuaryRoom.ts).
+ * O altar do santuário, aos pés do anjo caído colossal da sala própria do santuário (data/sanctuaryRoom.ts).
  * Medidas em px.
  */
 export const SHRINE = {
-  /** Aviso que aparece quando o herói chega perto (sobre a estátua). */
+  /** Aviso que aparece quando o herói chega perto (sobre o altar). */
   label: 'SANTUÁRIO',
-  /** Altura (px) do aviso acima do chão da estátua. */
-  promptDy: { name: 80, key: 91 },
-  /** Altura (px) da região em que o herói consegue usar a estátua, e quanto ela desce abaixo do pedestal (os degraus). */
+  /** Altura (px) do aviso acima do chão do altar. */
+  promptDy: { name: 70, key: 81 },
+  /** Altura (px) da região em que o herói consegue usar o altar, e quanto ela desce abaixo dele (os degraus). */
   boxHeight: 46,
   boxBelow: 40,
   /** Folga lateral (px) da região de uso. */
   reachX: 26,
   /** Altura (px) do centro do brilho acima do chão. */
-  glowDy: 30,
+  glowDy: 40,
+  /** O orbe de alma que flutua sobre o altar: altura do centro, vaivém (px) e período (ms). */
+  orb: { dy: 52, bob: 2, bobMs: 2000 },
 } as const;

@@ -14,14 +14,15 @@ import {
   SHRINE_BASE_ROW,
   SHRINE_CELL,
   SHRINE_FRAME,
+  SHRINE_ORB_KEY,
   SHRINE_SHEET_KEY,
 } from '../systems/propTextures';
 
 export type PropKind = 'chest' | 'fire' | 'door' | 'shrine';
 
 /**
- * Objeto tocável do cenário: baú, fogueira de descanso, porta do próximo bioma ou a estátua do
- * santuário (esta mostra o aviso "[E] SANTUÁRIO" quando o herói está perto).
+ * Objeto tocável do cenário: baú, fogueira de descanso, porta do próximo bioma ou o altar do
+ * santuário (este mostra o aviso "[E] SANTUÁRIO" quando o herói está perto).
  * O que cada um faz é decidido pela cena (ela lê `kind` e `used`).
  */
 export class Prop extends Phaser.GameObjects.Image {
@@ -33,9 +34,12 @@ export class Prop extends Phaser.GameObjects.Image {
   key = '';
   private clockMs = 0;
   private readonly glow: Phaser.GameObjects.Image;
-  /** Aviso "[E] nome" (só a estátua do santuário tem). */
+  /** Aviso "[E] nome" (só o altar do santuário tem). */
   private readonly prompt: (Phaser.GameObjects.BitmapText | Phaser.GameObjects.Image)[] = [];
   private near = false;
+  /** O orbe de almas que flutua sobre o altar (só o altar do santuário tem). */
+  private readonly orb: Phaser.GameObjects.Image | null = null;
+  private readonly orbY: number = 0;
 
   /** (x, floorY): centro horizontal e altura do chão onde o objeto se apoia, em pixels. */
   constructor(scene: Phaser.Scene, kind: PropKind, x: number, floorY: number) {
@@ -53,7 +57,7 @@ export class Prop extends Phaser.GameObjects.Image {
     scene.add.existing(this);
     this.setDepth(PROP_FX.depth);
     const reach = PROP_FX.reach;
-    // A estátua é usada de cima dos degraus e de um pouco mais longe que os outros objetos
+    // O altar é usado de cima dos degraus e de um pouco mais longe que os outros objetos
     const boxHeight = shrine ? SHRINE.boxHeight : 28;
     const below = shrine ? SHRINE.boxBelow : 0;
     const reachX = shrine ? SHRINE.reachX : reach;
@@ -71,6 +75,10 @@ export class Prop extends Phaser.GameObjects.Image {
       .setScale(look.radius / 64)
       .setAlpha(look.glowAlpha);
     if (shrine) {
+      this.orbY = floorY - SHRINE.orb.dy;
+      this.orb = scene.add
+        .image(x, this.orbY, SHRINE_ORB_KEY, SHRINE_FRAME)
+        .setDepth(PROP_FX.depth + 0.01);
       const depth = DEPTH.hud - 1;
       this.prompt.push(
         pixelText(scene, x, floorY - SHRINE.promptDy.name, SHRINE.label, {
@@ -85,6 +93,7 @@ export class Prop extends Phaser.GameObjects.Image {
     }
     this.once(Phaser.GameObjects.Events.DESTROY, () => {
       this.glow.destroy();
+      this.orb?.destroy();
       for (const item of this.prompt) item.destroy();
     });
   }
@@ -112,7 +121,7 @@ export class Prop extends Phaser.GameObjects.Image {
     }
   }
 
-  /** O herói está perto o bastante para usar? Liga e desliga o aviso (só a estátua tem aviso). */
+  /** O herói está perto o bastante para usar? Liga e desliga o aviso (só o altar tem aviso). */
   setNear(near: boolean): void {
     if (near === this.near) return;
     this.near = near;
@@ -128,6 +137,10 @@ export class Prop extends Phaser.GameObjects.Image {
 
   update(dtMs: number): void {
     this.clockMs += dtMs;
+    // O orbe de almas sobe e desce devagar
+    this.orb?.setY(
+      this.orbY + Math.sin((this.clockMs / SHRINE.orb.bobMs) * Math.PI * 2) * SHRINE.orb.bob,
+    );
     const look = PROP_FX[this.kind];
     // O brilho respira devagar (a fogueira também treme mais depressa)
     const wave = Math.sin((this.clockMs / look.pulseMs) * Math.PI * 2);
