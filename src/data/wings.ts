@@ -29,13 +29,17 @@ export type FurnitureKind =
   | 'mushrooms'
   | 'signpost'
   | 'campfire'
+  | 'boat'
+  | 'reeds'
+  | 'stakes'
   // Teto
   | 'tapestry'
   | 'chandelier'
   | 'cage'
   | 'roots'
   | 'lantern'
-  | 'cocoon';
+  | 'cocoon'
+  | 'net';
 
 export type FurniturePlacement = 'floor' | 'ceiling';
 
@@ -119,6 +123,10 @@ export const FURNITURE: Readonly<Record<FurnitureKind, FurnitureSpec>> = {
     light: { radius: 66, strength: 0.75, dy: 22 },
   },
   cocoon: { placement: 'ceiling', widthTiles: 1, heightTiles: 2, variants: 2 },
+  boat: { placement: 'floor', widthTiles: 3, heightTiles: 1, variants: 2 },
+  reeds: { placement: 'floor', widthTiles: 1, heightTiles: 2, variants: 3 },
+  stakes: { placement: 'floor', widthTiles: 1, heightTiles: 1, variants: 2 },
+  net: { placement: 'ceiling', widthTiles: 2, heightTiles: 2, variants: 2 },
   chandelier: {
     placement: 'ceiling',
     widthTiles: 2,
@@ -139,7 +147,9 @@ export type WingId =
   | 'masmorra'
   | 'cripta'
   | 'bosque'
-  | 'raizes';
+  | 'raizes'
+  | 'charco'
+  | 'palafitas';
 
 export interface WingDef {
   id: WingId;
@@ -276,6 +286,33 @@ export const WINGS: Readonly<Record<BiomeId, readonly WingDef[]>> = {
         { kind: 'cocoon', weight: 2 },
         { kind: 'lantern', weight: 2 },
         { kind: 'stump', weight: 1 },
+      ],
+      count: { min: 3, max: 5 },
+    },
+  ],
+  pantano: [
+    {
+      id: 'charco',
+      name: 'CHARCO DOS AFOGADOS',
+      furniture: [
+        { kind: 'reeds', weight: 5 },
+        { kind: 'stakes', weight: 2 },
+        { kind: 'boat', weight: 2 },
+        { kind: 'mushrooms', weight: 2 },
+        { kind: 'skulls', weight: 1 },
+      ],
+      count: { min: 3, max: 5 },
+    },
+    {
+      id: 'palafitas',
+      name: 'VILA DE PALAFITAS',
+      furniture: [
+        { kind: 'barrel', weight: 3 },
+        { kind: 'crates', weight: 3 },
+        { kind: 'net', weight: 3 },
+        { kind: 'lantern', weight: 2 },
+        { kind: 'boat', weight: 1 },
+        { kind: 'cage', weight: 1 },
       ],
       count: { min: 3, max: 5 },
     },

@@ -156,7 +156,7 @@ describe('santuário na run', () => {
   });
 
   it('a jornada começa fora do castelo: a primeira área é ao ar livre e o castelo vem depois', () => {
-    const outdoors = ['floresta'];
+    const outdoors = ['floresta', 'pantano'];
     const castle = ['muralhas', 'saloes', 'catacumbas'];
     const first = RUN_PLAN[0]?.options ?? [];
     expect(first.length).toBeGreaterThan(0);
@@ -219,12 +219,12 @@ describe('escolha de área (plano com duas opções)', () => {
     expect(() => pickArea([])).toThrow();
   });
 
-  it('o portal escolhido define a primeira área e as seguintes sobram para as outras etapas', () => {
+  it('a passagem escolhida define a primeira área e as seguintes sobram para as outras etapas', () => {
     const run = createRun(5, catalog, { secretRooms: 0, firstBiome: 'saloes' }, CHOICE_PLAN);
     expect(run.map.biome).toBe('saloes');
     enterSanctuaryBetweenBiomes(run, CHOICE_PLAN);
     expect(run.sanctuary?.options).toEqual(['muralhas']);
-    // Um portal que não foi ofertado cai na primeira opção
+    // Uma passagem que não foi ofertada cai na primeira opção
     expect(leaveSanctuary(run, catalog, 'catacumbas', CHOICE_PLAN)).toBe(true);
     expect(run.stage).toBe(1);
     expect(run.map.biome).toBe('muralhas');
@@ -236,7 +236,7 @@ describe('escolha de área (plano com duas opções)', () => {
     expect(run.map.rooms.some((r) => r.kind === 'boss')).toBe(true);
   });
 
-  it('a primeira área também é escolhida no portal do despertar', () => {
+  it('a primeira área também é escolhida na passagem do despertar', () => {
     expect(createRun(1, catalog, { secretRooms: 0 }, CHOICE_PLAN).map.biome).toBe('muralhas');
     const run = createRun(1, catalog, { secretRooms: 0 }, CHOICE_PLAN);
     startInSanctuary(run, 'catacumbas', CHOICE_PLAN);

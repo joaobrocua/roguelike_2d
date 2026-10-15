@@ -685,6 +685,96 @@ function drawCocoon(p: Pen): void {
   rect(ctx, 0xcfcfd8, cx - 1, h - 5, 2, 4); // pontas soltas
 }
 
+function drawBoat(p: Pen): void {
+  const { ctx, w, h } = p;
+  const sunk = p.variant === 1;
+  // Casco: uma meia-lua de tábuas, com a proa para cima
+  for (let x = 2; x < w - 2; x++) {
+    const t = (x - 2) / (w - 4);
+    const depth = Math.round(4 + Math.sin(t * Math.PI) * 6);
+    const lift = Math.round((1 - Math.sin(t * Math.PI)) * 5);
+    rect(ctx, p.wood.base, x, h - depth - lift, 1, depth);
+    rect(ctx, p.wood.light, x, h - depth - lift, 1, 1);
+    if (x % 5 === 0) rect(ctx, p.wood.dark, x, h - depth - lift, 1, depth);
+  }
+  rect(ctx, p.wood.dark, 3, h - 2, w - 6, 2); // quilha
+  if (sunk) {
+    rect(ctx, p.wood.dark, w / 2 - 3, h - 12, 2, 8); // costela quebrada
+    rect(ctx, p.moss, 6, h - 6, 10, 2);
+  } else {
+    rect(ctx, p.wood.dark, w / 2 - 1, h - 14, 2, 6); // remo
+    rect(ctx, p.wood.light, w / 2 - 6, h - 14, 6, 1);
+    rect(ctx, 0x9a8a62, w / 2 + 2, h - 9, 8, 4); // rede e cordas na popa
+  }
+  rect(ctx, p.mossLight, 8, h - 8, 4, 1);
+}
+
+function drawReeds(p: Pen): void {
+  const { ctx, w, h } = p;
+  const stalks = p.variant === 0 ? 5 : p.variant === 1 ? 4 : 6;
+  for (let i = 0; i < stalks; i++) {
+    const x = 2 + Math.round(((w - 5) * i) / Math.max(1, stalks - 1));
+    const height = randomInt(p.rng, h - 12, h - 3);
+    const bend = i % 2 === 0 ? 1 : -1;
+    for (let y = 0; y < height; y++) {
+      const dx = Math.round((y / height) ** 2 * bend * 2);
+      rect(ctx, y % 6 === 0 ? p.mossLight : p.moss, x + dx, h - 1 - y, 1, 1);
+    }
+    // Espiga marrom (taboa) no alto
+    const tx = x + bend * 2;
+    rect(ctx, 0x5a3a22, tx - 1, h - height - 4, 2, 5);
+    rect(ctx, 0x8a5e38, tx - 1, h - height - 4, 1, 4);
+  }
+}
+
+function drawStakes(p: Pen): void {
+  const { ctx, w, h } = p;
+  const skull = p.variant === 1;
+  for (const [x, top] of [
+    [3, 3],
+    [8, 6],
+    [12, 4],
+  ] as const) {
+    rect(ctx, p.wood.dark, x, top, 2, h - top);
+    rect(ctx, p.wood.light, x, top, 1, h - top);
+    rect(ctx, p.wood.dark, x, top - 1, 1, 1);
+  }
+  rect(ctx, p.stone.dark, 1, h - 2, w - 2, 2); // base de lama
+  rect(ctx, p.moss, 2, h - 2, 5, 1);
+  if (skull) {
+    rect(ctx, p.bone, 6, 0, 5, 4); // crânio espetado
+    rect(ctx, p.stone.deep, 7, 1, 1, 1);
+    rect(ctx, p.stone.deep, 9, 1, 1, 1);
+    rect(ctx, p.boneShade, 7, 3, 3, 1);
+  }
+}
+
+function drawNet(p: Pen): void {
+  const { ctx, w, h } = p;
+  const torn = p.variant === 1;
+  rect(ctx, p.wood.base, 0, 0, w, 3); // vara
+  rect(ctx, p.wood.light, 0, 0, w, 1);
+  // Malha em losangos pendurada, mais larga no alto e fechada embaixo
+  for (let y = 3; y < h - 2; y += 3) {
+    const t = (y - 3) / (h - 5);
+    const half = Math.round(w / 2 - 2 - t * (w / 2 - 6));
+    for (let x = w / 2 - half; x < w / 2 + half; x += 3) {
+      const o = (Math.floor(y / 3) % 2) * 1;
+      rect(ctx, 0x9a8a62, x + o, y, 1, 3);
+      rect(ctx, 0x6a5c3e, x + o + 1, y + 1, 2, 1);
+    }
+  }
+  for (const x of [5, w - 7, w / 2]) {
+    rect(ctx, 0xb5a577, x, 4, 3, 3); // boias de cortiça
+    rect(ctx, 0x6a5c3e, x, 6, 3, 1);
+  }
+  if (torn) {
+    rect(ctx, p.stone.deep, w / 2 - 3, 12, 5, 5, 0.9);
+  } else {
+    rect(ctx, p.bone, w / 2 - 1, h - 6, 3, 3); // um peixe seco preso
+  }
+}
+
 const DRAWERS: Readonly<Record<FurnitureKind, (p: Pen) => void>> = {
   barrel: drawBarrel,
   crates: drawCrates,
@@ -710,6 +800,10 @@ const DRAWERS: Readonly<Record<FurnitureKind, (p: Pen) => void>> = {
   roots: drawRoots,
   lantern: drawLantern,
   cocoon: drawCocoon,
+  boat: drawBoat,
+  reeds: drawReeds,
+  stakes: drawStakes,
+  net: drawNet,
   tapestry: drawTapestry,
   chandelier: drawChandelier,
   cage: drawCage,

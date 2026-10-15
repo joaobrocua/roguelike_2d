@@ -149,4 +149,32 @@ export const BIOME_LOOK: Readonly<Record<BiomeId, BiomeLook>> = {
     shaft: 0xe8d88a,
     shaftAlpha: 0.08,
   },
+  // Pântano dos afogados: céu cinzento e carregado, lama avermelhada, água escura e fogos-fátuos azulados
+  pantano: {
+    stone: {
+      deep: 0x120d0a,
+      dark: 0x221813,
+      base: 0x3a2a20,
+      light: 0x55402f,
+      highlight: 0x80654a,
+    },
+    back: {
+      deep: 0x080a0c,
+      dark: 0x0e1214,
+      base: 0x151b1e,
+      light: 0x212a2e,
+      highlight: 0x33414a,
+    },
+    skyTop: 0x0b0e12,
+    skyMid: 0x222b32,
+    skyLow: 0x46565f,
+    moss: 0x3e6a52,
+    mossLight: 0x7fcf9a,
+    ambient: 0x04070a,
+    fog: 0x8fa4ad,
+    glow: 0x7fe8ff,
+    glowSoft: 0x3a9fb8,
+    shaft: 0xaee8f5,
+    shaftAlpha: 0.06,
+  },
 };

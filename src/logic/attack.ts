@@ -24,6 +24,13 @@ export interface ProjectileData extends HitData {
   height: number;
   /** Altura da saída, a partir do centro de quem atira. */
   spawnOffsetY: number;
+  /** Velocidade vertical inicial (px/s; negativa = para cima): faz o tiro sair em arco. */
+  speedY?: number;
+  /** Gravidade total do tiro (px/s²). Sem isto ele voa em linha reta. */
+  gravityY?: number;
+  /** Textura própria (a chave) e cor; o corpo do tiro passa a ter `width` x `height`. */
+  textureKey?: string;
+  tint?: number;
 }
 
 export interface AttackConfig extends HitData {

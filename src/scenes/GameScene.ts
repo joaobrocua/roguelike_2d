@@ -13,6 +13,7 @@ import {
   DOG_PACK,
   LOBO_ESPECTRAL,
   RAIZ_EMBOSCADORA,
+  SAPO_PECONHENTO,
   ENEMY_MARKERS,
   type EnemyType,
 } from '../data/enemies';
@@ -29,8 +30,10 @@ import { GUARDIAO, VICTORY_DELAY_MS } from '../data/boss';
 import { ROOM_TEMPLATES } from '../data/roomTemplates';
 import { ArqueiroOco } from '../entities/ArqueiroOco';
 import { CaoDeOssos } from '../entities/CaoDeOssos';
+import { FogoFatuo } from '../entities/FogoFatuo';
 import { LoboEspectral } from '../entities/LoboEspectral';
 import { RaizEmboscadora } from '../entities/RaizEmboscadora';
+import { SapoPeconhento } from '../entities/SapoPeconhento';
 import { Carnical } from '../entities/Carnical';
 import { Guardiao } from '../entities/Guardiao';
 import type { Enemy, EnemyTarget, EnemyWorld } from '../entities/Enemy';
@@ -142,7 +145,7 @@ export class GameScene extends Phaser.Scene {
   private sanctuaryDecor: SanctuaryDecor | null = null;
   /** A mobília da ala desta sala (null na sala do santuário). */
   private furniture: FurnitureSystem | null = null;
-  /** Os portais da sala do santuário (um por área oferecida: 1 ou 2). */
+  /** As passagens da sala do santuário (um por área oferecida: 1 ou 2). */
   private sanctuaryGates: SanctuaryGate[] = [];
   private boss: Guardiao | null = null;
   private bossHud: BossHud | null = null;
@@ -601,6 +604,12 @@ export class GameScene extends Phaser.Scene {
             packId: dogs++,
           });
           break;
+        case 'sapo':
+          enemy = new SapoPeconhento(this, x, this.markerY(marker, SAPO_PECONHENTO.height), world);
+          break;
+        case 'fatuo':
+          enemy = new FogoFatuo(this, x, marker.row * TILE_SIZE + TILE_SIZE / 2, world);
+          break;
         case 'raiz':
           enemy = new RaizEmboscadora(
             this,
@@ -611,7 +620,7 @@ export class GameScene extends Phaser.Scene {
           break;
       }
       // Voadores atravessam plataformas: só os terrestres colidem com o cenário.
-      if (type !== 'vulto') this.physics.add.collider(enemy, solids);
+      if (type !== 'vulto' && type !== 'fatuo') this.physics.add.collider(enemy, solids);
       this.enemies.push(enemy);
     }
   }
@@ -653,14 +662,14 @@ export class GameScene extends Phaser.Scene {
     return this.furniture?.lights ?? [];
   }
 
-  /** Luzes da sala do santuário (chamas e portal); vazio nas outras salas. */
+  /** Luzes da sala do santuário (chamas e passagens); vazio nas outras salas. */
   private sanctuaryLights(): readonly LightSource[] {
     const lights = this.sanctuaryDecor?.lights ?? [];
     return [...lights, ...this.sanctuaryGates.map((gate) => gate.light)];
   }
 
   /**
-   * Os portais gigantes do santuário: um por área oferecida (marcador 'X' à direita; com duas
+   * As passagens do santuário (arcos de pedra abertos para a região seguinte): um por área oferecida (marcador 'X' à direita; com duas
    * áreas, também o 'Y' à esquerda). Levam à próxima área ou, depois de morrer ou vencer, à run
    * nova. A cor da energia é a da área de destino.
    */
@@ -668,7 +677,7 @@ export class GameScene extends Phaser.Scene {
     const sanctuary = this.run.sanctuary;
     if (!sanctuary) return;
     const options = sanctuary.options;
-    // Uma área: portal à direita. Duas: a primeira à esquerda e a segunda à direita
+    // Uma área: passagem à direita. Duas: a primeira à esquerda e a segunda à direita
     const chars = options.length > 1 ? ['Y', 'X'] : ['X'];
     chars.forEach((char, i) => {
       const marker = room.markers.find((m) => m.char === char);
@@ -692,7 +701,7 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  /** O herói entrou em um portal? Segue para a área dele. */
+  /** O herói entrou em uma passagem? Segue para a região dela. */
   private checkGate(): void {
     if (this.transitioning || this.player.isDead()) return;
     for (const gate of this.sanctuaryGates) {
@@ -788,7 +797,7 @@ export class GameScene extends Phaser.Scene {
   private spawnProps(room: ParsedRoom): void {
     for (const marker of room.markers) {
       const kind: PropKind | undefined = PROP_MARKERS[marker.char as keyof typeof PROP_MARKERS];
-      // Na sala do santuário o 'X' é o portal gigante (ver spawnGate), e não uma porta comum
+      // Na sala do santuário o 'X' é uma passagem (ver spawnGate), e não uma porta comum
       if (!kind || (this.run.sanctuary && kind === 'door')) continue;
       const prop = new Prop(
         this,
@@ -914,22 +923,22 @@ export class GameScene extends Phaser.Scene {
   /** Porta da sala de saída (leva ao santuário) ou da sala do santuário (leva adiante). */
   private useDoor(): void {
     if (this.transitioning || this.victoryQueued) return;
-    if (this.run.sanctuary) return; // na sala do santuário quem leva adiante são os portais
+    if (this.run.sanctuary) return; // na sala do santuário quem leva adiante são as passagens
     if (isLastStage(this.run.stage)) return; // último bioma: o fim da run é do chefe (sala 'boss')
     // Ao passar de bioma, as almas carregadas são guardadas com segurança na base...
     this.run.lastBanked = bankSouls(this.run, this.meta.save);
     this.meta.commit();
     // ...e o herói passa antes pelo santuário
-    sfx('portal');
+    sfx('passage');
     enterSanctuaryBetweenBiomes(this.run);
     this.leave(null);
   }
 
-  /** Portal do santuário: segue para a área escolhida ou, no despertar, começa a run nova nela. */
+  /** Passagem do santuário: segue para a área escolhida ou, no despertar, começa a run nova nela. */
   private leaveSanctuaryRoom(chosen: BiomeId): void {
     if (this.transitioning || this.victoryQueued) return;
     const awakening = this.run.sanctuary?.leadsTo === 'start';
-    sfx('portal');
+    sfx('passage');
     // As "Passagens" compradas agora valem já no mapa do próximo bioma
     this.run.secretRooms = this.meta.effects.secretRooms;
     leaveSanctuary(this.run, CATALOG.infos, chosen);

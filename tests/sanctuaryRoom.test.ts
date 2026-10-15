@@ -73,9 +73,9 @@ describe('sala do santuário', () => {
         (m) => m.row === marker.row && m.col === room.cols - 1 - marker.col,
       );
       if (marker.char === 'T') expect(twin?.char, `tocha ${marker.col}`).toBe('T');
-      // Os dois portais são espelhos um do outro
-      if (marker.char === 'X') expect(twin?.char, 'portal espelhado').toBe('Y');
-      if (marker.char === 'Y') expect(twin?.char, 'portal espelhado').toBe('X');
+      // As duas passagens são espelhos um do outro
+      if (marker.char === 'X') expect(twin?.char, 'passagem espelhada').toBe('Y');
+      if (marker.char === 'Y') expect(twin?.char, 'passagem espelhada').toBe('X');
     }
     // As velas formam pares simétricos em torno do eixo
     const width = room.cols * TILE_SIZE;
@@ -102,9 +102,9 @@ describe('sala do santuário', () => {
     expect(banners.size).toBe(ALL_BIOMES.length);
   });
 
-  it('o portal cabe entre os braseiros e a parede e o herói o alcança pelo chão', () => {
+  it('a passagem cabe entre os braseiros e a parede e o herói o alcança pelo chão', () => {
     const door = room.markers.find((m) => m.char === 'X');
-    if (!door) throw new Error('sem portal');
+    if (!door) throw new Error('sem passagem');
     const g = SANCTUARY_DECOR.gate;
     const x = door.col * TILE_SIZE + TILE_SIZE / 2;
     const rightBrazier = SANCTUARY_DECOR.braziers[1] ?? 0;
@@ -114,11 +114,10 @@ describe('sala do santuário', () => {
     expect(g.trigger.halfWidth * 2).toBeLessThanOrEqual(g.opening.width);
     expect(g.trigger.height).toBeLessThanOrEqual(g.height - g.opening.top);
     expect(SANCTUARY_DECOR.floorY - g.height).toBeGreaterThanOrEqual(TILE_SIZE);
-    expect(g.portalFrames).toBeGreaterThan(1);
-    // O portal da esquerda (quando há duas áreas) cabe entre a parede e o braseiro, e o herói
+    // A passagem da esquerda (quando há duas áreas) cabe entre a parede e o braseiro, e o herói
     // nasce fora dele (senão sairia da sala no primeiro frame)
     const left = room.markers.find((m) => m.char === 'Y');
-    if (!left || !room.spawn) throw new Error('sem portal esquerdo');
+    if (!left || !room.spawn) throw new Error('sem passagem esquerda');
     const lx = left.col * TILE_SIZE + TILE_SIZE / 2;
     expect(lx - g.width / 2).toBeGreaterThanOrEqual(TILE_SIZE);
     expect(lx + g.width / 2).toBeLessThan((SANCTUARY_DECOR.braziers[0] ?? 0) - 16 + 1);

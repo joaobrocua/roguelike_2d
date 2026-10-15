@@ -5,6 +5,7 @@ import { ENEMY_BODIES } from '../data/enemies';
 /** Chaves das texturas. Para usar arte final, carregue a imagem com a mesma chave. */
 export const TEXTURE = {
   arrow: 'arrow',
+  spit: 'spit',
   bolt: 'bolt',
   barrier: 'barrier',
   pickup: 'pickup',
@@ -40,6 +41,17 @@ export function createPlaceholderTextures(scene: Phaser.Scene): void {
     g.fillStyle(PALETTE.ember, 1);
     g.fillRect(7, 0, 3, 3);
     g.generateTexture(TEXTURE.arrow, 10, 3);
+  }
+
+  // Cuspe do Sapo Peçonhento: uma gota redonda e verde (a cor vem do tint do tiro)
+  if (!scene.textures.exists(TEXTURE.spit)) {
+    g.clear();
+    g.fillStyle(0xffffff, 1);
+    g.fillRect(1, 0, 4, 6);
+    g.fillRect(0, 1, 6, 4);
+    g.fillStyle(0xb8ffd0, 1);
+    g.fillRect(1, 1, 2, 2);
+    g.generateTexture(TEXTURE.spit, 6, 6);
   }
 
   // Raio do Tomo (quadrado roxo com núcleo claro), barreira e item de relíquia (brancos: o tint

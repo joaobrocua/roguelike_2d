@@ -20,8 +20,11 @@ export class Projectile extends Phaser.Physics.Arcade.Sprite {
   /** O disparo veio de uma esquiva perfeita (efeitos de destaque). */
   empowered = false;
 
+  private readonly defaultTexture: string;
+
   constructor(scene: Phaser.Scene, textureKey: string) {
     super(scene, 0, 0, textureKey);
+    this.defaultTexture = textureKey;
     scene.add.existing(this);
     scene.physics.add.existing(this);
     this.setDepth(DEPTH.projectile);
@@ -40,7 +43,16 @@ export class Projectile extends Phaser.Physics.Arcade.Sprite {
     this.multiplier = 1;
     this.empowered = false;
     this.enableBody(true, x, y, true, true);
-    this.setVelocity(dirX * cfg.speed, 0);
+    // Tiros especiais (o cuspe do sapo) trocam a textura e a cor, e saem em arco
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    const arc = (cfg.gravityY ?? 0) > 0;
+    this.setTexture(cfg.textureKey ?? this.defaultTexture);
+    if (cfg.textureKey) body.setSize(cfg.width, cfg.height, true);
+    if (cfg.tint !== undefined) this.setTint(cfg.tint);
+    else this.clearTint();
+    body.setAllowGravity(arc);
+    if (arc) body.setGravityY((cfg.gravityY ?? 0) - this.scene.physics.world.gravity.y);
+    this.setVelocity(dirX * cfg.speed, cfg.speedY ?? 0);
     this.setFlipX(dirX < 0);
     this.refreshBox();
   }

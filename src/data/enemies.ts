@@ -5,6 +5,7 @@
 import type { AmbusherConfig } from '../logic/ai/ambusher';
 import type { FlyerConfig } from '../logic/ai/flyer';
 import type { GroundMeleeConfig } from '../logic/ai/groundMelee';
+import type { HopperConfig } from '../logic/ai/hopper';
 import type { RangedConfig } from '../logic/ai/ranged';
 import type { AttackConfig, ProjectileData } from '../logic/attack';
 import { PALETTE } from './palette';
@@ -247,6 +248,93 @@ export const RAIZ_EMBOSCADORA = {
   } satisfies AmbusherConfig,
 } as const satisfies EnemyBody & { ai: AmbusherConfig };
 
+/**
+ * Sapo Peçonhento (Pântano dos Afogados): salta de um ponto a outro e cospe veneno em arco de
+ * uma distância média, depois de inchar a papada (a telegrafia do tiro).
+ */
+export const SAPO_PECONHENTO = {
+  id: 'sapo',
+  width: 16,
+  height: 12,
+  maxHp: 22,
+  hitStunMs: 200,
+  knockbackFriction: 600,
+  color: PALETTE.venom,
+  flying: false,
+  meleeShape: 'none',
+  // Só a linha do tempo do cuspe: o golpe real é a gota, que sai ao fim da preparação.
+  attack: {
+    windupMs: 620,
+    activeMs: 80,
+    recoveryMs: 420,
+    damage: 0,
+    knockbackX: 0,
+    knockbackY: 0,
+    hitbox: { width: 0, height: 0, offsetY: 0 },
+  },
+  ai: {
+    sightRangeX: 230,
+    sightRangeY: 90,
+    minDistanceX: 70,
+    maxDistanceX: 130,
+    hopSpeed: 95,
+    hopVelocity: -190,
+    restMs: 650,
+    patrolHopMs: 1500,
+    shootCooldownMs: 1100,
+  } satisfies HopperConfig,
+  spit: {
+    speed: 160,
+    speedY: -150,
+    gravityY: 480,
+    lifeMs: 2400,
+    width: 6,
+    height: 6,
+    damage: 9,
+    knockbackX: 100,
+    knockbackY: -60,
+    spawnOffsetY: -4,
+    textureKey: 'spit', // a mesma chave de TEXTURE.spit (src/systems/textures.ts)
+    tint: 0x8ac24a,
+  } satisfies ArrowData,
+} as const satisfies EnemyBody & { ai: HopperConfig; spit: ArrowData };
+
+/** Fogo-Fátuo (Pântano dos Afogados): uma chama azulada que paira e mergulha; ilumina em volta. */
+export const FOGO_FATUO = {
+  id: 'fatuo',
+  width: 12,
+  height: 12,
+  maxHp: 16,
+  hitStunMs: 160,
+  knockbackFriction: 500,
+  color: PALETTE.player,
+  flying: true,
+  meleeShape: 'body',
+  attack: {
+    windupMs: 440, // treme e esquenta: avisa o mergulho
+    activeMs: 380,
+    recoveryMs: 600,
+    damage: 10,
+    knockbackX: 130,
+    knockbackY: -100,
+    hitbox: { width: 15, height: 15, offsetY: 0 },
+  },
+  ai: {
+    sightRangeX: 210,
+    sightRangeY: 160,
+    hoverHeight: 50,
+    hoverSpeed: 70,
+    swayAmplitude: 28,
+    swayPeriodMs: 1300,
+    diveTriggerRangeX: 46,
+    diveCooldownMs: 1200,
+    diveSpeed: 230,
+    riseSpeed: 90,
+  } satisfies FlyerConfig,
+  /** A luz que ele solta na escuridão da sala (px e força de 0 a 1). */
+  light: { radius: 76, strength: 0.8 },
+} as const satisfies EnemyBody & { ai: FlyerConfig; light: { radius: number; strength: number } };
+
 /** Bando de cães: quantos atacam ao mesmo tempo e o intervalo mínimo entre os botes. */
 export const DOG_PACK = { maxConcurrent: 2, gapMs: 450 } as const;
 
@@ -258,6 +346,8 @@ export const ENEMY_MARKERS = {
   D: 'cao',
   L: 'lobo',
   R: 'raiz',
+  O: 'sapo',
+  W: 'fatuo',
 } as const;
 
 export type EnemyType = (typeof ENEMY_MARKERS)[keyof typeof ENEMY_MARKERS];
@@ -269,6 +359,8 @@ export const ENEMY_BODIES: readonly EnemyBody[] = [
   CAO_DE_OSSOS,
   LOBO_ESPECTRAL,
   RAIZ_EMBOSCADORA,
+  SAPO_PECONHENTO,
+  FOGO_FATUO,
 ];
 
 /** Só a sala de teste faz os inimigos renascerem; nas salas reais eles ficam mortos. */

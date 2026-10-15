@@ -5,8 +5,8 @@ import type { BiomeMap, TemplateInfo } from './map/types';
 
 /**
  * A sala do santuário em que o herói está. Ela fica entre duas áreas ('nextBiome') ou no despertar
- * depois de morrer ou vencer ('start': os portais levam ao começo de uma run nova). `biome` é a
- * área cujo visual a sala veste; `options` são as áreas que os portais oferecem (1 ou 2).
+ * depois de morrer ou vencer ('start': as passagens levam ao começo de uma run nova). `biome` é a
+ * área cujo visual a sala veste; `options` são as áreas que as passagens oferecem (1 ou 2).
  */
 export interface SanctuaryState {
   biome: BiomeId;
@@ -49,7 +49,7 @@ export interface RunState {
 /** Opções da run vindas da meta-progressão e da escolha do primeiro caminho. */
 export interface RunOptions {
   secretRooms: number;
-  /** Área escolhida no portal do despertar (se o plano oferece mais de uma na primeira etapa). */
+  /** Área escolhida na passagem do despertar (se o plano oferece mais de uma na primeira etapa). */
   firstBiome?: BiomeId | null;
 }
 
@@ -167,7 +167,7 @@ export function propKey(roomId: number, col: number, row: number): string {
   return `${roomId}:${col},${row}`;
 }
 
-/** Entra no santuário entre duas áreas: a sala veste a área que acabou e os portais oferecem as próximas. */
+/** Entra no santuário entre duas áreas: a sala veste a área que acabou e as passagens oferecem as próximas. */
 export function enterSanctuaryBetweenBiomes(
   run: RunState,
   plan: readonly RunStage[] = RUN_PLAN,
@@ -181,7 +181,7 @@ export function enterSanctuaryBetweenBiomes(
 
 /**
  * Faz a run começar no santuário (despertar depois de morrer ou vencer), vestindo a área `biome`;
- * os portais oferecem as áreas da primeira etapa.
+ * as passagens oferecem as áreas da primeira etapa.
  */
 export function startInSanctuary(
   run: RunState,
@@ -192,9 +192,9 @@ export function startInSanctuary(
 }
 
 /**
- * Sai do santuário por um portal. Entre áreas passa para a próxima (devolve false se não há); no
+ * Sai do santuário por uma passagem. Entre áreas passa para a próxima (devolve false se não há); no
  * despertar só marca que o herói saiu (a cena cria a run nova, com o progresso já comprado e a
- * área que o portal escolheu).
+ * área que a passagem escolheu).
  */
 export function leaveSanctuary(
   run: RunState,

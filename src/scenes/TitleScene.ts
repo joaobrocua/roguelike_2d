@@ -243,7 +243,7 @@ export class TitleScene extends Phaser.Scene {
   private play(): void {
     if (this.starting) return;
     this.starting = true;
-    sfx('portal');
+    sfx('passage');
     this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
       // Dados vazios: começa uma run nova (ver GameScene.init)
       this.scene.start('Game', {});

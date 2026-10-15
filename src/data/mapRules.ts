@@ -19,21 +19,28 @@ export const DOOR = {
   verticalCols: [13, 14, 15, 16],
 } as const;
 
-export type BiomeId = 'muralhas' | 'saloes' | 'catacumbas' | 'floresta';
+export type BiomeId = 'muralhas' | 'saloes' | 'catacumbas' | 'floresta' | 'pantano';
 
 /** Todas as áreas que existem no jogo (as texturas e os testes percorrem esta lista). */
-export const ALL_BIOMES: readonly BiomeId[] = ['muralhas', 'saloes', 'catacumbas', 'floresta'];
+export const ALL_BIOMES: readonly BiomeId[] = [
+  'muralhas',
+  'saloes',
+  'catacumbas',
+  'floresta',
+  'pantano',
+];
 
 export const BIOME_NAMES: Readonly<Record<BiomeId, string>> = {
   muralhas: 'Muralhas e Pátio',
   saloes: 'Salões e Capela',
   catacumbas: 'Catacumbas e Masmorra',
   floresta: 'Floresta Apodrecida',
+  pantano: 'Pântano dos Afogados',
 };
 
 /**
- * Uma etapa da jornada: as áreas que o jogador pode escolher ao chegar nela (os portais do
- * santuário). Com uma só área não há escolha; com duas, o santuário mostra dois portais.
+ * Uma etapa da jornada: as áreas que o jogador pode escolher ao chegar nela (as passagens do
+ * santuário). Com uma só área não há escolha; com duas, o santuário mostra duas passagens.
  */
 export interface RunStage {
   options: readonly BiomeId[];
@@ -42,21 +49,22 @@ export interface RunStage {
 /**
  * A jornada de uma run, etapa por etapa. A última etapa é a do chefe: todas as áreas dela precisam
  * ter uma sala de chefe, e as das outras, uma sala de saída (os testes conferem). No máximo duas
- * áreas por etapa (o santuário só tem espaço para dois portais) e uma área não repete numa run.
+ * áreas por etapa (o santuário só tem espaço para duas passagens) e uma área não repete numa run.
  */
 export const RUN_PLAN: readonly RunStage[] = [
-  { options: ['floresta'] },
+  { options: ['floresta', 'pantano'] },
   { options: ['muralhas'] },
   { options: ['saloes'] },
   { options: ['catacumbas'] },
 ];
 
-/** Nome curto da área (cabe no letreiro sobre o portal). */
+/** Nome curto da área (cabe na placa sobre a passagem). */
 export const BIOME_SHORT_NAMES: Readonly<Record<BiomeId, string>> = {
   muralhas: 'MURALHAS',
   saloes: 'SALÕES',
   catacumbas: 'CATACUMBAS',
   floresta: 'FLORESTA',
+  pantano: 'PÂNTANO',
 };
 
 /** Tamanho de um bioma (em salas) e o que deve existir nele. */
@@ -107,6 +115,16 @@ export const BIOME_CONFIG: Readonly<Record<BiomeId, BiomeConfig>> = {
     extraLinks: 2,
   },
   floresta: {
+    minRooms: 6,
+    maxRooms: 7,
+    gridCols: 5,
+    gridRows: 3,
+    chests: 1,
+    rests: 1,
+    secrets: 1,
+    extraLinks: 1,
+  },
+  pantano: {
     minRooms: 6,
     maxRooms: 7,
     gridCols: 5,

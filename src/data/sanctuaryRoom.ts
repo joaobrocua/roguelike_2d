@@ -3,7 +3,7 @@
  * no despertar depois de morrer. O desenho é um só; o bioma entra com a pedra, o fundo, a
  * escuridão e as cores (SANCTUARY_LOOK). Legenda: ver data/rooms.ts, mais:
  *   'S' o altar (a coluna marca a BORDA ESQUERDA do tile: o centro dele é o eixo da sala)
- *   'X' e 'Y' os portais que levam adiante (o da direita e o da esquerda; o 'Y' só existe quando
+ *   'X' e 'Y' as passagens que levam adiante (o da direita e o da esquerda; o 'Y' só existe quando
  *   a etapa oferece duas áreas) e 'P' o ponto de nascimento do herói
  * Tudo em tiles de 16 px; a sala tem 1 célula (30 x 17), sem aberturas nas paredes.
  */
@@ -68,6 +68,13 @@ export const SANCTUARY_LOOK: Readonly<Record<BiomeId, SanctuaryLook>> = {
     banner: 0x3e3a14,
     bannerTrim: 0xd9e46a,
     rune: 0xd9e46a,
+  },
+  // Pântano: fogo-fátuo azulado, pano cinza-esverdeado e a luz fria dos fogos-fátuos
+  pantano: {
+    flame: [0x2a8a9a, 0x7fe8ff, 0xe0ffff],
+    banner: 0x2a3a40,
+    bannerTrim: 0x7fe8ff,
+    rune: 0x7fe8ff,
   },
 };
 
@@ -136,25 +143,40 @@ export const SANCTUARY_DECOR = {
     zoneHeight: 56,
   },
   /**
-   * O portal gigante que leva adiante: um arco de pedra com um vão de energia da cor do bioma de
-   * destino. `x` vem do marcador 'X' do desenho; o chão é o da sala.
+   * A passagem que leva adiante: um arco de pedra aberto para a região seguinte, com a paisagem
+   * dela do outro lado e uma placa com o nome do lugar. `x` vem do marcador 'X' (ou 'Y') do
+   * desenho; o chão é o da sala.
    */
   gate: {
     width: 72,
     height: 116,
     /** Vão do arco (px dentro do quadro): largura, topo e fundo (acima da soleira). */
     opening: { width: 40, top: 16, bottom: 112 },
-    /** Quadros da energia e o tempo de cada um. */
-    portalFrames: 4,
-    portalFrameMs: 150,
-    /** Região em que o herói entra no portal: meia largura e altura (px) a partir do chão. */
+    /** Região em que o herói entra na passagem: meia largura e altura (px) a partir do chão. */
     trigger: { halfWidth: 14, height: 84 },
-    light: { radius: 150, strength: 1 },
-    glowAlpha: 0.38,
-    glowPulseMs: 2200,
-    /** Letreiro acima do arco ("ATO II") e a altura dele acima do topo do arco. */
-    labelDy: 10,
-    sparks: { frequencyMs: 130, lifespanMs: 1700, speedY: { min: -22, max: -8 }, alpha: 0.85 },
+    /** A luz de fora que entra pelo arco, e o quanto ela oscila. */
+    light: { radius: 135, strength: 1 },
+    glowAlpha: 0.2,
+    glowPulseMs: 3200,
+    /** Altura (px) do centro da placa acima do topo do arco. */
+    labelDy: 12,
+    /** A placa de madeira: folga lateral, altura, correntes e cores. */
+    sign: {
+      padX: 5,
+      height: 14,
+      chain: 6,
+      wood: 0x5a4128,
+      woodLight: 0x7d5a37,
+      woodDark: 0x2e2016,
+    },
+    /** Poeira e vaga-lumes da região que entram pelo arco. */
+    dust: {
+      frequencyMs: 240,
+      lifespanMs: 2600,
+      speedY: { min: -10, max: -3 },
+      speedX: 5,
+      alpha: 0.7,
+    },
   },
   depth: {
     pillar: -5.4,
@@ -163,7 +185,7 @@ export const SANCTUARY_DECOR = {
     runes: -3.4,
     banner: -4.6,
     floorDecor: 0.04,
-    portal: -3.2,
+    view: -3.2,
     gate: -3.1,
   },
 } as const;

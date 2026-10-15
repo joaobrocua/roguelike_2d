@@ -7,10 +7,10 @@
 import { CELL, DOOR } from '../../data/mapRules';
 import type { ExitInfo, RoomKind, RoomTemplate, Side, TemplateInfo } from './types';
 
-const ALLOWED_CHARS = '#.PCAVDLRTBFXG';
-const ENEMY_CHARS = 'CAVDLR';
-/** Marcadores que ficam em pé sobre o chão (o 'V' voa e tem regra própria). */
-const GROUNDED_CHARS = 'CADLRPBFXG';
+const ALLOWED_CHARS = '#.PCAVDLROWTBFXG';
+const ENEMY_CHARS = 'CAVDLROW';
+/** Marcadores que ficam em pé sobre o chão (o 'V' e o 'W' voam e têm regra própria). */
+const GROUNDED_CHARS = 'CADLROPBFXG';
 
 /** Marcadores que só existem em um tipo de sala (e quantos devem existir nele). */
 const OWNED_MARKERS: readonly { char: string; kind: RoomKind; exactlyOne: boolean }[] = [
@@ -225,7 +225,7 @@ export function validateTemplate(template: RoomTemplate): string[] {
     if (GROUNDED_CHARS.includes(char)) {
       if (!solidAt(col, row + 1)) fail(`${where} não tem bloco sólido embaixo.`);
       if (solidAt(col, row - 1)) fail(`${where} não tem 2 blocos livres acima do chão.`);
-    } else if (char === 'V') {
+    } else if (char === 'V' || char === 'W') {
       const freeAround = [
         isOpenAt(layout, col - 1, row),
         isOpenAt(layout, col + 1, row),

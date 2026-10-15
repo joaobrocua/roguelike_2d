@@ -5,12 +5,15 @@ import {
   ARQUEIRO_SHEET,
   CAO_SHEET,
   CARNICAL_SHEET,
+  FATUO_SHEET,
   GUARDIAO_SHEET,
   LOBO_SHEET,
   RAIZ_SHEET,
+  SAPO_SHEET,
   VULTO_SHEET,
   type ArcherPose,
   type EnemySheet,
+  type FrogPose,
   type GhoulPose,
   type HoundPose,
   type RootPose,
@@ -601,6 +604,167 @@ function drawRoot(ctx: Ctx, p: RootPose): void {
   drawTendril(ctx, root, front, frontLen, frontCurl, bark, THORN);
 }
 
+// --- Fogo-Fátuo --------------------------------------------------------------------------
+
+const WISP = 0x7fe8ff;
+const WISP_SOFT = 0x3a9fb8;
+const WISP_CORE = 0xe0ffff;
+
+function drawWisp(ctx: Ctx, p: WraithPose): void {
+  const cx = 14 + p.lean;
+  const cy = (p.inverted ? 17 : 12) - p.bob; // no mergulho a chama fica em cima: sobra espaço
+  const rows = Math.max(5, 9 - p.squash);
+  const half = Math.floor(rows / 2);
+  const dir = p.inverted ? -1 : 1;
+  // Halo suave em volta
+  for (const [r, a] of [
+    [9, 0.1],
+    [6, 0.16],
+  ] as const) {
+    for (let dy = -r; dy <= r; dy++) {
+      const w = Math.round(Math.sqrt(r * r - dy * dy));
+      fillPx(ctx, WISP, cx - w, cy + dy, w * 2 + 1, 1, a * p.alpha);
+    }
+  }
+  // Corpo: um disco achatado de luz, claro no miolo
+  for (let dy = -half; dy <= half; dy++) {
+    const w = Math.round(Math.sqrt(Math.max(0, 25 - (dy * dy * 25) / (half * half + 1))));
+    fillPx(ctx, WISP_SOFT, cx - w, cy + dy, w * 2 + 1, 1, p.alpha);
+    if (Math.abs(dy) < half)
+      fillPx(ctx, WISP, cx - w + 1, cy + dy, Math.max(1, w * 2 - 1), 1, p.alpha);
+    if (Math.abs(dy) <= 1)
+      fillPx(ctx, WISP_CORE, cx - Math.max(0, w - 3), cy + dy, Math.max(1, w * 2 - 5), 1, p.alpha);
+  }
+  // Olhos: duas fendas escuras (acesas no mergulho)
+  const eye = p.eyes === 'bright' ? 0xfff2a0 : OUTLINE;
+  if (p.eyes === 'closed') {
+    fillPx(ctx, OUTLINE, cx - 3, cy, 6, 1, 0.7 * p.alpha);
+  } else {
+    fillPx(ctx, eye, cx - 3, cy - 1, 2, 2, p.alpha);
+    fillPx(ctx, eye, cx + 1, cy - 1, 2, 2, p.alpha);
+  }
+  // Chama que escorre atrás (para baixo, ou para cima no mergulho), balançando
+  const len = p.tailLen + 3;
+  for (let i = 0; i < len; i++) {
+    const sway = Math.round((p.tailSway * i) / Math.max(1, len));
+    const width = Math.max(1, 4 - Math.floor((i * 4) / len));
+    const y = cy + dir * (half + 1 + i);
+    fillPx(
+      ctx,
+      WISP_SOFT,
+      cx - Math.floor(width / 2) + sway,
+      y,
+      width,
+      1,
+      (0.85 - i * 0.1) * p.alpha,
+    );
+  }
+  // Fagulhas soltas (a morte)
+  for (const [i, [dx, dy]] of [
+    [-9, -4],
+    [8, -6],
+    [-5, 8],
+    [10, 5],
+    [0, -10],
+    [-11, 3],
+  ].entries()) {
+    if (i < p.scatter) fillPx(ctx, WISP, cx + (dx ?? 0), cy + (dy ?? 0), 1, 1, 0.8);
+  }
+}
+
+// --- Sapo Peçonhento ---------------------------------------------------------------------
+
+const FROG = 0x4f7a3a;
+const FROG_DARK = 0x2e4a24;
+const FROG_LIGHT = 0x8ac24a;
+const FROG_BELLY = 0xcfe69a;
+const FROG_EYE = 0xf0cf62;
+const FROG_WART = 0x6a5230;
+
+function drawFrog(ctx: Ctx, p: FrogPose): void {
+  const cx = 14;
+  const ground = 18;
+  const lift = p.air;
+  const bodyY = ground - 8 + p.crouch - p.bob - lift; // topo do corpo
+  const flat = p.flat;
+
+  // Pernas de trás: coxa dobrada e pé comprido; esticam no pulo
+  const hindX = cx - 4;
+  const foot = { x: hindX - 2 - p.legs, y: ground - 1 - lift + (p.legs > 0 ? 0 : 0) };
+  linePx(
+    ctx,
+    FROG_DARK,
+    hindX + 2,
+    bodyY + 4,
+    hindX - 1 - Math.floor(p.legs / 2),
+    bodyY + 6 + Math.floor(p.legs / 2),
+    2,
+  );
+  linePx(
+    ctx,
+    FROG_DARK,
+    hindX - 1 - Math.floor(p.legs / 2),
+    bodyY + 6 + Math.floor(p.legs / 2),
+    foot.x,
+    foot.y,
+    1,
+  );
+  fillPx(ctx, FROG_DARK, foot.x - 2, foot.y, 4, 1); // pé espalmado
+
+  // Corpo gordo: costas escuras e verdes, barriga clara
+  const h = Math.max(3, 7 - flat);
+  for (let r = 0; r < h; r++) {
+    const w = r === 0 ? 8 : r < h - 1 ? 12 : 10;
+    fillPx(ctx, r === 0 ? FROG_DARK : FROG, cx - Math.floor(w / 2), bodyY + r, w, 1);
+  }
+  fillPx(ctx, FROG_LIGHT, cx - 3, bodyY + 1, 5, 1);
+  fillPx(ctx, FROG_BELLY, cx - 3, bodyY + h - 1, 8, 1);
+  for (const [dx, dy] of [
+    [-4, 2],
+    [1, 1],
+    [3, 3],
+    [-1, 3],
+  ] as const) {
+    if (dy < h) fillPx(ctx, FROG_WART, cx + dx, bodyY + dy, 1, 1);
+  }
+
+  // Pata da frente
+  fillPx(ctx, FROG, cx + 3, bodyY + h - 1, 2, ground - (bodyY + h) - lift + 1);
+  fillPx(ctx, FROG_DARK, cx + 3, ground - 1 - lift, 4, 1);
+
+  // Cabeça, mais alta quando prepara o cuspe
+  const hx = cx + 4;
+  const hy = bodyY - 2 - p.headUp + Math.floor(flat / 2);
+  fillPx(ctx, FROG, hx, hy + 1, 6, 4);
+  fillPx(ctx, FROG_LIGHT, hx + 1, hy + 1, 3, 1);
+  // Olhos saltados no alto da cabeça
+  for (const ex of [hx + 1, hx + 4]) {
+    fillPx(ctx, FROG, ex - 1, hy - 1, 3, 3);
+    if (p.eyesClosed) fillPx(ctx, FROG_DARK, ex - 1, hy, 3, 1);
+    else {
+      fillPx(ctx, FROG_EYE, ex, hy - 1, 2, 2);
+      fillPx(ctx, OUTLINE, ex + 1, hy, 1, 1);
+    }
+  }
+  // Boca: linha escura, ou aberta cuspindo
+  if (p.mouth > 0) {
+    fillPx(ctx, OUTLINE, hx + 3, hy + 3, 4, p.mouth);
+    fillPx(ctx, FROG_BELLY, hx + 4, hy + 3 + p.mouth, 3, 1);
+    fillPx(ctx, 0xb8ffd0, hx + 6, hy + 3, 2, 1, 0.9); // gota de veneno saindo
+  } else {
+    fillPx(ctx, OUTLINE, hx + 2, hy + 4, 5, 1);
+  }
+  // Papada: incha com o veneno
+  if (p.sac > 0) {
+    const r = 1 + p.sac;
+    for (let dy = 0; dy < r; dy++) {
+      const w = Math.round(Math.sqrt(r * r - dy * dy) * 1.4);
+      fillPx(ctx, p.sac >= 3 ? 0xb8ffd0 : FROG_BELLY, hx + 2 - w + 2, hy + 5 + dy, w * 2, 1);
+    }
+    if (p.sac >= 2) fillPx(ctx, FROG_LIGHT, hx + 2, hy + 6, 2, 1, 0.8);
+  }
+}
+
 // --- Criação das texturas e animações ----------------------------------------------------
 
 function sheetCell(def: EnemyBody, sheet: EnemySheet<unknown>): { width: number; height: number } {
@@ -639,6 +803,8 @@ const SHEETS: readonly EnemySheet<unknown>[] = [
   CAO_SHEET,
   LOBO_SHEET,
   RAIZ_SHEET,
+  FATUO_SHEET,
+  SAPO_SHEET,
   GUARDIAO_SHEET,
 ];
 
@@ -658,6 +824,8 @@ export function enemyDrawers(): readonly EnemyDrawer[] {
     { sheet: CAO_SHEET, body: enemyDef('cao'), draw: drawHound },
     { sheet: LOBO_SHEET, body: enemyDef('lobo'), draw: drawWolf },
     { sheet: RAIZ_SHEET, body: enemyDef('raiz'), draw: drawRoot },
+    { sheet: FATUO_SHEET, body: enemyDef('fatuo'), draw: drawWisp },
+    { sheet: SAPO_SHEET, body: enemyDef('sapo'), draw: drawFrog },
     { sheet: GUARDIAO_SHEET, body: GUARDIAO, draw: drawGuardian },
   ] as unknown as readonly EnemyDrawer[];
 }

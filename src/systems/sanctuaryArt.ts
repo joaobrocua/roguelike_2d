@@ -1,9 +1,12 @@
 import type Phaser from 'phaser';
+import { ATMOSPHERE } from '../data/atmosphere';
+import { GAME_SIZE } from '../data/balance';
 import { BIOME_LOOK } from '../data/biomeLook';
 import type { BiomeId } from '../data/mapRules';
 import { PALETTE } from '../data/palette';
 import { SANCTUARY_DECOR as D, SANCTUARY_LOOK } from '../data/sanctuaryRoom';
-import { bayer, canvasTexture, line, mix, noise2 as hash, rect, type Ctx } from './pixelCanvas';
+import { canvasTexture, line, mix, noise2 as hash, rect, type Ctx } from './pixelCanvas';
+import { drawBackgroundLayer } from './biomeBackgrounds';
 import { drawColossus } from './colossusArt';
 
 /**
@@ -21,11 +24,18 @@ export const SANCTUARY_TEXTURE = {
   banner: (biome: BiomeId): string => `sanct-banner-${biome}`,
   brazier: (biome: BiomeId, frame: number): string => `sanct-brazier-${biome}-${frame}`,
   candle: (biome: BiomeId, frame: number): string => `sanct-candle-${biome}-${frame}`,
-  gate: (biome: BiomeId, dest: BiomeId): string => `sanct-gate-${biome}-${dest}`,
-  portal: (dest: BiomeId, frame: number): string => `sanct-portal-${dest}-${frame}`,
+  gate: (biome: BiomeId): string => `sanct-gate-${biome}`,
+  view: (dest: BiomeId): string => `sanct-view-${dest}`,
   shaft: 'sanct-shaft',
   runes: 'sanct-runes',
 } as const;
+
+/** O quanto a vista clareia na cor da luz da região (0 a 1), para ela se destacar da pedra escura. */
+const VIEW_LIFT = 0.1;
+/** Primeira linha (px) do fundo mostrada na vista e o contraste aplicado a ela. */
+const VIEW_TOP = 24;
+const VIEW_PIVOT = 100;
+const VIEW_CONTRAST = 1.5;
 
 /** Tamanhos das texturas (px). */
 export const BRAZIER_SIZE = { width: 32, height: 48 } as const;
@@ -184,7 +194,7 @@ const GATE = D.gate;
 const ARCH_CX = GATE.width / 2;
 const ARCH_CY = GATE.width / 2;
 
-/** O pixel (x, y) do quadro do portal está no vão do arco? */
+/** O pixel (x, y) do quadro da passagem está no vão do arco? */
 function inOpening(x: number, y: number): boolean {
   const { width, top, bottom } = GATE.opening;
   const r = width / 2;
@@ -201,23 +211,14 @@ function inArch(x: number, y: number): boolean {
   return dx * dx + (y + 0.5 - ARCH_CY) ** 2 < ARCH_CX * ARCH_CX;
 }
 
-/** Uma runa de 3 x 4 pixels (padrão sorteado, sempre com algum traço) na cor `color`. */
-function drawGlyph(ctx: Ctx, color: number, x: number, y: number, seed: number): void {
-  for (let gy = 0; gy < 4; gy++) {
-    for (let gx = 0; gx < 3; gx++) {
-      if (hash(seed * 7 + gx, seed * 13 + gy) > 0.45 || gx === 1)
-        rect(ctx, color, x + gx, y + gy, 1, 1, 0.9);
-    }
-  }
-}
-
 /**
- * O arco de pedra do portal: aduelas em volta, colunas com juntas, uma pedra-chave no alto com
- * runas da cor do destino e uma soleira. O vão fica transparente (a energia é outra imagem).
+ * O arco de pedra da passagem: aduelas em volta, colunas com juntas, uma pedra-chave lisa no alto,
+ * musgo, rachaduras e uma soleira gasta. O vão fica transparente (a vista da região do outro lado
+ * é outra imagem, desenhada por trás).
  */
-function drawGate(ctx: Ctx, biome: BiomeId, dest: BiomeId): void {
-  const stone = BIOME_LOOK[biome].stone;
-  const rune = BIOME_LOOK[dest].glow;
+function drawGate(ctx: Ctx, biome: BiomeId): void {
+  const look = BIOME_LOOK[biome];
+  const stone = look.stone;
   for (let y = 0; y < GATE.height; y++) {
     for (let x = 0; x < GATE.width; x++) {
       if (!inArch(x, y) || inOpening(x, y)) continue;
@@ -256,29 +257,50 @@ function drawGate(ctx: Ctx, biome: BiomeId, dest: BiomeId): void {
       }
     }
   }
-  // Pedra-chave com uma runa grande
+  // Pedra-chave lisa, com um friso gasto
   rect(ctx, stone.light, ARCH_CX - 6, 0, 12, 15);
   rect(ctx, stone.highlight, ARCH_CX - 6, 0, 12, 1);
   rect(ctx, stone.deep, ARCH_CX - 6, 14, 12, 1);
   rect(ctx, stone.deep, ARCH_CX - 7, 1, 1, 14);
   rect(ctx, stone.deep, ARCH_CX + 6, 1, 1, 14);
-  rect(ctx, rune, ARCH_CX - 1, 3, 2, 8);
-  rect(ctx, rune, ARCH_CX - 3, 5, 6, 2);
-  // Runas pelo arco e pelas colunas
-  [200, 225, 315, 340].forEach((deg, i) => {
-    const rad = (deg * Math.PI) / 180;
-    drawGlyph(
-      ctx,
-      rune,
-      Math.round(ARCH_CX + Math.cos(rad) * 28) - 1,
-      Math.round(ARCH_CY + Math.sin(rad) * 28) - 2,
-      i + 1,
-    );
-  });
-  [58, 78, 98].forEach((y, i) => {
-    drawGlyph(ctx, rune, 6, y, i + 10);
-    drawGlyph(ctx, rune, GATE.width - 9, y, i + 20);
-  });
+  rect(ctx, stone.dark, ARCH_CX - 3, 5, 6, 1);
+  rect(ctx, stone.dark, ARCH_CX - 3, 9, 6, 1);
+  // Musgo pelo arco e hera descendo pelas colunas, mais algumas rachaduras
+  for (let i = 0; i < 26; i++) {
+    const x = Math.floor(hash(i, 2) * (GATE.width - 6)) + 3;
+    const y = Math.floor(hash(i, 5) * (GATE.height - 24)) + 4;
+    if (inArch(x, y) && !inOpening(x, y)) {
+      rect(
+        ctx,
+        hash(x, y) > 0.5 ? look.moss : look.mossLight,
+        x,
+        y,
+        2 + Math.floor(hash(y, x) * 3),
+        1,
+      );
+    }
+  }
+  for (const x of [5, GATE.width - 7]) {
+    const len = 28 + Math.floor(hash(x, 4) * 20);
+    for (let j = 0; j < len; j++) {
+      rect(
+        ctx,
+        j % 5 === 0 ? look.mossLight : look.moss,
+        x + Math.round(Math.sin(j / 4 + x) * 1.2),
+        18 + j,
+        1,
+        1,
+      );
+    }
+  }
+  for (const [x, y] of [
+    [22, 30],
+    [51, 64],
+    [10, 84],
+  ] as const) {
+    rect(ctx, stone.deep, x, y, 1, 5);
+    rect(ctx, stone.deep, x + 1, y + 5, 1, 4);
+  }
   // Base reforçada e soleira
   rect(ctx, stone.dark, 0, GATE.height - 10, GATE.width, 10);
   rect(ctx, stone.base, 1, GATE.height - 9, GATE.width - 2, 7);
@@ -294,33 +316,91 @@ function drawGate(ctx: Ctx, biome: BiomeId, dest: BiomeId): void {
   );
 }
 
-/** Um quadro da energia dentro do arco: espirais da cor do destino que giram de um quadro ao outro. */
-function drawPortal(ctx: Ctx, dest: BiomeId, frame: number): void {
+/**
+ * A vista da região do outro lado do arco: o fundo do bioma de destino (céu, silhuetas e fundo
+ * médio) recortado no vão, com uma estrada de terra que some no horizonte e uma neblina baixa.
+ * Pintada com as mesmas funções dos fundos do jogo, então a floresta parece a floresta.
+ */
+function drawView(ctx: Ctx, dest: BiomeId): void {
   const look = BIOME_LOOK[dest];
-  const ramp = [
-    look.ambient,
-    mix(look.glowSoft, look.ambient, 0.55),
-    look.glowSoft,
-    mix(look.glow, 0xffffff, 0.35),
-  ];
-  const { width, top, bottom } = GATE.opening;
-  const halfW = width / 2;
-  const halfH = (bottom - top) / 2;
-  const cy = (top + bottom) / 2;
-  const phase = (frame / GATE.portalFrames) * Math.PI * 2;
+  const bgW = ATMOSPHERE.layerWidth;
+  const bgH = GAME_SIZE.height;
+  const scratch = document.createElement('canvas');
+  scratch.width = bgW;
+  scratch.height = bgH;
+  const sctx = scratch.getContext('2d');
+  if (!sctx) return;
+  drawBackgroundLayer(sctx, dest, 'far', bgW, bgH);
+  drawBackgroundLayer(sctx, dest, 'mid', bgW, bgH);
+  // O fundo encolhido pela metade (média de cada bloco 2x2, para as árvores finas não sumirem) para
+  // caber uma paisagem inteira no vão: céu, silhuetas e horizonte, e não só um pedaço de tronco
+  const { top, bottom } = GATE.opening;
+  const shrink = 2;
+  const source = sctx.getImageData(
+    Math.round(bgW / 2 - (GATE.width * shrink) / 2),
+    VIEW_TOP,
+    GATE.width * shrink,
+    GATE.height * shrink,
+  );
+  const horizon = top + Math.round((bottom - top) * 0.62);
+  const stride = GATE.width * shrink * 4;
   for (let y = top; y < bottom; y++) {
     for (let x = 0; x < GATE.width; x++) {
       if (!inOpening(x, y)) continue;
-      const u = (x + 0.5 - ARCH_CX) / halfW;
-      const w = (y + 0.5 - cy) / halfH;
-      const r = Math.min(1, Math.sqrt(u * u + w * w * 0.55));
-      const angle = Math.atan2(w, u);
-      const swirl = 0.5 + 0.5 * Math.sin(angle * 2 + r * 8 - phase);
-      const value = Math.min(1, swirl * 0.55 + (1 - r) * 0.55);
-      const level = value * (ramp.length - 1);
-      const index = Math.min(ramp.length - 2, Math.floor(level));
-      const color = level - index > bayer(x, y) ? ramp[index + 1] : ramp[index];
-      rect(ctx, color ?? look.glow, x, y, 1, 1);
+      const channels = [0, 0, 0];
+      for (let dy = 0; dy < shrink; dy++) {
+        for (let dx = 0; dx < shrink; dx++) {
+          const i = (y * shrink + dy) * stride + (x * shrink + dx) * 4;
+          for (let c = 0; c < 3; c++) channels[c] = (channels[c] ?? 0) + (source.data[i + c] ?? 0);
+        }
+      }
+      const n = shrink * shrink;
+      const [r = 0, g = 0, b = 0] = channels.map((v) => Math.round(v / n));
+      // Mais contraste (as silhuetas se separam do céu) e um toque da luz da região
+      const stretch = (v: number): number =>
+        Math.max(0, Math.min(255, Math.round((v - VIEW_PIVOT) * VIEW_CONTRAST + VIEW_PIVOT)));
+      const color = mix(
+        (stretch(r) << 16) | (stretch(g) << 8) | stretch(b),
+        look.glowSoft,
+        VIEW_LIFT,
+      );
+      rect(ctx, color, x, y, 1, 1);
+    }
+  }
+  // Estrada de terra em perspectiva: larga embaixo e fina no horizonte
+  const road = mix(look.stone.light, look.fog, 0.18);
+  for (let y = horizon; y < bottom; y++) {
+    const t = (y - horizon) / Math.max(1, bottom - horizon);
+    const half = Math.round(2 + t * 15);
+    for (let x = ARCH_CX - half; x < ARCH_CX + half; x++) {
+      if (!inOpening(x, y)) continue;
+      const edge = Math.abs(x + 0.5 - ARCH_CX) > half - 2;
+      rect(
+        ctx,
+        edge ? mix(road, look.stone.deep, 0.45) : mix(road, 0x000000, (1 - t) * 0.35),
+        x,
+        y,
+        1,
+        1,
+      );
+    }
+  }
+  // Névoa baixa no horizonte, que também suaviza o recorte
+  for (let y = horizon - 8; y < horizon + 6; y++) {
+    const fade = 0.4 - Math.abs(y - horizon) * 0.04;
+    for (let x = 0; x < GATE.width; x++) {
+      if (inOpening(x, y)) rect(ctx, look.fog, x, y, 1, 1, Math.max(0, fade));
+    }
+  }
+  // Sombra do arco por cima: o vão escurece nas bordas, como quem olha de dentro de uma sala
+  for (let y = top; y < bottom; y++) {
+    for (let x = 0; x < GATE.width; x++) {
+      if (!inOpening(x, y)) continue;
+      const edge = Math.min(
+        x - (ARCH_CX - GATE.opening.width / 2),
+        ARCH_CX + GATE.opening.width / 2 - 1 - x,
+      );
+      if (edge < 3 || y - top < 3) rect(ctx, 0x000000, x, y, 1, 1, 0.28 - Math.max(0, edge) * 0.07);
     }
   }
 }
@@ -382,16 +462,14 @@ function drawRunes(ctx: Ctx): void {
   }
 }
 
-/** Cria (uma vez) o arco e a energia do portal para o bioma de destino. */
+/** Cria (uma vez) o arco de pedra e a vista da região de destino que se enxerga por ele. */
 export function ensureGateTextures(scene: Phaser.Scene, biome: BiomeId, dest: BiomeId): void {
-  canvasTexture(scene, SANCTUARY_TEXTURE.gate(biome, dest), GATE.width, GATE.height, (ctx) =>
-    drawGate(ctx, biome, dest),
+  canvasTexture(scene, SANCTUARY_TEXTURE.gate(biome), GATE.width, GATE.height, (ctx) =>
+    drawGate(ctx, biome),
   );
-  for (let frame = 0; frame < GATE.portalFrames; frame++) {
-    canvasTexture(scene, SANCTUARY_TEXTURE.portal(dest, frame), GATE.width, GATE.height, (ctx) =>
-      drawPortal(ctx, dest, frame),
-    );
-  }
+  canvasTexture(scene, SANCTUARY_TEXTURE.view(dest), GATE.width, GATE.height, (ctx) =>
+    drawView(ctx, dest),
+  );
 }
 
 /** Cria (uma vez) todas as texturas do santuário de um bioma. */

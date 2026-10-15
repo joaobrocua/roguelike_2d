@@ -3,8 +3,11 @@ import {
   CAO_DE_OSSOS,
   ENEMY_BODIES,
   ENEMY_MARKERS,
+  FOGO_FATUO,
   LOBO_ESPECTRAL,
   RAIZ_EMBOSCADORA,
+  SAPO_PECONHENTO,
+  VULTO,
 } from '../src/data/enemies';
 import { SOUL_REWARD } from '../src/data/meta';
 
@@ -34,5 +37,29 @@ describe('inimigos da floresta (dados)', () => {
     const reach = RAIZ_EMBOSCADORA.width / 2 + RAIZ_EMBOSCADORA.attack.hitbox.width;
     expect(reach).toBeGreaterThanOrEqual(ai.attackRangeX - 10);
     expect(RAIZ_EMBOSCADORA.knockbackScale).toBeLessThan(1);
+  });
+
+  it('o cuspe do sapo cai na faixa em que ele quer ficar (e dá tempo de ver a gota)', () => {
+    const { spit, ai } = SAPO_PECONHENTO;
+    // Alcance do arco até o nível do chão, uns 10 px abaixo de onde sai (resolve a parábola)
+    const drop = 10;
+    const a = spit.gravityY / 2;
+    const t = (-spit.speedY + Math.sqrt(spit.speedY ** 2 + 4 * a * drop)) / (2 * a);
+    const range = spit.speed * t;
+    expect(range).toBeGreaterThanOrEqual(ai.minDistanceX);
+    expect(range).toBeLessThanOrEqual(ai.maxDistanceX + 20);
+    expect(spit.lifeMs / 1000).toBeGreaterThan(t);
+    expect(ai.minDistanceX).toBeLessThan(ai.maxDistanceX);
+    expect(ai.sightRangeX).toBeGreaterThanOrEqual(ai.maxDistanceX);
+    expect(SAPO_PECONHENTO.attack.windupMs).toBeGreaterThanOrEqual(500); // dá tempo de reagir
+    expect(spit.width).toBe(6); // a textura do cuspe é 6 x 6
+    expect(spit.height).toBe(6);
+  });
+
+  it('o fogo-fátuo é uma versão mais fraca e luminosa do vulto', () => {
+    expect(FOGO_FATUO.maxHp).toBeLessThan(VULTO.maxHp);
+    expect(FOGO_FATUO.attack.windupMs).toBeGreaterThanOrEqual(400);
+    expect(FOGO_FATUO.light.radius).toBeGreaterThan(0);
+    expect(FOGO_FATUO.light.strength).toBeLessThanOrEqual(1);
   });
 });

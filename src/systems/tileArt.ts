@@ -178,7 +178,14 @@ export function createTileTextures(scene: Phaser.Scene): void {
         for (let edges = 0; edges < 8; edges++) {
           const key = tileTextureKey(biome, { kind, variant, edges });
           canvasTexture(scene, key, TILE_SIZE, TILE_SIZE, (ctx) =>
-            drawTile(ctx, look, kind, edges, 100 + variant * 7 + edges * 31, biome === 'floresta'),
+            drawTile(
+              ctx,
+              look,
+              kind,
+              edges,
+              100 + variant * 7 + edges * 31,
+              biome === 'floresta' || biome === 'pantano',
+            ),
           );
         }
       }

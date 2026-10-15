@@ -7,9 +7,11 @@ import {
   CARNICAL_SHEET,
   ENEMY_DEATH_FADE,
   ENEMY_WARN_FLICKER,
+  FATUO_SHEET,
   GUARDIAO_SHEET,
   LOBO_SHEET,
   RAIZ_SHEET,
+  SAPO_SHEET,
   VULTO_SHEET,
   type EnemySheet,
 } from '../src/data/enemySprites';
@@ -22,6 +24,8 @@ const SHEETS: readonly EnemySheet<unknown>[] = [
   CAO_SHEET,
   LOBO_SHEET,
   RAIZ_SHEET,
+  FATUO_SHEET,
+  SAPO_SHEET,
   GUARDIAO_SHEET,
 ];
 

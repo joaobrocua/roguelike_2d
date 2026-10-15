@@ -115,6 +115,8 @@ Cada inimigo tem uma IA por **máquina de estados** pura (`src/logic/ai`), que s
 | Cão de Ossos                | Rápido, dá botes; em bando, os ataques são escalonados                                                                                       |
 | Lobo Espectral (Floresta)   | O cão da floresta: mais rápido e mais forte; corre no mesmo bando dos cães                                                                   |
 | Raiz Emboscadora (Floresta) | Estacionária: dorme como um monte de raízes (não pode ser acertada), acorda quando o herói chega perto, chicoteia de longe e afunda de volta |
+| Sapo Peçonhento (Pântano)   | Pula para manter a distância e cospe veneno em arco depois de inchar a papada (a telegrafia)                                                 |
+| Fogo-Fátuo (Pântano)        | Chama azulada que paira sobre o charco e mergulha depois de esquentar; ilumina a sala em volta                                               |
 
 Os inimigos e o chefe são **pixel art desenhada em código**, quadro a quadro, como o herói: cada um tem a sua silhueta (o Carniçal encurvado de trapos vermelhos, o Arqueiro Oco encapuzado com arco de osso, o Vulto de fiapos roxos, o Cão de Ossos de costelas à mostra, o Guardião de armadura rachada) e animações de parado, andando, preparando o golpe, golpeando, recuperando, ferido e morrendo. As poses ficam em `src/data/enemySprites.ts`, o desenho em `src/systems/enemySprites.ts` e a escolha da animação em `src/logic/enemyAnim.ts`. Ao morrer, o corpo cai, fica um instante no chão e some.
 
@@ -122,12 +124,12 @@ Flechas também podem ser esquivadas com a esquiva perfeita. Inimigos derrotados
 
 ## A fortaleza (etapa 5)
 
-Uma run atravessa **4 áreas** do reino em ruínas, cada uma um mapa interligado de salas gerado por semente. O herói não entra direto no castelo: começa pela **Floresta Apodrecida** (ao ar livre), chega às **Muralhas e Pátio** (a entrada do castelo), atravessa os **Salões e Capela** e termina nas **Catacumbas e Masmorra**, com o chefe. Cada mapa tem sala inicial, salas de combate, uma fogueira de descanso, um baú e uma **porta de saída** para o bioma seguinte; o último termina na arena do chefe.
+Uma run atravessa **4 áreas** do reino em ruínas, cada uma um mapa interligado de salas gerado por semente. O herói não entra direto no castelo: começa por uma área ao ar livre, escolhida em uma passagem do santuário (a **Floresta Apodrecida** ou o **Pântano dos Afogados**), chega às **Muralhas e Pátio** (a entrada do castelo), atravessa os **Salões e Capela** e termina nas **Catacumbas e Masmorra**, com o chefe. Cada mapa tem sala inicial, salas de combate, uma fogueira de descanso, um baú e uma **porta de saída** para o bioma seguinte; o último termina na arena do chefe.
 
 - **Salas:** desenhos em texto (`src/data/templates`), em células de 30x17 blocos, com portas nas quatro direções. Antes de entrar no jogo, todo desenho é validado: as portas se alcançam com os pulos do herói e nada fica fora de alcance (`src/logic/map`).
 - **Geração:** `generateBiomeMap` monta o grafo de salas numa grade, com ligações extras para criar voltas, e sorteia os desenhos pela semente. A mesma semente dá a mesma run.
 - **Viagem:** as portas abertas levam à sala vizinha; as sem ligação são fechadas por parede. O minimapa (canto da tela) mostra as salas visitadas e as vizinhas; as salas secretas (liberadas na árvore com _Passagens_) só aparecem depois de visitadas.
-- **Jornada em etapas:** a run segue o plano `RUN_PLAN` (`src/data/mapRules.ts`): uma lista de etapas, cada uma com as áreas que o jogador pode escolher ao chegar nela. Com uma área só, o santuário tem um portal; com duas, tem dois (um de cada lado da sala, cada um com a cor e o nome da área de destino) e o herói escolhe o caminho. Uma área não se repete na mesma run. Hoje cada etapa tem uma área só (as áreas de fora que virão darão a escolha entre dois portais); acrescentar áreas e caminhos é preencher dados (os testes conferem que a etapa final só oferece áreas com sala de chefe e as outras, com sala de saída).
+- **Jornada em etapas:** a run segue o plano `RUN_PLAN` (`src/data/mapRules.ts`): uma lista de etapas, cada uma com as áreas que o jogador pode escolher ao chegar nela. Com uma área só, o santuário tem uma passagem; com duas, tem duas (um de cada lado da sala, cada um com a cor e o nome da área de destino) e o herói escolhe o caminho. Uma área não se repete na mesma run. Hoje só a primeira etapa oferece duas áreas (Floresta ou Pântano); acrescentar áreas e caminhos é preencher dados (os testes conferem que a etapa final só oferece áreas com sala de chefe e as outras, com sala de saída).
 - **Fogueira:** cura tudo uma vez. **Baú:** solta uma relíquia. **Porta de saída:** abre o próximo bioma.
 - **Guardião Partido:** o chefe também **pula**: salta o obstáculo que o barra, sobe com um pulo alto até quem está num balcão e dá um salto comprido quando você está longe (poeira e tremor ao pousar; valores em `src/data/boss.ts`). Ele tem três ataques (pancada, investida e tremor) e entra numa fase 2 mais agressiva com metade da vida. Ao cair, solta uma relíquia e a tela de vitória aparece. Dados em `src/data/boss.ts`, IA em `src/logic/ai/boss.ts`.
 - Cada bioma tem a sua escuridão e névoa (`BIOME_DARKNESS`).
@@ -136,12 +138,13 @@ Uma run atravessa **4 áreas** do reino em ruínas, cada uma um mapa interligado
 
 Cada área é dividida em **alas**, com ambientes e mobília próprios (`src/data/wings.ts`):
 
-| Área       | Alas                                                                                                                          |
-| ---------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| Muralhas   | Pátio de Armas (barris, caixotes, bonecos de treino, armas), Celeiros e Estábulos (carroças, barris)                          |
-| Salões     | Salão do Trono (mesas, cadeiras, lustres, tapeçarias), Biblioteca (estantes, livros), Capela (bancos, altar, candelabros)     |
-| Catacumbas | Ossuário (caveiras, caixões), Masmorra (celas, gaiolas), Cripta Real (sarcófagos, altar, urnas)                               |
-| Floresta   | Bosque Morto (troncos caídos, tocos, cogumelos, fogueira abandonada), Túnel de Raízes (raízes penduradas, casulos, lanternas) |
+| Área       | Alas                                                                                                                              |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Muralhas   | Pátio de Armas (barris, caixotes, bonecos de treino, armas), Celeiros e Estábulos (carroças, barris)                              |
+| Salões     | Salão do Trono (mesas, cadeiras, lustres, tapeçarias), Biblioteca (estantes, livros), Capela (bancos, altar, candelabros)         |
+| Catacumbas | Ossuário (caveiras, caixões), Masmorra (celas, gaiolas), Cripta Real (sarcófagos, altar, urnas)                                   |
+| Floresta   | Bosque Morto (troncos caídos, tocos, cogumelos, fogueira abandonada), Túnel de Raízes (raízes penduradas, casulos, lanternas)     |
+| Pântano    | Charco dos Afogados (juncos, estacas, barcos virados, cogumelos), Vila de Palafitas (barris, caixotes, redes de pesca, lanternas) |
 
 - **Como as alas se distribuem:** as salas do mapa ficam em faixas da esquerda para a direita (`src/logic/wings.ts`), então atravessar a área é atravessar ambientes diferentes; a ordem das alas muda a cada run, e o nome da ala aparece ao entrar nela.
 - **Mobília:** `src/logic/furniture.ts` escolhe, de forma determinística por sala, onde cada peça cabe (no chão, sobre um apoio e com espaço livre acima; ou pendurada no teto), sem tapar portas, inimigos, objetos nem o ponto de nascimento, e sem uma peça por cima da outra. A decoração miúda (tufos, ossos, teias) desvia da mobília. O desenho é pixel art de código (`src/systems/furnitureArt.ts`) com as cores de cada área, e as peças com chama (velas, candelabros, lustres) iluminam a sala.
@@ -155,7 +158,7 @@ Cada run rende **almas**, e o **Santuário** — uma sala própria, toda voltada
 - **Árvore:** _Vigor_ e _Força_ (atributos, com teto de +50% de vida e +25% de dano); _Retenção_, _Sorte_, _Colheita_ e _Reflexo_ (agência, até +30 ms na esquiva perfeita); _Arsenal I e II_ (liberam as 5 armas novas), _Passagens_ (uma sala secreta por bioma) e _Mestre_ (escolher a relíquia inicial). Os pré-requisitos são respeitados e o custo do nível _n_ é `custoBase × multiplicador^(n−1)`, com multiplicador entre 1,15 e 1,35. Tudo em `src/data/meta.ts`.
 - **Jogo base vencível sem upgrades:** com o save zerado os efeitos são neutros (4 armas originais, nenhuma sala secreta, nenhum bônus), e os tetos garantem que a árvore nunca passa de 1,5x a 2x dos atributos iniciais (há testes para isso).
 - **Save:** `localStorage` do navegador, versionado e validado ao carregar (save corrompido ou editado nunca derruba o jogo; níveis acima do máximo, nós desconhecidos e pré-requisitos faltando são corrigidos). A gravação é em etapas, com cópia de segurança, para uma queda no meio não corromper o progresso. Se o navegador não permitir `localStorage`, o jogo continua com o progresso só daquela sessão. Lógica em `src/logic/meta`.
-- **Controles do Santuário:** **E** (ou RT) diante do altar abre a janela de melhorias, que também guarda as almas carregadas. A sala veste o bioma (pedra, fundo, luz e a cor do fogo, dos estandartes e das runas), tem o anjo colossal sob um feixe de luz, colunas, braseiros e velas, e um portal gigante à direita, com a energia da cor do bioma de destino, leva adiante. Dentro dela, setas ou WASD escolhem, **J** compra e **E** ou Esc fecha. As melhorias valem na hora, mas _Passagens_ e a relíquia inicial só mudam a próxima run.
+- **Controles do Santuário:** **E** (ou RT) diante do altar abre a janela de melhorias, que também guarda as almas carregadas. A sala veste o bioma (pedra, fundo, luz e a cor do fogo, dos estandartes e das runas), tem o anjo colossal sob um feixe de luz, colunas, braseiros e velas, e uma passagem em arco de pedra à direita, aberta para a paisagem da região de destino e com uma placa de madeira com o nome do lugar, que leva adiante. Na janela de melhorias, setas ou WASD escolhem, **J** compra e **E** ou Esc fecha. As melhorias valem na hora, mas _Passagens_ e a relíquia inicial só mudam a próxima run.
 
 ## Título, pausa e opções (etapa 7)
 
@@ -167,7 +170,7 @@ Cada run rende **almas**, e o **Santuário** — uma sala própria, toda voltada
 
 Todo o som é **sintetizado por WebAudio**, sem nenhum arquivo de áudio.
 
-- **Efeitos:** cada som é uma _receita_ em `src/data/audio.ts` (osciladores que deslizam de uma frequência a outra e ruído filtrado, com envelope), tocada por `src/systems/AudioSystem.ts`: golpes, impactos, dano, rolagem, esquiva perfeita, pulo e pouso, almas, cura, relíquias, baú, fogueira, altar, portal, chefe, interface, morte e vitória. Um intervalo mínimo por som evita estourar com golpes em série.
+- **Efeitos:** cada som é uma _receita_ em `src/data/audio.ts` (osciladores que deslizam de uma frequência a outra e ruído filtrado, com envelope), tocada por `src/systems/AudioSystem.ts`: golpes, impactos, dano, rolagem, esquiva perfeita, pulo e pouso, almas, cura, relíquias, baú, fogueira, altar, passagem, chefe, interface, morte e vitória. Um intervalo mínimo por som evita estourar com golpes em série.
 - **Trilha:** gerada compasso a compasso (`src/logic/audio/music.ts`, lógica pura e determinística, com testes): acordes lentos, baixo e uma melodia esparsa com eco. Cada bioma tem a sua escala e andamento (menor natural, menor harmônico, frígio), e há trilhas próprias para o título, o santuário e o chefe. Ao mudar de sala a trilha só troca se for outra.
 - **Volume:** música, efeitos e liga/mudo nas opções e na pausa; **M** liga e desliga o som em qualquer tela. As escolhas ficam salvas no navegador (`src/logic/audio/settings.ts`, validadas ao carregar).
 - O navegador só libera áudio depois de um clique ou tecla, então o som começa no primeiro aperto de botão; a aba escondida suspende o áudio.

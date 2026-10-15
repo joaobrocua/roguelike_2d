@@ -539,6 +539,79 @@ export const RAIZ_SHEET: EnemySheet<RootPose> = {
   },
 };
 
+// --- Fogo-Fátuo --------------------------------------------------------------------------
+
+/** O fogo-fátuo usa as mesmas poses do vulto (flutuar, esquentar, mergulhar); só o desenho muda. */
+export const FATUO_SHEET: EnemySheet<WraithPose> = {
+  ...VULTO_SHEET,
+  id: 'fatuo',
+  pad: { x: 8, y: 10 },
+};
+
+// --- Sapo Peçonhento ---------------------------------------------------------------------
+
+export interface FrogPose {
+  bob: number;
+  /** O corpo abaixa (agachado para pular ou pousando), em px. */
+  crouch: number;
+  /** Corpo todo no ar (px acima do chão): o pulo. */
+  air: number;
+  /** Quanto as pernas de trás se esticam (0 = dobradas). */
+  legs: number;
+  /** A cabeça sobe (px), preparando o cuspe ou cuspindo. */
+  headUp: number;
+  /** Tamanho da papada: 0 = normal, 3 = cheia de veneno. */
+  sac: number;
+  /** Boca aberta (px). */
+  mouth: number;
+  /** Olhos fechados (ferido). */
+  eyesClosed: boolean;
+  /** Corpo achatado (a morte): 0 = inteiro. */
+  flat: number;
+}
+
+const FROG_BASE: FrogPose = {
+  bob: 0,
+  crouch: 0,
+  air: 0,
+  legs: 0,
+  headUp: 0,
+  sac: 0,
+  mouth: 0,
+  eyesClosed: false,
+  flat: 0,
+};
+
+const frog = (o: Partial<FrogPose>): FrogPose => ({ ...FROG_BASE, ...o });
+
+export const SAPO_SHEET: EnemySheet<FrogPose> = {
+  id: 'sapo',
+  pad: { x: 8, y: 6 },
+  frames: [
+    { name: 'idle0', pose: frog({}) },
+    { name: 'idle1', pose: frog({ sac: 1, bob: 1 }) },
+    { name: 'land', pose: frog({ crouch: 2, legs: 0, sac: 1 }) },
+    { name: 'air', pose: frog({ air: 4, legs: 4, headUp: 1 }) },
+    { name: 'windup0', pose: frog({ sac: 2, headUp: 1, crouch: 1 }) },
+    { name: 'windup1', pose: frog({ sac: 3, headUp: 2, crouch: 1, bob: -1 }) },
+    { name: 'strike', pose: frog({ mouth: 3, headUp: 3, sac: 0, crouch: 1 }) },
+    { name: 'recover', pose: frog({ sac: 1, crouch: 1, headUp: 1 }) },
+    { name: 'hurt', pose: frog({ eyesClosed: true, crouch: 2, bob: -1, mouth: 1 }) },
+    { name: 'dead0', pose: frog({ eyesClosed: true, flat: 2, crouch: 4 }) },
+    { name: 'dead1', pose: frog({ eyesClosed: true, flat: 3, crouch: 5 }) },
+  ],
+  animations: {
+    idle: { frames: ['idle0', 'idle1'], fps: 2, loop: true },
+    walk: { frames: ['land'], fps: 1, loop: true },
+    jump: { frames: ['air'], fps: 1, loop: false },
+    windup: { frames: ['windup0', 'windup1'], fps: 8, loop: false },
+    strike: { frames: ['strike'], fps: 1, loop: false },
+    recover: { frames: ['recover'], fps: 1, loop: false },
+    hurt: { frames: ['hurt'], fps: 1, loop: false },
+    dead: { frames: ['dead0', 'dead1'], fps: 6, loop: false },
+  },
+};
+
 // --- Guardião Partido (chefe) ------------------------------------------------------------
 
 export interface GuardianPose {
