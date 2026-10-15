@@ -1,5 +1,6 @@
 import type { RoomTemplate } from '../logic/map/types';
 import { CATACUMBAS_TEMPLATES } from './templates/catacumbas';
+import { FLORESTA_TEMPLATES } from './templates/floresta';
 import { MURALHAS_TEMPLATES } from './templates/muralhas';
 import { SALOES_TEMPLATES } from './templates/saloes';
 
@@ -11,4 +12,5 @@ export const ROOM_TEMPLATES: readonly RoomTemplate[] = [
   ...MURALHAS_TEMPLATES,
   ...SALOES_TEMPLATES,
   ...CATACUMBAS_TEMPLATES,
+  ...FLORESTA_TEMPLATES,
 ];

@@ -121,4 +121,32 @@ export const BIOME_LOOK: Readonly<Record<BiomeId, BiomeLook>> = {
     shaft: 0x7fffd0,
     shaftAlpha: 0.06,
   },
+  // Floresta apodrecida: terra e raízes, névoa amarelada e vaga-lumes (olivas e âmbar)
+  floresta: {
+    stone: {
+      deep: 0x14110a,
+      dark: 0x241d12,
+      base: 0x3b3220,
+      light: 0x574a2e,
+      highlight: 0x857442,
+    },
+    back: {
+      deep: 0x0a0805,
+      dark: 0x120e08,
+      base: 0x1b160c,
+      light: 0x2a2214,
+      highlight: 0x3c321c,
+    },
+    skyTop: 0x0a0906,
+    skyMid: 0x241f10,
+    skyLow: 0x4e4220,
+    moss: 0x5f7a2a,
+    mossLight: 0xa3c04a,
+    ambient: 0x070803,
+    fog: 0x8a8a50,
+    glow: 0xf0cf62,
+    glowSoft: 0xb08a2e,
+    shaft: 0xe8d88a,
+    shaftAlpha: 0.08,
+  },
 };

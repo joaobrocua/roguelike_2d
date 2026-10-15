@@ -5,7 +5,7 @@ import type { BiomeId } from '../data/mapRules';
 import { ALL_BIOMES } from '../data/mapRules';
 import { TILE_SIZE } from '../data/rooms';
 import { TILE_EDGE, type TileLook } from '../logic/tileVariant';
-import { createRng, randomInt } from '../utils/rng';
+import { createRng, randomInt, type Rng } from '../utils/rng';
 import { canvasTexture, mix, rect, type Ctx } from './pixelCanvas';
 
 /**
@@ -22,17 +22,58 @@ export function tileTextureKey(biome: BiomeId, look: TileLook): string {
 
 const HALF = TILE_SIZE / 2;
 
+/**
+ * Corpo do bloco de terra da floresta: manchas de terra de dois tons, pedrinhas e raízes
+ * serpenteando em vez de tijolos e argamassa.
+ */
+function drawEarthBody(ctx: Ctx, look: BiomeLook, kind: 'top' | 'fill', rng: Rng): void {
+  const s = look.stone;
+  const base = kind === 'top' ? s.base : mix(s.base, s.dark, 0.5);
+  rect(ctx, base, 0, 0, TILE_SIZE, TILE_SIZE);
+  // Torrões: manchas mais claras e mais escuras espalhadas
+  for (let i = 0; i < 9; i++) {
+    const x = randomInt(rng, 0, 12);
+    const y = randomInt(rng, 0, 12);
+    const w = randomInt(rng, 3, 6);
+    const h = randomInt(rng, 2, 4);
+    rect(ctx, rng() < 0.5 ? mix(base, s.light, 0.35) : mix(base, s.dark, 0.55), x, y, w, h, 0.8);
+  }
+  // Pedrinhas com luz em cima
+  for (let i = 0; i < 3; i++) {
+    const x = randomInt(rng, 1, 13);
+    const y = randomInt(rng, 3, 13);
+    rect(ctx, mix(s.light, s.highlight, 0.4), x, y, 2, 1);
+    rect(ctx, s.deep, x, y + 1, 2, 1, 0.6);
+  }
+  // Raízes: uma veia escura com luz do lado, cruzando o bloco
+  let ry = randomInt(rng, 4, 11);
+  for (let x = 0; x < TILE_SIZE; x++) {
+    if (rng() < 0.28) ry = Math.min(14, Math.max(2, ry + (rng() < 0.5 ? -1 : 1)));
+    rect(ctx, s.deep, x, ry, 1, 2, 0.85);
+    rect(ctx, mix(s.light, base, 0.4), x, ry - 1, 1, 1, 0.55);
+  }
+}
+
 function drawTile(
   ctx: Ctx,
   look: BiomeLook,
   kind: 'top' | 'fill',
   edges: number,
   seed: number,
+  earth = false,
 ): void {
   const rng = createRng(seed);
   const s = look.stone;
   const base = kind === 'top' ? s.base : mix(s.base, s.dark, 0.5);
   const mortar = kind === 'top' ? s.deep : mix(s.deep, 0x000000, 0.25);
+  if (earth) drawEarthBody(ctx, look, kind, rng);
+  else drawBrickBody(ctx, look, rng, base, mortar);
+  drawTileFinish(ctx, look, kind, edges, rng, earth);
+}
+
+/** Corpo de pedra: duas fiadas de tijolos deslocadas, juntas, lascas e trincas. */
+function drawBrickBody(ctx: Ctx, look: BiomeLook, rng: Rng, base: number, mortar: number): void {
+  const s = look.stone;
   rect(ctx, base, 0, 0, TILE_SIZE, TILE_SIZE);
 
   // Duas fiadas de tijolos deslocadas, cada tijolo com o seu tom
@@ -70,8 +111,27 @@ function drawTile(
     rect(ctx, mortar, cx + 1, cy + 3, 1, 2, 0.85);
     rect(ctx, mortar, cx, cy + 5, 1, 2, 0.7);
   }
+}
 
-  if (kind === 'top') {
+/** Acabamento comum: superfície onde se pisa, sombras internas e lados ao ar livre. */
+function drawTileFinish(
+  ctx: Ctx,
+  look: BiomeLook,
+  kind: 'top' | 'fill',
+  edges: number,
+  rng: Rng,
+  earth: boolean,
+): void {
+  const s = look.stone;
+  if (kind === 'top' && earth) {
+    // Terra com um tapete de musgo em cima, que escorre em franjas irregulares
+    rect(ctx, look.moss, 0, 0, TILE_SIZE, 3);
+    rect(ctx, look.mossLight, 0, 0, TILE_SIZE, 1, 0.9);
+    for (let x = 0; x < TILE_SIZE; x++) {
+      rect(ctx, rng() < 0.5 ? look.moss : s.deep, x, 3, 1, randomInt(rng, 0, 3), 0.9);
+    }
+    for (let i = 0; i < 2; i++) rect(ctx, look.mossLight, randomInt(rng, 0, 13), 1, 2, 1, 0.8);
+  } else if (kind === 'top') {
     // Superfície onde se pisa: pedra clara no alto e musgo escorrendo
     rect(ctx, s.highlight, 0, 0, TILE_SIZE, 1);
     rect(ctx, s.light, 0, 1, TILE_SIZE, 2);
@@ -118,7 +178,7 @@ export function createTileTextures(scene: Phaser.Scene): void {
         for (let edges = 0; edges < 8; edges++) {
           const key = tileTextureKey(biome, { kind, variant, edges });
           canvasTexture(scene, key, TILE_SIZE, TILE_SIZE, (ctx) =>
-            drawTile(ctx, look, kind, edges, 100 + variant * 7 + edges * 31),
+            drawTile(ctx, look, kind, edges, 100 + variant * 7 + edges * 31, biome === 'floresta'),
           );
         }
       }

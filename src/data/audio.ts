@@ -293,6 +293,7 @@ const HARMONIC = [0, 2, 3, 5, 7, 8, 11] as const;
 const PHRYGIAN = [0, 1, 3, 5, 7, 8, 10] as const;
 const PHRYGIAN_DOMINANT = [0, 1, 4, 5, 7, 8, 10] as const;
 const PENTATONIC = [0, 2, 4, 7, 9] as const;
+const DORIAN = [0, 2, 3, 5, 7, 9, 10] as const;
 
 export const MUSIC_TRACKS = {
   // Título e Muralhas: menor natural, lento, vento e sinos distantes
@@ -395,6 +396,23 @@ export const MUSIC_TRACKS = {
     leadOctave: 1,
     bassOctave: -1,
     seed: 61,
+  },
+  // Floresta: dórico, lento e aberto, com sinos de vento
+  floresta: {
+    rootMidi: 47,
+    scale: DORIAN,
+    bpm: 56,
+    beatsPerBar: 4,
+    progression: [
+      [0, 2, 4],
+      [3, 5, 0],
+      [4, 6, 1],
+      [2, 4, 6],
+    ],
+    leadDensity: 0.22,
+    leadOctave: 1,
+    bassOctave: -1,
+    seed: 71,
   },
 } as const satisfies Record<string, MusicTrackStyle>;
 

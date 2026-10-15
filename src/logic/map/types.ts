@@ -73,6 +73,7 @@ export function oppositeSide(side: Side): Side {
  * Modelo de sala: o desenho em texto. Caracteres:
  *   '#' bloco   '.' vazio   'P' ponto de nascimento (só na sala 'start')
  *   'C' Carniçal  'A' Arqueiro Oco  'V' Vulto  'D' Cão de Ossos   'T' tocha de parede
+ *   'L' Lobo Espectral  'R' Raiz Emboscadora (ela dorme como um monte de raízes até o herói chegar perto)
  *   'B' baú (só 'chest')   'F' fogueira de descanso (só 'rest')
  *   'X' porta para o próximo bioma (só 'exit')   'G' o chefe (só 'boss')
  * As dimensões são múltiplos da célula (src/data/mapRules.ts): largura 30 ou 60, altura 17.

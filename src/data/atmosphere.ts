@@ -66,4 +66,9 @@ export const ATMOSPHERE = {
 export const TILE_VARIANTS = 3;
 
 /** Escuridão de cada bioma (opacidade da camada escura): do entardecer ao fundo da masmorra. */
-export const BIOME_DARKNESS = { muralhas: 0.36, saloes: 0.46, catacumbas: 0.6 } as const;
+export const BIOME_DARKNESS = {
+  muralhas: 0.36,
+  saloes: 0.46,
+  catacumbas: 0.6,
+  floresta: 0.5,
+} as const;

@@ -43,6 +43,9 @@ interface Pen {
   bone: number;
   boneShade: number;
   moss: number;
+  mossLight: number;
+  glow: number;
+  glowSoft: number;
 }
 
 const BOOK_COLORS = [0x7a2a35, 0x2f5f7a, 0x3d6b3a, 0x8a6a2a, 0x5a3a7a, 0x6e6e78] as const;
@@ -68,6 +71,9 @@ function makePen(ctx: Ctx, biome: BiomeId, kind: FurnitureKind, variant: number)
     bone: 0xc4c0aa,
     boneShade: 0x8d8a78,
     moss: look.moss,
+    mossLight: look.mossLight,
+    glow: look.glow,
+    glowSoft: look.glowSoft,
   };
 }
 
@@ -523,6 +529,162 @@ function drawCage(p: Pen): void {
   }
 }
 
+function drawLog(p: Pen): void {
+  const { ctx, w, h } = p;
+  const hollow = p.variant === 0;
+  for (let y = 3; y < h; y++) {
+    const edge = y < 5 || y > h - 3 ? 3 : 0;
+    rect(ctx, p.wood.base, 4 + edge, y, w - 6 - edge, 1);
+  }
+  for (let x = 8; x < w - 4; x += 5) rect(ctx, p.wood.dark, x, 4, 1, h - 6); // sulcos
+  rect(ctx, p.wood.light, 6, 3, w - 10, 1);
+  // ponta cortada, com anéis
+  disc(ctx, p.wood.light, 6, 9, 5);
+  disc(ctx, p.wood.base, 6, 9, 3);
+  disc(ctx, hollow ? p.wood.dark : p.wood.light, 6, 9, 1);
+  rect(ctx, p.mossLight, 16, 2, 14, 2); // musgo por cima
+  rect(ctx, p.moss, 20, 3, 18, 1);
+  if (!hollow) {
+    rect(ctx, p.bone, w - 12, 0, 1, 3); // cogumelinhos
+    rect(ctx, p.glow, w - 14, 0, 5, 2);
+  } else {
+    rect(ctx, p.wood.dark, w - 7, 5, 4, 9); // galho quebrado
+  }
+}
+
+function drawStump(p: Pen): void {
+  const { ctx, w, h } = p;
+  for (let y = 4; y < h; y++) {
+    const flare = y > h - 4 ? y - (h - 4) : 0;
+    rect(ctx, p.wood.base, 3 - flare, y, w - 6 + flare * 2, 1);
+  }
+  for (let x = 5; x < w - 3; x += 3) rect(ctx, p.wood.dark, x, 6, 1, h - 7);
+  rect(ctx, p.wood.light, 3, 3, w - 6, 3); // topo cortado
+  rect(ctx, p.wood.base, 5, 3, w - 10, 1);
+  rect(ctx, p.wood.dark, 7, 4, 2, 1);
+  rect(ctx, p.mossLight, 3, 3, 4, 2);
+  if (p.variant === 1) {
+    rect(ctx, p.glow, 9, 2, 3, 2); // cogumelo nascendo no toco
+    rect(ctx, p.bone, 10, 4, 1, 2);
+  }
+}
+
+function drawMushrooms(p: Pen): void {
+  const { ctx, w, h } = p;
+  const caps =
+    p.variant === 0
+      ? ([
+          [4, 5, 6],
+          [11, 7, 5],
+          [8, 3, 4],
+        ] as const)
+      : p.variant === 1
+        ? ([
+            [7, 6, 7],
+            [12, 9, 4],
+          ] as const)
+        : ([
+            [3, 8, 4],
+            [8, 4, 6],
+            [13, 8, 4],
+          ] as const);
+  for (const [cx, stem, cap] of caps) {
+    rect(ctx, p.bone, cx, h - stem, 2, stem);
+    for (let r = 0; r < Math.ceil(cap / 2); r++) {
+      const half = Math.min(cap / 2, r + 2);
+      rect(ctx, p.glowSoft, cx + 1 - half, h - stem - r, Math.round(half * 2), 1);
+    }
+    rect(ctx, p.glow, cx - 1, h - stem - 1, 1, 1);
+    rect(ctx, p.glow, cx + 2, h - stem - 2, 1, 1, 0.9);
+  }
+  rect(ctx, p.moss, 1, h - 1, w - 2, 1);
+}
+
+function drawSignpost(p: Pen): void {
+  const { ctx, w, h } = p;
+  rect(ctx, p.wood.dark, w / 2 - 1, 3, 3, h - 3); // poste
+  rect(ctx, p.wood.base, w / 2, 3, 1, h - 3);
+  rect(ctx, p.wood.dark, 2, h - 2, w - 4, 2);
+  if (p.variant === 0) {
+    rect(ctx, p.wood.base, 1, 5, w - 3, 5); // placa em seta
+    rect(ctx, p.wood.light, 1, 5, w - 3, 1);
+    rect(ctx, p.wood.base, w - 3, 6, 2, 3);
+    rect(ctx, p.wood.dark, 3, 7, w - 8, 1);
+  } else {
+    rect(ctx, p.wood.base, 3, 12, w - 5, 4); // placa caída, pendurada por um prego
+    rect(ctx, p.wood.dark, 3, 15, w - 5, 1);
+    rect(ctx, p.iron.light, w / 2, 11, 1, 2);
+  }
+  rect(ctx, p.mossLight, w / 2 - 1, 5, 3, 1);
+}
+
+function drawCampfire(p: Pen): void {
+  const { ctx, h } = p;
+  for (const x of [3, 8, 14, 19, 24]) {
+    disc(ctx, p.stone.light, x + 2, h - 3, 3);
+    rect(ctx, p.stone.dark, x, h - 2, 5, 2);
+  }
+  rect(ctx, p.wood.dark, 8, h - 5, 16, 3); // lenha
+  rect(ctx, p.wood.base, 10, h - 6, 12, 2);
+  rect(ctx, p.wood.light, 10, h - 6, 12, 1);
+  rect(ctx, p.flame[0], 11, h - 5, 10, 2);
+  flame(p, 13, h - 11);
+  flame(p, 17, h - 10);
+  rect(ctx, p.flame[2], 15, h - 7, 2, 1);
+}
+
+function drawRoots(p: Pen): void {
+  const { ctx, w, h } = p;
+  const strands = p.variant === 2 ? 4 : 6;
+  for (let i = 0; i < strands; i++) {
+    let x = 3 + Math.round(((w - 8) * i) / (strands - 1));
+    const len = randomInt(p.rng, h - 22, h - 4);
+    const thick = 3 - (i % 2);
+    for (let y = 0; y < len; y++) {
+      if (y % 6 === 0 && p.rng() < 0.5) x += p.rng() < 0.5 ? -1 : 1;
+      const t = Math.max(1, thick - Math.floor((y / len) * thick));
+      rect(ctx, p.wood.base, x, y, t, 1);
+      rect(ctx, p.wood.dark, x + t - 1, y, 1, 1);
+      if (y % 11 === 5) rect(ctx, p.mossLight, x - 1, y, 2, 2);
+    }
+  }
+  rect(ctx, p.wood.dark, 0, 0, w, 4); // massa de raízes no teto
+  rect(ctx, p.wood.base, 2, 0, w - 4, 3);
+  if (p.variant === 1) disc(ctx, p.glow, w / 2, h - 6, 2); // algo brilha preso nas raízes
+}
+
+function drawLantern(p: Pen): void {
+  const { ctx, w } = p;
+  const cx = w / 2;
+  rect(ctx, p.moss, cx, 0, 1, 12); // cipó que a segura
+  rect(ctx, p.mossLight, cx, 3, 1, 1);
+  rect(ctx, p.iron.base, cx - 3, 12, 7, 2);
+  rect(ctx, p.iron.base, cx - 3, 24, 7, 2);
+  rect(ctx, p.iron.light, cx - 3, 12, 7, 1);
+  for (const x of [cx - 3, cx + 3]) rect(ctx, p.iron.base, x, 14, 1, 10);
+  rect(ctx, p.glowSoft, cx - 2, 14, 5, 10, 0.55);
+  rect(ctx, p.glow, cx - 1, 16, 3, 6, 0.9);
+  rect(ctx, p.flame[2], cx, 18, 1, 2);
+}
+
+function drawCocoon(p: Pen): void {
+  const { ctx, w, h } = p;
+  const cx = w / 2;
+  rect(ctx, 0xcfcfd8, cx, 0, 1, 8); // fio de seda
+  for (let y = 8; y < h - 4; y++) {
+    const t = (y - 8) / (h - 12);
+    const half = Math.round(2 + Math.sin(t * Math.PI) * 4);
+    rect(ctx, 0xb8b8c4, cx - half, y, half * 2, 1);
+    rect(ctx, 0xe4e4ec, cx - half, y, 1, 1);
+  }
+  for (let y = 10; y < h - 6; y += 3) rect(ctx, 0x8d8d9c, cx - 4, y, 8, 1, 0.7);
+  if (p.variant === 1) {
+    rect(ctx, p.bone, cx - 2, h - 9, 4, 3); // algo preso dentro
+    rect(ctx, p.stone.deep, cx - 1, h - 8, 1, 1);
+  }
+  rect(ctx, 0xcfcfd8, cx - 1, h - 5, 2, 4); // pontas soltas
+}
+
 const DRAWERS: Readonly<Record<FurnitureKind, (p: Pen) => void>> = {
   barrel: drawBarrel,
   crates: drawCrates,
@@ -540,6 +702,14 @@ const DRAWERS: Readonly<Record<FurnitureKind, (p: Pen) => void>> = {
   coffin: drawCoffin,
   cell: drawCell,
   urn: drawUrn,
+  log: drawLog,
+  stump: drawStump,
+  mushrooms: drawMushrooms,
+  signpost: drawSignpost,
+  campfire: drawCampfire,
+  roots: drawRoots,
+  lantern: drawLantern,
+  cocoon: drawCocoon,
   tapestry: drawTapestry,
   chandelier: drawChandelier,
   cage: drawCage,

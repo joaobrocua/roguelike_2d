@@ -69,7 +69,7 @@ describe('enterRoom', () => {
 });
 
 describe('advanceBiome', () => {
-  it('passa pelos três biomas e então termina a run', () => {
+  it('passa por todas as etapas do plano e então termina a run', () => {
     const run = createRun(31, catalog);
     run.cleared.add(3);
     run.usedProps.add(propKey(1, 2, 3));
@@ -84,8 +84,8 @@ describe('advanceBiome', () => {
     expect(run.usedProps.size).toBe(0);
     expect([...run.visited]).toEqual([run.map.startId]);
 
-    expect(advanceBiome(run, catalog)).toBe(true);
-    expect(isLastStage(run.stage)).toBe(true);
+    while (!isLastStage(run.stage)) expect(advanceBiome(run, catalog)).toBe(true);
+    expect(run.stage).toBe(RUN_PLAN.length - 1);
     // O último bioma termina no chefe
     expect(run.map.rooms.some((r) => r.kind === 'boss')).toBe(true);
 
@@ -143,7 +143,7 @@ describe('santuário na run', () => {
     const run = createRun(2, catalog);
     enterSanctuaryBetweenBiomes(run);
     expect(run.sanctuary).toEqual({
-      biome: 'muralhas',
+      biome: RUN_PLAN[0]?.options[0],
       leadsTo: 'nextBiome',
       options: RUN_PLAN[1]?.options,
     });
@@ -151,8 +151,23 @@ describe('santuário na run', () => {
     expect(leaveSanctuary(run, catalog)).toBe(true);
     expect(run.sanctuary).toBeNull();
     expect(run.stage).toBe(1);
-    expect(run.map.biome).toBe('saloes');
+    expect(run.map.biome).toBe(RUN_PLAN[1]?.options[0]);
     expect(run.roomId).toBe(run.map.startId);
+  });
+
+  it('a jornada começa fora do castelo: a primeira área é ao ar livre e o castelo vem depois', () => {
+    const outdoors = ['floresta'];
+    const castle = ['muralhas', 'saloes', 'catacumbas'];
+    const first = RUN_PLAN[0]?.options ?? [];
+    expect(first.length).toBeGreaterThan(0);
+    for (const biome of first) expect(outdoors).toContain(biome);
+    // Nenhuma área de fora aparece depois que o herói entra no castelo
+    const firstCastle = RUN_PLAN.findIndex((stage) =>
+      stage.options.some((b) => castle.includes(b)),
+    );
+    RUN_PLAN.slice(firstCastle).forEach((stage) => {
+      for (const biome of stage.options) expect(castle).toContain(biome);
+    });
   });
 
   it('no despertar a porta não muda de bioma', () => {

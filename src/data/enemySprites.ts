@@ -481,6 +481,64 @@ export const CAO_SHEET: EnemySheet<HoundPose> = {
   },
 };
 
+// --- Lobo Espectral ----------------------------------------------------------------------
+
+/** O lobo usa as mesmas poses do cão (correr, agachar, saltar); só o desenho muda. */
+export const LOBO_SHEET: EnemySheet<HoundPose> = { ...CAO_SHEET, id: 'lobo', pad: { x: 9, y: 5 } };
+
+// --- Raiz Emboscadora --------------------------------------------------------------------
+
+export interface RootPose {
+  /** Quanto do corpo já emergiu: 0 = só o monte de raízes, 1 = erguida por inteiro. */
+  rise: number;
+  /** Balanço dos cipós (de -3 a 3). */
+  sway: number;
+  /** Cipós puxados para trás, preparando o golpe: 0 = soltos, 1 = armados. */
+  cock: number;
+  /** O cipó da frente se estica num chicote de tantos px para frente. */
+  lash: number;
+  /** Núcleo: 0 = apagado, 1 = aceso, 2 = a mil (golpe a caminho). */
+  core: 0 | 1 | 2;
+  /** Murchando (a morte): 0 = viva, 1 = caída, 2 = seca. */
+  wither: 0 | 1 | 2;
+}
+
+const ROOT_BASE: RootPose = { rise: 1, sway: 0, cock: 0, lash: 0, core: 1, wither: 0 };
+const root = (o: Partial<RootPose>): RootPose => ({ ...ROOT_BASE, ...o });
+
+export const RAIZ_SHEET: EnemySheet<RootPose> = {
+  id: 'raiz',
+  // Folga larga dos lados: o chicote se estica até 40 px para a frente do corpo
+  pad: { x: 41, y: 15 },
+  frames: [
+    { name: 'idle0', pose: root({ rise: 0, core: 0 }) },
+    { name: 'idle1', pose: root({ rise: 0, core: 0, sway: 1 }) },
+    { name: 'rise0', pose: root({ rise: 0.35, core: 0, sway: 2 }) },
+    { name: 'rise1', pose: root({ rise: 0.7, core: 1, sway: -2 }) },
+    { name: 'rise2', pose: root({ rise: 1, core: 1, sway: 2 }) },
+    { name: 'awake0', pose: root({ sway: -1 }) },
+    { name: 'awake1', pose: root({ sway: 1 }) },
+    { name: 'awake2', pose: root({ sway: 2 }) },
+    { name: 'windup0', pose: root({ cock: 0.55, core: 2, sway: -1 }) },
+    { name: 'windup1', pose: root({ cock: 1, core: 2, sway: -3 }) },
+    { name: 'strike', pose: root({ lash: 32, core: 2, sway: 2 }) },
+    { name: 'recover', pose: root({ rise: 0.75, lash: 6, core: 1, sway: 2 }) },
+    { name: 'hurt', pose: root({ sway: -3, core: 0 }) },
+    { name: 'dead0', pose: root({ rise: 0.55, core: 0, wither: 1 }) },
+    { name: 'dead1', pose: root({ rise: 0.15, core: 0, wither: 2 }) },
+  ],
+  animations: {
+    idle: { frames: ['idle0', 'idle1'], fps: 1.5, loop: true },
+    walk: { frames: ['awake0', 'awake1', 'awake2', 'awake1'], fps: 6, loop: true },
+    jump: { frames: ['rise0', 'rise1', 'rise2'], fps: 8, loop: false },
+    windup: { frames: ['windup0', 'windup1'], fps: 8, loop: false },
+    strike: { frames: ['strike'], fps: 1, loop: false },
+    recover: { frames: ['recover'], fps: 1, loop: false },
+    hurt: { frames: ['hurt'], fps: 1, loop: false },
+    dead: { frames: ['dead0', 'dead1'], fps: 5, loop: false },
+  },
+};
+
 // --- Guardião Partido (chefe) ------------------------------------------------------------
 
 export interface GuardianPose {

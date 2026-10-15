@@ -62,6 +62,13 @@ export const SANCTUARY_LOOK: Readonly<Record<BiomeId, SanctuaryLook>> = {
     bannerTrim: 0x6fe3b0,
     rune: 0x7fffd0,
   },
+  // Floresta: fogo-fátuo amarelado, pano de musgo escuro, luz de vaga-lume
+  floresta: {
+    flame: [0x8a9a2e, 0xd9e46a, 0xf8ffd0],
+    banner: 0x3e3a14,
+    bannerTrim: 0xd9e46a,
+    rune: 0xd9e46a,
+  },
 };
 
 /** Onde cada peça de cenário fica (px de mundo; o chão da sala está em y = 240). */

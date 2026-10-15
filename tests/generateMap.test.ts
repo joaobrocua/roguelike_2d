@@ -92,7 +92,7 @@ describe('generateBiomeMap', () => {
     }
   });
 
-  it('300 seeds x 3 biomas x final sim/não: o mapa passa em todas as regras', () => {
+  it('300 seeds x todos os biomas x final sim/não: o mapa passa em todas as regras', () => {
     for (const biome of ALL_BIOMES) {
       for (const final of [false, true]) {
         for (let seed = 1; seed <= 300; seed++) {
@@ -102,7 +102,7 @@ describe('generateBiomeMap', () => {
         }
       }
     }
-  });
+  }, 30000);
 
   it('confere por fora do validador: contagens, posições e becos', () => {
     for (const biome of ALL_BIOMES) {

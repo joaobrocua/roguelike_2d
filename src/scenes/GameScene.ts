@@ -11,6 +11,8 @@ import {
   CAO_DE_OSSOS,
   CARNICAL,
   DOG_PACK,
+  LOBO_ESPECTRAL,
+  RAIZ_EMBOSCADORA,
   ENEMY_MARKERS,
   type EnemyType,
 } from '../data/enemies';
@@ -27,6 +29,8 @@ import { GUARDIAO, VICTORY_DELAY_MS } from '../data/boss';
 import { ROOM_TEMPLATES } from '../data/roomTemplates';
 import { ArqueiroOco } from '../entities/ArqueiroOco';
 import { CaoDeOssos } from '../entities/CaoDeOssos';
+import { LoboEspectral } from '../entities/LoboEspectral';
+import { RaizEmboscadora } from '../entities/RaizEmboscadora';
 import { Carnical } from '../entities/Carnical';
 import { Guardiao } from '../entities/Guardiao';
 import type { Enemy, EnemyTarget, EnemyWorld } from '../entities/Enemy';
@@ -555,7 +559,7 @@ export class GameScene extends Phaser.Scene {
     };
   }
 
-  /** Cria um inimigo para cada marcador da sala ('C', 'A', 'V', 'D'), se a sala ainda não foi limpa. */
+  /** Cria um inimigo para cada marcador da sala ('C', 'A', 'V', 'D', 'L', 'R'), se a sala ainda não foi limpa. */
   private spawnEnemies(
     room: ParsedRoom,
     world: EnemyWorld,
@@ -590,6 +594,20 @@ export class GameScene extends Phaser.Scene {
             pack: this.pack,
             packId: dogs++,
           });
+          break;
+        case 'lobo':
+          enemy = new LoboEspectral(this, x, this.markerY(marker, LOBO_ESPECTRAL.height), world, {
+            pack: this.pack,
+            packId: dogs++,
+          });
+          break;
+        case 'raiz':
+          enemy = new RaizEmboscadora(
+            this,
+            x,
+            this.markerY(marker, RAIZ_EMBOSCADORA.height),
+            world,
+          );
           break;
       }
       // Voadores atravessam plataformas: só os terrestres colidem com o cenário.

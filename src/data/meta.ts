@@ -192,6 +192,8 @@ export const SOUL_REWARD: Readonly<Record<string, number>> = {
   arqueiro: 4,
   vulto: 4,
   cao: 2,
+  lobo: 4,
+  raiz: 5,
   guardiao: 40,
 };
 

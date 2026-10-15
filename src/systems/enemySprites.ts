@@ -6,11 +6,14 @@ import {
   CAO_SHEET,
   CARNICAL_SHEET,
   GUARDIAO_SHEET,
+  LOBO_SHEET,
+  RAIZ_SHEET,
   VULTO_SHEET,
   type ArcherPose,
   type EnemySheet,
   type GhoulPose,
   type HoundPose,
+  type RootPose,
   ENEMY_ANIM_STATES,
   type WraithPose,
 } from '../data/enemySprites';
@@ -384,6 +387,220 @@ function drawHound(ctx: Ctx, p: HoundPose): void {
   }
 }
 
+// --- Lobo Espectral ----------------------------------------------------------------------
+
+const FUR_DARK = 0x2b3a44;
+const FUR = 0x4b6573;
+const FUR_LIGHT = 0x86a8b4;
+const MIST = 0xbfe3e8;
+const WOLF_EYE = 0xd9f58a;
+
+function drawWolfWisps(ctx: Ctx, p: HoundPose): void {
+  // Sem corpo: restam fiapos de névoa, as patas desfeitas e os olhos acesos, que vão apagando
+  const g = 19;
+  const fade = p.scatter >= 3 ? 0.45 : 0.7;
+  for (const [x, y, w] of [
+    [12, g - 1, 10],
+    [16, g - 3, 6],
+    [10, g - 2, 3],
+    [24, g - 2, 5],
+    [19, g - 5, 2],
+  ] as const) {
+    fillPx(ctx, MIST, x, y, w, 1, fade);
+  }
+  fillPx(ctx, FUR, 14, g, 12, 1, 0.8);
+  fillPx(ctx, WOLF_EYE, 26, g - 2, 1, 1, 0.9);
+  fillPx(ctx, WOLF_EYE, 24, g - 2, 1, 1, 0.5);
+}
+
+function drawWolf(ctx: Ctx, p: HoundPose): void {
+  if (p.scatter >= 3) {
+    drawWolfWisps(ctx, p);
+    return;
+  }
+  const cx = 21;
+  const ground = 21;
+  const lift = p.air;
+  const top = 9 + p.crouch - p.bob - lift; // linha das costas
+  const hipX = cx - 7;
+  const shoulderX = cx + 4;
+
+  const leg = (x: number, off: number, liftBy: number, color: number, y: number): void => {
+    const foot: Point = { x: x + off, y: ground - 2 - liftBy - lift };
+    const knee: Point = { x: Math.round((x + foot.x) / 2) - 1, y: Math.round((y + foot.y) / 2) };
+    drawLimb(ctx, { x, y }, knee, color, 2);
+    drawLimb(ctx, knee, foot, color, 1);
+    fillPx(ctx, color, foot.x, foot.y + 1, 3, 1);
+  };
+
+  // Névoa solta atrás do corpo (é um espírito)
+  fillPx(ctx, MIST, hipX - 9, top + 3, 5, 1, 0.3);
+  fillPx(ctx, MIST, hipX - 6, top + 6, 4, 1, 0.22);
+
+  leg(hipX + 1, p.hindB, p.liftHind, FUR_DARK, top + 4);
+  leg(shoulderX + 1, p.frontB, p.liftFront, FUR_DARK, top + 4);
+
+  // Corpo: costas escuras, flanco de pelo e barriga clara
+  fillPx(ctx, FUR_DARK, hipX - 3, top, cx - hipX + 11, 2);
+  fillPx(ctx, FUR, hipX - 3, top + 1, cx - hipX + 11, 5);
+  fillPx(ctx, FUR_LIGHT, hipX - 1, top + 5, cx - hipX + 8, 2);
+  fillPx(ctx, FUR_DARK, hipX - 3, top + 3, 3, 3); // anca
+  // Pelagem eriçada nas costas
+  for (let x = hipX; x <= shoulderX + 3; x += 3) fillPx(ctx, FUR_DARK, x, top - 1, 1, 1);
+
+  leg(hipX - 1, p.hindA, p.liftHind, FUR, top + 4);
+  leg(shoulderX, p.frontA, p.liftFront, FUR, top + 4);
+
+  // Rabo de pelo, que balança
+  linePx(ctx, FUR, hipX - 3, top + 1, hipX - 8, top + 1 + p.tail, 2);
+  fillPx(ctx, FUR_LIGHT, hipX - 9, top + p.tail, 2, 2);
+
+  // Pescoço e cabeça
+  const sx = cx + 6 + p.head;
+  const sy = top - 3 + p.headDy;
+  fillPx(ctx, FUR, cx + 4, top - 1, sx - cx - 2, 5); // pescoço grosso
+  fillPx(ctx, FUR, sx, sy, 7, 6); // crânio
+  fillPx(ctx, FUR_DARK, sx, sy, 7, 1);
+  fillPx(ctx, FUR_DARK, sx + 1, sy - 3, 2, 3); // orelhas pontudas
+  fillPx(ctx, FUR_DARK, sx + 4, sy - 2, 2, 2);
+  fillPx(ctx, FUR_LIGHT, sx + 6, sy + 2, 5, 3); // focinho
+  fillPx(ctx, OUTLINE, sx + 10, sy + 2, 1, 1); // nariz
+  fillPx(ctx, WOLF_EYE, sx + 4, sy + 2, 2, 1);
+  fillPx(ctx, WOLF_EYE, sx + 3, sy + 2, 1, 1, 0.5);
+  // Mandíbula: abre `jaw` px, com presas
+  if (p.jaw > 0) {
+    fillPx(ctx, OUTLINE, sx + 6, sy + 5, 5, p.jaw);
+    fillPx(ctx, MIST, sx + 7, sy + 5, 1, 1);
+    fillPx(ctx, MIST, sx + 9, sy + 5, 1, 1);
+    fillPx(ctx, FUR_DARK, sx + 6, sy + 5 + p.jaw, 4, 1);
+    fillPx(ctx, MIST, sx + 8, sy + 4 + p.jaw, 1, 1);
+  } else {
+    fillPx(ctx, FUR_DARK, sx + 6, sy + 5, 4, 1);
+  }
+}
+
+// --- Raiz Emboscadora --------------------------------------------------------------------
+
+const ROOT_BARK = 0x4a3a22;
+const ROOT_DARK = 0x2a2013;
+const ROOT_LIGHT = 0x6a5430;
+const ROOT_MOSS = 0x5f7a2a;
+const ROOT_MOSS_LIGHT = 0xa3c04a;
+const ROOT_CORE = 0xd9e46a;
+const ROOT_CORE_HOT = 0xfff2a0;
+const THORN = 0xc9b98a;
+const ROOT_WITHER = 0x5a5340;
+
+/** Um cipó: segmentos que se curvam aos poucos; `angle` em graus (0 = para frente, -90 = para cima). */
+function drawTendril(
+  ctx: Ctx,
+  from: Point,
+  angle: number,
+  length: number,
+  curl: number,
+  color: number,
+  tip: number,
+): void {
+  let x = from.x;
+  let y = from.y;
+  let a = angle;
+  const segments = 6;
+  for (let i = 0; i < segments; i++) {
+    const rad = (a * Math.PI) / 180;
+    const nx = x + Math.cos(rad) * (length / segments);
+    const ny = y + Math.sin(rad) * (length / segments);
+    linePx(ctx, color, Math.round(x), Math.round(y), Math.round(nx), Math.round(ny), i < 3 ? 2 : 1);
+    if (i % 2 === 1) fillPx(ctx, ROOT_MOSS, Math.round(nx), Math.round(ny) - 1, 1, 1);
+    x = nx;
+    y = ny;
+    a += curl;
+  }
+  // Espinho na ponta
+  fillPx(ctx, tip, Math.round(x), Math.round(y), 2, 1);
+  fillPx(ctx, tip, Math.round(x) + 1, Math.round(y) - 1, 1, 1);
+}
+
+function drawRoot(ctx: Ctx, p: RootPose): void {
+  const cx = 50;
+  const ground = 37;
+  const dead = p.wither > 0;
+  const bark = dead ? ROOT_WITHER : ROOT_BARK;
+  const dark = dead ? ROOT_DARK : ROOT_DARK;
+  const light = dead ? 0x7a7258 : ROOT_LIGHT;
+
+  // Monte de raízes no chão (sempre aparece)
+  for (const [dx, w, h] of [
+    [-9, 6, 3],
+    [-5, 8, 5],
+    [1, 8, 4],
+    [5, 6, 3],
+    [-2, 5, 6],
+  ] as const) {
+    fillPx(ctx, bark, cx + dx, ground - h, w, h);
+    fillPx(ctx, light, cx + dx, ground - h, w, 1);
+    fillPx(ctx, dark, cx + dx + w - 2, ground - h + 1, 2, h - 1);
+  }
+  fillPx(ctx, ROOT_MOSS, cx - 7, ground - 4, 3, 1);
+  fillPx(ctx, ROOT_MOSS_LIGHT, cx + 3, ground - 5, 2, 1);
+  fillPx(ctx, dark, cx - 10, ground - 1, 21, 1);
+  if (p.rise <= 0) {
+    // Dormindo: um brilho fraco entre as raízes
+    if (!dead) fillPx(ctx, ROOT_CORE, cx - 1, ground - 3, 1, 1, 0.45);
+    return;
+  }
+
+  // Tronco que sobe do monte, retorcido (torce um pouco a cada fileira)
+  const height = Math.round(p.rise * 14);
+  const baseY = ground - 4;
+  const topY = baseY - height;
+  for (let y = baseY; y > topY; y--) {
+    const t = (baseY - y) / Math.max(1, height);
+    const width = Math.round(10 - t * 3);
+    const twist = Math.round(Math.sin(y * 0.5) * 1.5) + (dead ? Math.round(t * -3) : 0);
+    const x0 = cx - Math.floor(width / 2) + twist;
+    fillPx(ctx, bark, x0, y, width, 1);
+    fillPx(ctx, light, x0, y, 2, 1);
+    fillPx(ctx, dark, x0 + width - 2, y, 2, 1);
+    if ((y + Math.round(t * 5)) % 4 === 0) fillPx(ctx, dark, x0 + 2, y, width - 4, 1);
+  }
+  if (!dead && p.rise > 0.3) fillPx(ctx, ROOT_MOSS, cx - 4, baseY - 6, 3, 2);
+  if (!dead && p.rise > 0.6) fillPx(ctx, ROOT_MOSS_LIGHT, cx + 2, baseY - 11, 2, 2);
+
+  // Bulbo no alto, com o núcleo (o olho da raiz)
+  const bulbY = topY - 4;
+  fillPx(ctx, bark, cx - 4, bulbY, 8, 6);
+  fillPx(ctx, light, cx - 4, bulbY, 8, 1);
+  fillPx(ctx, dark, cx - 4, bulbY + 5, 8, 1);
+  const core = p.core === 2 ? ROOT_CORE_HOT : ROOT_CORE;
+  if (p.core > 0) {
+    fillPx(ctx, core, cx - 1, bulbY + 2, 4, 3);
+    fillPx(ctx, ROOT_CORE_HOT, cx, bulbY + 3, 2, 1);
+    if (p.core === 2) fillPx(ctx, ROOT_CORE, cx - 3, bulbY + 1, 8, 5, 0.25);
+  } else {
+    fillPx(ctx, dark, cx - 1, bulbY + 2, 4, 3);
+  }
+
+  // Cipós: um para trás, um para cima e o da frente (o que chicoteia)
+  if (p.rise < 0.5) return;
+  const root: Point = { x: cx, y: bulbY + 2 };
+  const sway = p.sway;
+  if (dead) {
+    drawTendril(ctx, root, 150, 12, -10, bark, THORN);
+    drawTendril(ctx, root, 40, 12, 12, bark, THORN);
+    return;
+  }
+  const lash = p.lash;
+  const cock = p.cock;
+  const front = lash > 0 ? -4 : cock > 0 ? -45 - cock * 105 : -45 + sway * 6;
+  const mid = lash > 0 ? -70 : cock > 0 ? -95 - cock * 35 : -92 + sway * 3;
+  const back = lash > 0 ? -150 : cock > 0 ? -150 - cock * 22 : -145 - sway * 5;
+  const frontLen = lash > 0 ? 10 + lash : 15;
+  const frontCurl = lash > 0 ? 0 : cock > 0 ? -4 : 7;
+  drawTendril(ctx, root, back, 13, -6, bark, THORN);
+  drawTendril(ctx, root, mid, 12, sway > 0 ? 5 : -5, bark, THORN);
+  drawTendril(ctx, root, front, frontLen, frontCurl, bark, THORN);
+}
+
 // --- Criação das texturas e animações ----------------------------------------------------
 
 function sheetCell(def: EnemyBody, sheet: EnemySheet<unknown>): { width: number; height: number } {
@@ -420,6 +637,8 @@ const SHEETS: readonly EnemySheet<unknown>[] = [
   ARQUEIRO_SHEET,
   VULTO_SHEET,
   CAO_SHEET,
+  LOBO_SHEET,
+  RAIZ_SHEET,
   GUARDIAO_SHEET,
 ];
 
@@ -437,6 +656,8 @@ export function enemyDrawers(): readonly EnemyDrawer[] {
     { sheet: ARQUEIRO_SHEET, body: enemyDef('arqueiro'), draw: drawArcher },
     { sheet: VULTO_SHEET, body: enemyDef('vulto'), draw: drawWraith },
     { sheet: CAO_SHEET, body: enemyDef('cao'), draw: drawHound },
+    { sheet: LOBO_SHEET, body: enemyDef('lobo'), draw: drawWolf },
+    { sheet: RAIZ_SHEET, body: enemyDef('raiz'), draw: drawRoot },
     { sheet: GUARDIAO_SHEET, body: GUARDIAO, draw: drawGuardian },
   ] as unknown as readonly EnemyDrawer[];
 }

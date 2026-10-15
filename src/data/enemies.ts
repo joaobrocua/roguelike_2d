@@ -2,6 +2,7 @@
  * Inimigos dos andares 1 a 3. Cada um define corpo, vida, ataque e os parâmetros da sua IA.
  * Tempos em ms, velocidades em px/s, distâncias em px. O chefe entra na etapa 5.
  */
+import type { AmbusherConfig } from '../logic/ai/ambusher';
 import type { FlyerConfig } from '../logic/ai/flyer';
 import type { GroundMeleeConfig } from '../logic/ai/groundMelee';
 import type { RangedConfig } from '../logic/ai/ranged';
@@ -174,6 +175,78 @@ export const CAO_DE_OSSOS = {
   } satisfies GroundMeleeConfig,
 } as const satisfies EnemyBody & { ai: GroundMeleeConfig };
 
+/** Lobo Espectral (Floresta Apodrecida): um cão mais rápido e mais forte, do mesmo bando. */
+export const LOBO_ESPECTRAL = {
+  id: 'lobo',
+  width: 24,
+  height: 16,
+  maxHp: 30,
+  hitStunMs: 160,
+  knockbackFriction: 600,
+  color: PALETTE.player,
+  flying: false,
+  meleeShape: 'front',
+  attack: {
+    windupMs: 240,
+    activeMs: 240, // bote longo: avança durante a fase ativa
+    recoveryMs: 480,
+    damage: 11,
+    knockbackX: 130,
+    knockbackY: -80,
+    hitbox: { width: 22, height: 15, offsetY: 0 },
+  },
+  ai: {
+    patrolSpeed: 46,
+    chaseSpeed: 140,
+    sightRangeX: 170,
+    sightRangeY: 54,
+    loseSightRangeX: 240,
+    attackRangeX: 52,
+    attackRangeY: 26,
+    attackCooldownMs: 650,
+    turnPauseMs: 280,
+    lungeSpeed: 250,
+    waitDistanceX: 90,
+  } satisfies GroundMeleeConfig,
+} as const satisfies EnemyBody & { ai: GroundMeleeConfig };
+
+/**
+ * Raiz Emboscadora (Floresta Apodrecida): dorme como um monte de raízes (sem poder ser acertada),
+ * acorda quando o herói chega perto, chicoteia de longe e afunda de volta quando ele se afasta.
+ */
+export const RAIZ_EMBOSCADORA = {
+  id: 'raiz',
+  width: 18,
+  height: 22,
+  maxHp: 36,
+  hitStunMs: 200,
+  knockbackFriction: 700,
+  knockbackScale: 0.4, // enraizada: quase não sai do lugar
+  color: PALETTE.venom,
+  flying: false,
+  meleeShape: 'front',
+  attack: {
+    windupMs: 520, // os cipós se erguem para trás: dá tempo de rolar
+    activeMs: 160,
+    recoveryMs: 560,
+    damage: 14,
+    knockbackX: 170,
+    knockbackY: -110,
+    hitbox: { width: 34, height: 18, offsetY: 2 },
+  },
+  ai: {
+    wakeRangeX: 70,
+    wakeRangeY: 44,
+    attackRangeX: 48,
+    attackRangeY: 34,
+    sleepRangeX: 120,
+    riseMs: 420,
+    sinkMs: 320,
+    sinkDelayMs: 1500,
+    attackCooldownMs: 650,
+  } satisfies AmbusherConfig,
+} as const satisfies EnemyBody & { ai: AmbusherConfig };
+
 /** Bando de cães: quantos atacam ao mesmo tempo e o intervalo mínimo entre os botes. */
 export const DOG_PACK = { maxConcurrent: 2, gapMs: 450 } as const;
 
@@ -183,11 +256,20 @@ export const ENEMY_MARKERS = {
   A: 'arqueiro',
   V: 'vulto',
   D: 'cao',
+  L: 'lobo',
+  R: 'raiz',
 } as const;
 
 export type EnemyType = (typeof ENEMY_MARKERS)[keyof typeof ENEMY_MARKERS];
 
-export const ENEMY_BODIES: readonly EnemyBody[] = [CARNICAL, ARQUEIRO_OCO, VULTO, CAO_DE_OSSOS];
+export const ENEMY_BODIES: readonly EnemyBody[] = [
+  CARNICAL,
+  ARQUEIRO_OCO,
+  VULTO,
+  CAO_DE_OSSOS,
+  LOBO_ESPECTRAL,
+  RAIZ_EMBOSCADORA,
+];
 
 /** Só a sala de teste faz os inimigos renascerem; nas salas reais eles ficam mortos. */
 export const TEST_ROOM_RESPAWN_MS = 6000;

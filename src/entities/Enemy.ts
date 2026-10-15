@@ -43,6 +43,8 @@ import type { ProjectileSystem } from '../systems/ProjectileSystem';
 import { TILE_SIZE } from '../data/rooms';
 import { approachZero } from '../utils/math';
 
+/** Onde fica a caixa de acerto de um inimigo escondido (longe de qualquer sala). */
+const HIDDEN_X = -100000;
 const BAR_WIDTH = 20;
 const BAR_HEIGHT = 3;
 const BAR_OFFSET_Y = 6;
@@ -286,6 +288,16 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
   /** Chamado ao renascer, para o tipo reiniciar o estado da sua IA. */
   protected resetAi(): void {}
 
+  /** Pode ser acertado agora? Quem se esconde (a raiz dormindo) devolve false. */
+  protected hurtable(): boolean {
+    return true;
+  }
+
+  /** Troca o estado de animação escolhido pelo padrão (a raiz tem fases próprias de parada). */
+  protected overrideAnimState(state: EnemyAnimState): EnemyAnimState {
+    return state;
+  }
+
   private fillSense(target: EnemyTarget, body: Phaser.Physics.Arcade.Body): void {
     const sense = this.sense;
     sense.dx = target.x - this.x;
@@ -327,6 +339,7 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
     hurt.y = body.y;
     hurt.width = body.width;
     hurt.height = body.height;
+    if (!this.hurtable()) hurt.x = HIDDEN_X; // escondido: nenhum golpe encontra o corpo
 
     const hitbox = this.attackDef.hitbox;
     const shape = this.attackShape;
@@ -385,6 +398,9 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.barBack.setPosition(barX, barY);
     this.barFront.setPosition(barX, barY);
     this.barFront.setDisplaySize(BAR_WIDTH * (this.health.hp / this.health.maxHp), BAR_HEIGHT);
+    const showBar = this.hurtable();
+    this.barBack.setVisible(showBar);
+    this.barFront.setVisible(showBar);
   }
 
   /** Escolhe a animação pelo que o inimigo está fazendo. */
@@ -398,7 +414,7 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
     input.stunned = isStunned(this.health);
     input.airborne = !this.def.flying && !body.blocked.down;
     input.dead = false;
-    const state = enemyAnimState(input, ENEMY_WALK_THRESHOLD);
+    const state = this.overrideAnimState(enemyAnimState(input, ENEMY_WALK_THRESHOLD));
     // Uma animação sem repetição que terminou não pode ser reiniciada por tocar de novo
     if (state === this.animState) return;
     this.animState = state;

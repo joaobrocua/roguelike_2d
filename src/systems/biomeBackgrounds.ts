@@ -1,6 +1,7 @@
 import type { BiomeId } from '../data/mapRules';
 import { BIOME_LOOK, type BiomeLook, type StoneRamp } from '../data/biomeLook';
 import { createRng, randomInt, type Rng } from '../utils/rng';
+import { farFloresta, midFloresta, nearFloresta } from './forestBackgrounds';
 import { disc, ditherGradientV, mix, rect, type Ctx } from './pixelCanvas';
 
 /**
@@ -663,16 +664,19 @@ const FAR: Record<BiomeId, LayerDraw> = {
   muralhas: farMuralhas,
   saloes: farSaloes,
   catacumbas: farCatacumbas,
+  floresta: farFloresta,
 };
 const MID: Record<BiomeId, LayerDraw> = {
   muralhas: midMuralhas,
   saloes: midSaloes,
   catacumbas: midCatacumbas,
+  floresta: midFloresta,
 };
 const NEAR: Record<BiomeId, LayerDraw> = {
   muralhas: nearMuralhas,
   saloes: nearSaloes,
   catacumbas: nearCatacumbas,
+  floresta: nearFloresta,
 };
 
 export type BackgroundLayer = 'far' | 'mid' | 'near';

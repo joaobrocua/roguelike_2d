@@ -39,7 +39,7 @@ export function decorTextureKey(biome: BiomeId, kind: DecorKind, variant: number
 
 function drawTuft(ctx: Ctx, look: BiomeLook, variant: number, rng: Rng, biome: BiomeId): void {
   const { height: h } = DECOR_SIZE.tuft;
-  if (biome === 'catacumbas' && variant !== 0) {
+  if ((biome === 'catacumbas' || biome === 'floresta') && variant !== 0) {
     // Cogumelos que brilham
     for (const [x, ch] of [
       [3, 4],

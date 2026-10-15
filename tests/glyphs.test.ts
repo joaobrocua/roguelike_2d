@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { GUARDIAO } from '../src/data/boss';
-import { BIOME_NAMES } from '../src/data/mapRules';
+import { BIOME_NAMES, BIOME_SHORT_NAMES } from '../src/data/mapRules';
 import { RELIC_IDS, RELICS } from '../src/data/relics';
 import { UPGRADE_NODES } from '../src/data/meta';
 import { BANNER, DEATH_SCREEN, HUD, RELIC_CHOICE, SANCTUARY, VICTORY_SCREEN } from '../src/data/ui';
@@ -37,7 +37,7 @@ describe('os textos do jogo só usam glifos que a fonte tem', () => {
     ].join(' '),
     dicas: HUD.hints.items.map((item) => `${item.keys.join('')}${item.label}`).join(' '),
     faixa: `${BANNER.actLabel} ${BANNER.acts.join(' ')} ${Object.values(BANNER.sanctuary).join(' ')}`,
-    biomas: Object.values(BIOME_NAMES).join(' '),
+    biomas: [...Object.values(BIOME_NAMES), ...Object.values(BIOME_SHORT_NAMES)].join(' '),
     chefe: GUARDIAO.name.toUpperCase(),
     santuario: [
       SANCTUARY.title,

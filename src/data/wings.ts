@@ -24,10 +24,18 @@ export type FurnitureKind =
   | 'coffin'
   | 'cell'
   | 'urn'
+  | 'log'
+  | 'stump'
+  | 'mushrooms'
+  | 'signpost'
+  | 'campfire'
   // Teto
   | 'tapestry'
   | 'chandelier'
-  | 'cage';
+  | 'cage'
+  | 'roots'
+  | 'lantern'
+  | 'cocoon';
 
 export type FurniturePlacement = 'floor' | 'ceiling';
 
@@ -84,7 +92,33 @@ export const FURNITURE: Readonly<Record<FurnitureKind, FurnitureSpec>> = {
   coffin: { placement: 'floor', widthTiles: 3, heightTiles: 2, variants: 2 },
   cell: { placement: 'floor', widthTiles: 3, heightTiles: 3, variants: 2 },
   urn: { placement: 'floor', widthTiles: 1, heightTiles: 1, variants: 2 },
+  log: { placement: 'floor', widthTiles: 3, heightTiles: 1, variants: 2 },
+  stump: { placement: 'floor', widthTiles: 1, heightTiles: 1, variants: 2 },
+  mushrooms: {
+    placement: 'floor',
+    widthTiles: 1,
+    heightTiles: 1,
+    variants: 3,
+    light: { radius: 38, strength: 0.5, dy: 7 },
+  },
+  signpost: { placement: 'floor', widthTiles: 1, heightTiles: 2, variants: 2 },
+  campfire: {
+    placement: 'floor',
+    widthTiles: 2,
+    heightTiles: 1,
+    variants: 1,
+    light: { radius: 72, strength: 0.75, dy: 9 },
+  },
   tapestry: { placement: 'ceiling', widthTiles: 2, heightTiles: 3, variants: 3 },
+  roots: { placement: 'ceiling', widthTiles: 2, heightTiles: 3, variants: 3 },
+  lantern: {
+    placement: 'ceiling',
+    widthTiles: 1,
+    heightTiles: 2,
+    variants: 1,
+    light: { radius: 66, strength: 0.75, dy: 22 },
+  },
+  cocoon: { placement: 'ceiling', widthTiles: 1, heightTiles: 2, variants: 2 },
   chandelier: {
     placement: 'ceiling',
     widthTiles: 2,
@@ -96,7 +130,16 @@ export const FURNITURE: Readonly<Record<FurnitureKind, FurnitureSpec>> = {
 };
 
 export type WingId =
-  'patio' | 'estabulo' | 'salao' | 'biblioteca' | 'capela' | 'ossuario' | 'masmorra' | 'cripta';
+  | 'patio'
+  | 'estabulo'
+  | 'salao'
+  | 'biblioteca'
+  | 'capela'
+  | 'ossuario'
+  | 'masmorra'
+  | 'cripta'
+  | 'bosque'
+  | 'raizes';
 
 export interface WingDef {
   id: WingId;
@@ -208,6 +251,33 @@ export const WINGS: Readonly<Record<BiomeId, readonly WingDef[]>> = {
         { kind: 'tapestry', weight: 1 },
       ],
       count: { min: 2, max: 4 },
+    },
+  ],
+  floresta: [
+    {
+      id: 'bosque',
+      name: 'BOSQUE MORTO',
+      furniture: [
+        { kind: 'log', weight: 4 },
+        { kind: 'stump', weight: 3 },
+        { kind: 'mushrooms', weight: 3 },
+        { kind: 'signpost', weight: 1 },
+        { kind: 'campfire', weight: 1 },
+        { kind: 'lantern', weight: 2 },
+      ],
+      count: { min: 3, max: 5 },
+    },
+    {
+      id: 'raizes',
+      name: 'TÚNEL DE RAÍZES',
+      furniture: [
+        { kind: 'roots', weight: 5 },
+        { kind: 'mushrooms', weight: 3 },
+        { kind: 'cocoon', weight: 2 },
+        { kind: 'lantern', weight: 2 },
+        { kind: 'stump', weight: 1 },
+      ],
+      count: { min: 3, max: 5 },
     },
   ],
 };
