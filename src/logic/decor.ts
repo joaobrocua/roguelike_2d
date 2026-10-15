@@ -61,8 +61,16 @@ function isDoorStrip(room: ParsedRoom, col: number, row: number): boolean {
   return false;
 }
 
-/** Marca (1) todo bloco a até `radius` de um marcador ou do ponto de nascimento. */
-function buildClearMask(room: ParsedRoom): Uint8Array {
+/** Um retângulo de blocos (inclusive nas quatro bordas) onde nada deve nascer. */
+export interface DecorAvoid {
+  col0: number;
+  col1: number;
+  row0: number;
+  row1: number;
+}
+
+/** Marca (1) todo bloco a até `radius` de um marcador ou do ponto de nascimento, e os retângulos a evitar. */
+function buildClearMask(room: ParsedRoom, avoid: readonly DecorAvoid[]): Uint8Array {
   const mask = new Uint8Array(room.cols * room.rows);
   const r = DECOR_CLEAR_RADIUS_TILES;
   const mark = (cx: number, cy: number): void => {
@@ -74,13 +82,24 @@ function buildClearMask(room: ParsedRoom): Uint8Array {
   };
   for (const marker of room.markers) mark(marker.col, marker.row);
   if (room.spawn) mark(room.spawn.col, room.spawn.row);
+  for (const box of avoid) {
+    for (let row = Math.max(0, box.row0); row <= Math.min(room.rows - 1, box.row1); row++) {
+      for (let col = Math.max(0, box.col0); col <= Math.min(room.cols - 1, box.col1); col++) {
+        mask[row * room.cols + col] = 1;
+      }
+    }
+  }
   return mask;
 }
 
-export function planDecor(room: ParsedRoom, seed: number): DecorItem[] {
+export function planDecor(
+  room: ParsedRoom,
+  seed: number,
+  avoid: readonly DecorAvoid[] = [],
+): DecorItem[] {
   const { cols, rows } = room;
   const rng = createRng(seed);
-  const clear = buildClearMask(room);
+  const clear = buildClearMask(room, avoid);
   const items: DecorItem[] = [];
 
   // Último item colocado por tipo (coluna e linha dele; a varredura é por linha, então ele é o

@@ -10,6 +10,37 @@ import { UI_TEXTURE } from './uiArt';
  * Nome do bioma ao entrar nele: o "ATO I" pequeno em cima, o nome grande no meio e dois divisores
  * dourados. Sobe um pouquinho enquanto aparece, fica um instante e some.
  */
+/**
+ * O nome da ala ao entrar nela (BIBLIOTECA, CAPELA...): uma linha discreta com um divisor, que
+ * aparece e some sozinha. Não repete o aviso grande da área.
+ */
+export function showWingCaption(scene: Phaser.Scene, name: string): void {
+  const cx = GAME_SIZE.width / 2;
+  const label = pixelText(scene, cx, BANNER.wing.y, name, {
+    color: TEXT_COLORS.normal,
+    originX: 0.5,
+    originY: 0.5,
+    fixed: true,
+  });
+  const divider = scene.add
+    .image(cx, BANNER.wing.y + BANNER.wing.dividerDy, UI_TEXTURE.divider)
+    .setTint(PALETTE.glow)
+    .setScrollFactor(0);
+  const caption = scene.add
+    .container(0, 0, [label, divider])
+    .setScrollFactor(0)
+    .setDepth(DEPTH.hud)
+    .setAlpha(0);
+  scene.tweens.add({
+    targets: caption,
+    alpha: 1,
+    duration: BANNER.wing.fadeMs,
+    hold: BANNER.wing.holdMs,
+    yoyo: true,
+    onComplete: () => caption.destroy(),
+  });
+}
+
 export function showBiomeBanner(
   scene: Phaser.Scene,
   actIndex: number,

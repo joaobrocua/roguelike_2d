@@ -130,6 +130,20 @@ Uma run atravessa **3 biomas**, cada um um mapa interligado de salas gerado por 
 - **Guardião Partido:** o chefe também **pula**: salta o obstáculo que o barra, sobe com um pulo alto até quem está num balcão e dá um salto comprido quando você está longe (poeira e tremor ao pousar; valores em `src/data/boss.ts`). Ele tem três ataques (pancada, investida e tremor) e entra numa fase 2 mais agressiva com metade da vida. Ao cair, solta uma relíquia e a tela de vitória aparece. Dados em `src/data/boss.ts`, IA em `src/logic/ai/boss.ts`.
 - Cada bioma tem a sua escuridão e névoa (`BIOME_DARKNESS`).
 
+## Alas e mobília
+
+Cada área é dividida em **alas**, com ambientes e mobília próprios (`src/data/wings.ts`):
+
+| Área       | Alas                                                                                                                      |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Muralhas   | Pátio de Armas (barris, caixotes, bonecos de treino, armas), Celeiros e Estábulos (carroças, barris)                      |
+| Salões     | Salão do Trono (mesas, cadeiras, lustres, tapeçarias), Biblioteca (estantes, livros), Capela (bancos, altar, candelabros) |
+| Catacumbas | Ossuário (caveiras, caixões), Masmorra (celas, gaiolas), Cripta Real (sarcófagos, altar, urnas)                           |
+
+- **Como as alas se distribuem:** as salas do mapa ficam em faixas da esquerda para a direita (`src/logic/wings.ts`), então atravessar a área é atravessar ambientes diferentes; a ordem das alas muda a cada run, e o nome da ala aparece ao entrar nela.
+- **Mobília:** `src/logic/furniture.ts` escolhe, de forma determinística por sala, onde cada peça cabe (no chão, sobre um apoio e com espaço livre acima; ou pendurada no teto), sem tapar portas, inimigos, objetos nem o ponto de nascimento, e sem uma peça por cima da outra. A decoração miúda (tufos, ossos, teias) desvia da mobília. O desenho é pixel art de código (`src/systems/furnitureArt.ts`) com as cores de cada área, e as peças com chama (velas, candelabros, lustres) iluminam a sala.
+- **Para criar uma ala nova:** acrescente uma entrada em `WINGS` com o nome e a lista de peças; os testes conferem nomes, pesos e que toda peça cabe em algum modelo de sala.
+
 ## Progressão permanente (etapa 6)
 
 Cada run rende **almas**, e o **Santuário** — uma sala própria, toda voltada para um anjo caído colossal esculpido na parede do fundo, com um altar aos seus pés, que o herói atravessa ao passar de um bioma para o outro e onde acorda depois de morrer ou vencer — troca almas por melhorias permanentes numa árvore de 10 nós, seguindo o modelo do documento de design (20% atributos básicos, 40% agência e consistência, 40% expansão de conteúdo).

@@ -62,7 +62,9 @@ import {
 import { floorYAt } from '../logic/pickupDrop';
 import { isSolidTile, parseRoom, type ParsedRoom, type RoomMarker } from '../logic/roomParser';
 import { createSlowMo, triggerSlowMo, updateSlowMo } from '../logic/slowMo';
-import { planDecor } from '../logic/decor';
+import { planDecor, type DecorAvoid } from '../logic/decor';
+import { footprintOf, planFurniture } from '../logic/furniture';
+import { wingForRoom } from '../logic/wings';
 import { tileLook } from '../logic/tileVariant';
 import { AtmosphereSystem, type LightSource } from '../systems/AtmosphereSystem';
 import { BossHud } from '../systems/BossHud';
@@ -73,7 +75,8 @@ import { FxSystem } from '../systems/FxSystem';
 import { InputSystem } from '../systems/InputSystem';
 import { MiniMap } from '../systems/MiniMap';
 import { ProjectileSystem } from '../systems/ProjectileSystem';
-import { showBiomeBanner } from '../systems/BiomeBanner';
+import { showBiomeBanner, showWingCaption } from '../systems/BiomeBanner';
+import { FurnitureSystem } from '../systems/FurnitureSystem';
 import { getMetaStore, type MetaStore } from '../systems/metaStore';
 import { getAudio, sfx } from '../systems/AudioSystem';
 import { SanctuaryDecor } from '../systems/SanctuaryDecor';
@@ -133,6 +136,8 @@ export class GameScene extends Phaser.Scene {
   private atmosphere!: AtmosphereSystem;
   private minimap: MiniMap | null = null;
   private sanctuaryDecor: SanctuaryDecor | null = null;
+  /** A mobília da ala desta sala (null na sala do santuário). */
+  private furniture: FurnitureSystem | null = null;
   /** Os portais da sala do santuário (um por área oferecida: 1 ou 2). */
   private sanctuaryGates: SanctuaryGate[] = [];
   private boss: Guardiao | null = null;
@@ -260,6 +265,7 @@ export class GameScene extends Phaser.Scene {
     const run = this.run;
     let layout: readonly string[];
     this.sanctuaryDecor = null;
+    this.furniture = null;
     this.sanctuaryGates = [];
     if (run.sanctuary) {
       // A sala do santuário não está no mapa: tem desenho próprio e veste o bioma do momento
@@ -299,7 +305,7 @@ export class GameScene extends Phaser.Scene {
       solids.create(col * TILE_SIZE + TILE_SIZE / 2, row * TILE_SIZE + TILE_SIZE / 2, key);
     }
     if (run.sanctuary) this.sanctuaryDecor = new SanctuaryDecor(this, this.lookBiome);
-    else this.spawnDecor(room);
+    else this.spawnDecor(room, this.spawnFurniture(room));
 
     this.bolts = new ProjectileSystem(this, room, TEXTURE.bolt, PROJECTILE_POOL.bolts);
     const spawn = this.spawnPoint(room);
@@ -344,7 +350,7 @@ export class GameScene extends Phaser.Scene {
     this.atmosphere = new AtmosphereSystem(
       this,
       room,
-      [this.enemies, this.props, this.sanctuaryLights()],
+      [this.enemies, this.props, this.sanctuaryLights(), this.furnitureLights()],
       this.lookBiome,
       BIOME_DARKNESS[this.lookBiome],
     );
@@ -458,14 +464,38 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  /** Semente da sala: a mesma sala de uma run sempre fica igual. */
+  private roomSeed(): number {
+    const run = this.run;
+    return (Math.imul(run.seed | 0, 2654435761) + run.roomId * 977 + run.stage * 131) >>> 0;
+  }
+
+  /**
+   * Mobília da ala em que a sala fica (as salas do mapa se agrupam em alas, da esquerda para a
+   * direita). Devolve as áreas ocupadas, para a decoração miúda não nascer por cima. Ao mudar de
+   * ala, o nome dela aparece.
+   */
+  private spawnFurniture(room: ParsedRoom): DecorAvoid[] {
+    const placed = this.placed;
+    if (!placed) return [];
+    const run = this.run;
+    const areaSeed = (Math.imul(run.seed | 0, 2654435761) + run.stage * 131) >>> 0;
+    const wing = wingForRoom(this.lookBiome, placed, areaSeed);
+    // A primeira sala da área já mostra o nome da área; as seguintes avisam quando a ala muda
+    if (run.wingId !== null && run.wingId !== wing.id) showWingCaption(this, wing.name);
+    run.wingId = wing.id;
+    const items = planFurniture(room, wing, (this.roomSeed() ^ 0x5bd1e995) >>> 0);
+    this.furniture = new FurnitureSystem(this, items, this.lookBiome);
+    return items.map(footprintOf);
+  }
+
   /**
    * Decoração do cenário (tufos, ossos, trepadeiras, teias...), sorteada por sala com a semente
    * da run: a mesma sala sempre fica igual. É só visual, atrás de personagens e objetos.
    */
-  private spawnDecor(room: ParsedRoom): void {
-    const run = this.run;
-    const seed = (Math.imul(run.seed | 0, 2654435761) + run.roomId * 977 + run.stage * 131) >>> 0;
-    for (const item of planDecor(room, seed)) {
+  private spawnDecor(room: ParsedRoom, avoid: readonly DecorAvoid[]): void {
+    const seed = this.roomSeed();
+    for (const item of planDecor(room, seed, avoid)) {
       const image = this.add.image(0, 0, decorTextureKey(this.lookBiome, item.kind, item.variant));
       const left = item.col * TILE_SIZE;
       const top = item.row * TILE_SIZE;
@@ -598,6 +628,11 @@ export class GameScene extends Phaser.Scene {
     const shrine = new Prop(this, 'shrine', marker.col * TILE_SIZE, (marker.row + 1) * TILE_SIZE);
     this.shrine = shrine;
     this.props.push(shrine);
+  }
+
+  /** Luzes da mobília com chama (velas, candelabros, lustres); vazio se a sala não tem. */
+  private furnitureLights(): readonly LightSource[] {
+    return this.furniture?.lights ?? [];
   }
 
   /** Luzes da sala do santuário (chamas e portal); vazio nas outras salas. */

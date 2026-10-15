@@ -1,4 +1,5 @@
 import { BIOME_CONFIG, RUN_PLAN, type BiomeId, type RunStage } from '../data/mapRules';
+import type { WingId } from '../data/wings';
 import { generateBiomeMap } from './map/generateMap';
 import type { BiomeMap, TemplateInfo } from './map/types';
 
@@ -24,6 +25,8 @@ export interface RunState {
   stage: number;
   /** As áreas já visitadas, uma por etapa (a última é a atual). */
   route: BiomeId[];
+  /** A ala em que o herói está agora (para avisar quando ele muda de ambiente); null ao chegar numa área. */
+  wingId: WingId | null;
   map: BiomeMap;
   roomId: number;
   visited: Set<number>;
@@ -112,6 +115,7 @@ export function createRun(
     seed,
     stage: 0,
     route: [biome],
+    wingId: null,
     map,
     roomId: map.startId,
     visited: new Set([map.startId]),
@@ -150,6 +154,7 @@ export function advanceBiome(
   const biome = pickArea(areaOptions(next, run.route, plan), chosen);
   run.stage = next;
   run.route.push(biome);
+  run.wingId = null;
   run.map = mapFor(run.seed, next, biome, catalog, run.secretRooms, plan);
   run.roomId = run.map.startId;
   run.visited = new Set([run.map.startId]);

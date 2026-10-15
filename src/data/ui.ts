@@ -178,6 +178,8 @@ export const BANNER = {
   captionDy: -17,
   dividerDy: 15,
   slidePx: 6,
+  /** O nome da ala ao entrar nela (mais discreto que o da área): altura e tempos. */
+  wing: { y: 44, fadeMs: 450, holdMs: 1500, dividerDy: 9 },
   /** Rótulo em cima do nome SANTUÁRIO: entre biomas ou ao despertar depois de morrer. */
   sanctuary: { nextBiome: 'ENTRE OS ATOS', start: 'DESPERTAR' },
   /** Linha das almas guardadas, abaixo do divisor de baixo. */
