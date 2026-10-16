@@ -8,6 +8,7 @@ import {
   type RunStage,
 } from '../src/data/mapRules';
 import { ROOM_TEMPLATES } from '../src/data/roomTemplates';
+import { BANNER } from '../src/data/ui';
 import { buildCatalog } from '../src/logic/map/catalog';
 import {
   advanceBiome,
@@ -175,6 +176,10 @@ describe('santuário na run', () => {
     RUN_PLAN.slice(firstCastle).forEach((stage) => {
       for (const biome of stage.options) expect(castle).toContain(biome);
     });
+  });
+
+  it('há um algarismo romano de ato para cada etapa da jornada', () => {
+    expect(BANNER.acts.length).toBeGreaterThanOrEqual(RUN_PLAN.length);
   });
 
   it('toda área fora do castelo é de terra ou de rocha (nunca de tijolo por esquecimento)', () => {

@@ -28,13 +28,23 @@ function setup(dx: number, dy: number) {
 }
 
 describe('visão tapada pelo cenário', () => {
-  it('sem linha de visão paira parado e não ataca, mesmo perto e alinhado', () => {
+  it('sem linha de visão nunca ataca, mesmo perto e alinhado, e depois de um instante paira parado', () => {
     const { state, out, sense } = setup(0, 80);
     sense.targetVisible = false;
     updateFlyer(state, out, sense, 16, noSway);
+    expect(out.startAttack).toBe(false);
+    updateFlyer(state, out, sense, 700, noSway); // passou da memória curta
     expect(out.velX).toBe(0);
     expect(out.velY).toBe(0);
     expect(out.startAttack).toBe(false);
+  });
+
+  it('ao perder o alvo de vista segue se posicionando por um instante (não congela)', () => {
+    const { state, out, sense } = setup(150, 200);
+    sense.targetVisible = false;
+    updateFlyer(state, out, sense, 16, noSway);
+    expect(out.velX).not.toBe(0);
+    expect(out.velY).not.toBe(0);
   });
 
   it('com linha de visão volta a perseguir e a atacar', () => {
@@ -52,6 +62,7 @@ describe('createFlyer', () => {
       clockMs: 0,
       diveDirX: 0,
       diveDirY: 0,
+      blindMs: 0,
     });
   });
 });

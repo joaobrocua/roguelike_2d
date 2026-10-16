@@ -339,6 +339,7 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
     sense.attackAllowed = this.attackAllowed();
     sense.targetVisible =
       !this.def.sightBlocked ||
+      this.attack.phase !== 'idle' ||
       hasLineOfSight(this.world.room, this.x, this.y, target.x, target.y, TILE_SIZE);
     sense.grounded = this.def.flying || body.blocked.down;
 

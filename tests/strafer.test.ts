@@ -1,25 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { AttackPhase } from '../src/logic/attack';
+import { CORVO_CARNICEIRO } from '../src/data/enemies';
 import { createStrafer, updateStrafer, type StraferConfig } from '../src/logic/ai/strafer';
 import { createAiOutput, createAiSense } from '../src/logic/ai/types';
 
-// Valores de produção do Corvo Carniceiro.
-const cfg: StraferConfig = {
-  sightRangeX: 260,
-  sightRangeY: 120,
-  perchHeight: 34,
-  perchOffsetX: 100,
-  hoverSpeed: 90,
-  minPassDx: 50,
-  alignToleranceX: 14,
-  alignToleranceY: 12,
-  passSpeed: 230,
-  passSteerSpeed: 60,
-  riseSpeed: 90,
-  cooldownMs: 900,
-  swayAmplitude: 14,
-  swayPeriodMs: 1100,
-};
+// Os valores reais do Corvo Carniceiro (src/data/enemies.ts): o balanceamento muda, o teste acompanha.
+const cfg: StraferConfig = CORVO_CARNICEIRO.ai;
 
 // Sem balanço, para isolar o posicionamento.
 const noSway: StraferConfig = { ...cfg, swayAmplitude: 0 };
@@ -35,17 +21,23 @@ function setup(dx: number, dy: number) {
 
 describe('createStrafer', () => {
   it('começa em perch com tudo zerado', () => {
-    expect(createStrafer()).toEqual({ mode: 'perch', timerMs: 0, clockMs: 0, passDir: 0 });
+    expect(createStrafer()).toEqual({
+      mode: 'perch',
+      timerMs: 0,
+      clockMs: 0,
+      passDir: 0,
+      blindMs: 0,
+    });
   });
 });
 
 describe('sem alvo', () => {
   it('fora da visão (horizontal ou vertical) fica parado e não ataca', () => {
     const cases: Array<{ dx: number; dy: number }> = [
-      { dx: 261, dy: 34 },
-      { dx: -261, dy: 34 },
-      { dx: 100, dy: 121 },
-      { dx: 100, dy: -121 },
+      { dx: cfg.sightRangeX + 1, dy: 34 },
+      { dx: -(cfg.sightRangeX + 1), dy: 34 },
+      { dx: 100, dy: cfg.sightRangeY + 1 },
+      { dx: 100, dy: -(cfg.sightRangeY + 1) },
     ];
     for (const { dx, dy } of cases) {
       const { state, out, sense } = setup(dx, dy);
@@ -57,13 +49,33 @@ describe('sem alvo', () => {
     }
   });
 
-  it('sem linha de visão fica parado e não ataca, mesmo alinhado', () => {
+  it('sem linha de visão nunca ataca, mesmo alinhado, e depois de um instante fica parado', () => {
     const { state, out, sense } = setup(114, 34);
     sense.targetVisible = false;
     updateStrafer(state, out, sense, 16, cfg);
+    expect(out.startAttack).toBe(false);
+    updateStrafer(state, out, sense, 700, cfg); // passou da memória curta
     expect(out.velX).toBe(0);
     expect(out.velY).toBe(0);
     expect(out.startAttack).toBe(false);
+  });
+
+  it('ao perder o alvo de vista segue se posicionando por um instante (não congela)', () => {
+    const { state, out, sense } = setup(180, 80); // longe do ponto de espera, mas ao alcance da visão
+    sense.targetVisible = false;
+    updateStrafer(state, out, sense, 16, noSway);
+    expect(out.velX).not.toBe(0);
+    expect(out.velY).not.toBe(0);
+  });
+
+  it('ao voltar a ver o alvo a memória zera e ele ataca de novo', () => {
+    const { state, out, sense } = setup(114, 34);
+    sense.targetVisible = false;
+    updateStrafer(state, out, sense, 700, cfg);
+    sense.targetVisible = true;
+    updateStrafer(state, out, sense, 16, cfg);
+    expect(state.blindMs).toBe(0);
+    expect(out.startAttack).toBe(true);
   });
 
   it('alvo morto fica parado e não ataca, mesmo alinhado', () => {
@@ -312,11 +324,12 @@ describe('passagem', () => {
   });
 
   it('active: velY segue a altura do alvo, limitada por passSteerSpeed', () => {
+    const max = cfg.passSteerSpeed;
     const cases: Array<{ dy: number; velY: number }> = [
-      { dy: 100, velY: 60 }, // alvo bem abaixo: desce no máximo 60
+      { dy: 100, velY: max }, // alvo bem abaixo: desce no máximo passSteerSpeed
       { dy: 10, velY: 30 }, // perto: proporcional (ganho 3)
       { dy: 0, velY: 0 }, // já na altura do alvo
-      { dy: -40, velY: -60 }, // alvo acima: sobe no máximo 60
+      { dy: -40, velY: -max }, // alvo acima: sobe no máximo passSteerSpeed
     ];
     for (const { dy, velY } of cases) {
       const { state, out, sense } = setup(100, dy);
@@ -444,9 +457,9 @@ describe('cooldown e retorno ao perch', () => {
 describe('simulação do ciclo completo', () => {
   const FRAME_MS = 16;
   // Fases do ataque do corvo (a entidade é quem as conduz; aqui só as imitamos).
-  const WINDUP_MS = 300;
-  const ACTIVE_MS = 520;
-  const RECOVERY_MS = 300;
+  const WINDUP_MS = CORVO_CARNICEIRO.attack.windupMs;
+  const ACTIVE_MS = CORVO_CARNICEIRO.attack.activeMs;
+  const RECOVERY_MS = CORVO_CARNICEIRO.attack.recoveryMs;
 
   it('chega ao ponto de espera, ataca, cruza o herói, entra em cooldown e espera de novo', () => {
     const state = createStrafer();

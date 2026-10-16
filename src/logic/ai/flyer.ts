@@ -32,6 +32,8 @@ export interface FlyerState {
   /** Direção normalizada travada ao entrar em 'active'; (0,0) = ainda não travada. */
   diveDirX: number;
   diveDirY: number;
+  /** Há quanto tempo (ms) o alvo está escondido pelo cenário (0 = à vista). */
+  blindMs: number;
 }
 
 /** Ganho do posicionamento: velocidade proporcional ao erro, depois limitada por hoverSpeed. */
@@ -40,8 +42,11 @@ const POSITION_GAIN = 3;
 const DIVE_ALIGN_TOLERANCE = 12;
 
 export function createFlyer(): FlyerState {
-  return { mode: 'hover', timerMs: 0, clockMs: 0, diveDirX: 0, diveDirY: 0 };
+  return { mode: 'hover', timerMs: 0, clockMs: 0, diveDirX: 0, diveDirY: 0, blindMs: 0 };
 }
+
+/** Quanto (ms) ele continua se posicionando depois de perder o alvo de vista. */
+const BLIND_GRACE_MS = 600;
 
 function clamp(value: number, limit: number): number {
   return Math.max(-limit, Math.min(limit, value));
@@ -104,9 +109,11 @@ export function updateFlyer(
     }
   }
 
+  // Perder o alvo de vista não o congela: segue se posicionando por um instante, sem atacar.
+  state.blindMs = sense.targetVisible ? 0 : state.blindMs + dt;
   const sees =
     sense.targetAlive &&
-    sense.targetVisible &&
+    state.blindMs <= BLIND_GRACE_MS &&
     Math.abs(sense.dx) <= cfg.sightRangeX &&
     Math.abs(sense.dy) <= cfg.sightRangeY;
   if (!sees) return; // paira parado
@@ -125,6 +132,7 @@ export function updateFlyer(
     state.mode === 'hover' &&
     state.timerMs <= 0 &&
     sense.attackAllowed &&
+    sense.targetVisible &&
     Math.abs(sense.dx) <= cfg.diveTriggerRangeX &&
     Math.abs(errorY) <= DIVE_ALIGN_TOLERANCE
   ) {

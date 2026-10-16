@@ -573,7 +573,7 @@ export class GameScene extends Phaser.Scene {
     };
   }
 
-  /** Cria um inimigo para cada marcador da sala ('C', 'A', 'V', 'D', 'L', 'R'), se a sala ainda não foi limpa. */
+  /** Cria um inimigo para cada marcador de inimigo da sala (ver ENEMY_MARKERS), se a sala ainda não foi limpa. */
   private spawnEnemies(
     room: ParsedRoom,
     world: EnemyWorld,
@@ -648,7 +648,7 @@ export class GameScene extends Phaser.Scene {
           );
           break;
       }
-      // Voadores atravessam plataformas: só os terrestres colidem com o cenário.
+      // Fantasmas e chamas (vulto, fogo-fátuo) atravessam o cenário; os demais, voando ou não, colidem.
       if (type !== 'vulto' && type !== 'fatuo') {
         this.physics.add.collider(enemy, solids);
       }

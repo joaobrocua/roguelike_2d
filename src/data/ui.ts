@@ -172,7 +172,7 @@ export const BANNER = {
   fadeMs: 700,
   holdMs: 1700,
   /** Números romanos dos biomas ("ATO I"). */
-  acts: ['I', 'II', 'III', 'IV'],
+  acts: ['I', 'II', 'III', 'IV', 'V', 'VI'],
   actLabel: 'ATO',
   /** Distâncias (px) acima e abaixo do título para o rótulo e os divisores. */
   captionDy: -17,

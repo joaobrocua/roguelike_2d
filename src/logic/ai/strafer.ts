@@ -42,6 +42,8 @@ export interface StraferState {
   clockMs: number;
   /** Sentido (-1 ou 1) travado ao entrar em 'active'; 0 = ainda não travado. */
   passDir: number;
+  /** Há quanto tempo (ms) o alvo está escondido pelo cenário (0 = à vista). */
+  blindMs: number;
 }
 
 /** Ganho do posicionamento: velocidade proporcional ao erro, depois limitada pela velocidade máxima. */
@@ -50,8 +52,11 @@ const POSITION_GAIN = 3;
 const RECOVERY_DRIFT_FACTOR = 0.25;
 
 export function createStrafer(): StraferState {
-  return { mode: 'perch', timerMs: 0, clockMs: 0, passDir: 0 };
+  return { mode: 'perch', timerMs: 0, clockMs: 0, passDir: 0, blindMs: 0 };
 }
+
+/** Quanto (ms) ele continua se posicionando depois de perder o alvo de vista. */
+const BLIND_GRACE_MS = 600;
 
 function clamp(value: number, limit: number): number {
   return Math.max(-limit, Math.min(limit, value));
@@ -108,9 +113,12 @@ export function updateStrafer(
     }
   }
 
+  // Perder o alvo de vista (uma quina, uma coluna) não o congela: ele segue se posicionando por um
+  // instante, mas só ataca com o alvo à vista.
+  state.blindMs = sense.targetVisible ? 0 : state.blindMs + dt;
   const sees =
     sense.targetAlive &&
-    sense.targetVisible &&
+    state.blindMs <= BLIND_GRACE_MS &&
     Math.abs(sense.dx) <= cfg.sightRangeX &&
     Math.abs(sense.dy) <= cfg.sightRangeY;
   if (!sees) return; // espera parado
@@ -132,6 +140,7 @@ export function updateStrafer(
     state.mode === 'perch' &&
     state.timerMs <= 0 &&
     sense.attackAllowed &&
+    sense.targetVisible &&
     Math.abs(sense.dx) >= cfg.minPassDx &&
     Math.abs(sense.dx) <= cfg.perchOffsetX + cfg.alignToleranceX &&
     Math.abs(errorY) <= cfg.alignToleranceY

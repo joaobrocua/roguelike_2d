@@ -1,5 +1,5 @@
 /**
- * Inimigos dos andares 1 a 3. Cada um define corpo, vida, ataque e os parâmetros da sua IA.
+ * Os inimigos do jogo, de todas as áreas. Cada um define corpo, vida, ataque e os parâmetros da sua IA.
  * Tempos em ms, velocidades em px/s, distâncias em px. O chefe entra na etapa 5.
  */
 import type { AmbusherConfig } from '../logic/ai/ambusher';
@@ -510,7 +510,7 @@ export const MORCEGO_DE_CRISTAL = {
 
 /**
  * Aldeão em Chamas (Vila Queimada): um morador em pânico, tomado pelo fogo, que corre direto para
- * o herói e se agarra a ele num bote longo. Frágil, mas rápido; a chama que carrega ilumina em volta.
+ * o herói e se joga sobre ele num bote longo. Frágil, mas rápido; a chama que carrega ilumina em volta.
  */
 export const ALDEAO_EM_CHAMAS = {
   id: 'aldeao',
