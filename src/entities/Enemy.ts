@@ -35,6 +35,7 @@ import {
   updateHealth,
   type HealthState,
 } from '../logic/health';
+import { hasLineOfSight } from '../logic/lineOfSight';
 import { isSolidAt, type ParsedRoom } from '../logic/roomParser';
 import { enemyFramePad } from '../systems/enemySprites';
 import { ActorShadow } from '../systems/ActorShadow';
@@ -304,6 +305,11 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
   /** Chamado ao renascer, para o tipo reiniciar o estado da sua IA. */
   protected resetAi(): void {}
 
+  /** Para onde o desenho olha (o soldado mostra o lado em que o escudo ainda está). */
+  protected visualFacing(): number {
+    return this.facing;
+  }
+
   /** O escudo para o golpe que vem de `sourceX`? Só quem tem escudo sobrescreve. */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   protected blocks(_sourceX: number): boolean {
@@ -331,6 +337,9 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
     sense.targetAlive = target.alive;
     sense.attackPhase = this.attack.phase;
     sense.attackAllowed = this.attackAllowed();
+    sense.targetVisible =
+      !this.def.sightBlocked ||
+      hasLineOfSight(this.world.room, this.x, this.y, target.x, target.y, TILE_SIZE);
     sense.grounded = this.def.flying || body.blocked.down;
 
     if (this.def.flying) {
@@ -394,7 +403,7 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
   }
 
   private updateVisuals(): void {
-    this.setFlipX(this.facing < 0);
+    this.setFlipX(this.visualFacing() < 0);
     this.playAnimation();
 
     if (isStunned(this.health)) {

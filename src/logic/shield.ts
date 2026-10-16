@@ -22,14 +22,20 @@ export function createGuard(dir: GuardDir = -1): GuardState {
   return { dir, pendingMs: 0 };
 }
 
-/** Faz a guarda seguir para onde o corpo olha, com atraso. Muta `state`; não aloca nada. */
+/**
+ * Faz a guarda seguir para onde o corpo olha, com atraso. Com `snap` (o inimigo está atacando, de
+ * guarda baixa) ela acompanha na hora, para o desenho não virar de costas no meio da estocada.
+ * Muta `state`; não aloca nada.
+ */
 export function updateGuard(
   state: GuardState,
   facing: GuardDir,
   dtMs: number,
   cfg: GuardConfig,
+  snap = false,
 ): void {
-  if (facing === state.dir) {
+  if (snap || facing === state.dir) {
+    state.dir = facing;
     state.pendingMs = 0;
     return;
   }
@@ -38,6 +44,15 @@ export function updateGuard(
     state.dir = facing;
     state.pendingMs = 0;
   }
+}
+
+/**
+ * Para onde o desenho do inimigo olha: com a guarda erguida mostra o lado em que o escudo está de
+ * verdade (então, enquanto a guarda não virou, o jogador vê que ele está de costas); de guarda
+ * baixa acompanha o corpo.
+ */
+export function shownDirection(state: GuardState, guardUp: boolean, facing: GuardDir): GuardDir {
+  return guardUp ? state.dir : facing;
 }
 
 /** O golpe que vem de `sourceX` bate no escudo de quem está em `enemyX`? */

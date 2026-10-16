@@ -27,6 +27,23 @@ function setup(dx: number, dy: number) {
   return { state, out, sense };
 }
 
+describe('visão tapada pelo cenário', () => {
+  it('sem linha de visão paira parado e não ataca, mesmo perto e alinhado', () => {
+    const { state, out, sense } = setup(0, 80);
+    sense.targetVisible = false;
+    updateFlyer(state, out, sense, 16, noSway);
+    expect(out.velX).toBe(0);
+    expect(out.velY).toBe(0);
+    expect(out.startAttack).toBe(false);
+  });
+
+  it('com linha de visão volta a perseguir e a atacar', () => {
+    const { state, out, sense } = setup(0, 80);
+    updateFlyer(state, out, sense, 16, noSway);
+    expect(out.startAttack).toBe(true);
+  });
+});
+
 describe('createFlyer', () => {
   it('começa em hover com tudo zerado', () => {
     expect(createFlyer()).toEqual({

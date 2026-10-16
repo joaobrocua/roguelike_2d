@@ -18,6 +18,8 @@ export interface AiSense {
   ledgeBehind: boolean;
   /** Fase do ataque do próprio inimigo ('idle' se não está atacando). */
   attackPhase: AttackPhase;
+  /** O alvo está à vista (sem rocha no meio)? Só quem tem a visão tapada pelo cenário consulta. */
+  targetVisible: boolean;
   /** false quando o bando não deixa este inimigo atacar agora (ver pack.ts). */
   attackAllowed: boolean;
 }
@@ -72,6 +74,7 @@ export function createAiSense(): AiSense {
     wallBehind: false,
     ledgeBehind: false,
     attackPhase: 'idle',
+    targetVisible: true,
     attackAllowed: true,
   };
 }

@@ -27,6 +27,8 @@ export interface EnemyBody {
   color: number;
   /** Voadores ignoram gravidade e plataformas. */
   flying: boolean;
+  /** A rocha tapa a visão dele: sem linha reta de ar até o herói, ele não o enxerga. */
+  sightBlocked?: boolean;
   meleeShape: MeleeShape;
   attack: AttackConfig;
 }
@@ -478,6 +480,7 @@ export const MORCEGO_DE_CRISTAL = {
   knockbackFriction: 500,
   color: PALETTE.glow,
   flying: true,
+  sightBlocked: true, // dentro da mina a rocha o esconde: ele não mergulha através da parede
   meleeShape: 'body',
   attack: {
     windupMs: 320, // dobra as asas e os cristais acendem: avisa o mergulho

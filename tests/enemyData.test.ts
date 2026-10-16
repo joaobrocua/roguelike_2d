@@ -120,6 +120,8 @@ describe('inimigos da floresta (dados)', () => {
     expect(MORCEGO_DE_CRISTAL.maxHp).toBeLessThan(VULTO.maxHp);
     expect(MORCEGO_DE_CRISTAL.ai.diveSpeed).toBeGreaterThan(VULTO.ai.diveSpeed);
     expect(MORCEGO_DE_CRISTAL.attack.windupMs).toBeGreaterThanOrEqual(250); // dá para ver o aviso
+    expect(MORCEGO_DE_CRISTAL.sightBlocked).toBe(true); // a rocha o esconde
+    expect(ENEMY_BODIES.find((b) => b.id === 'vulto')?.sightBlocked).toBeUndefined(); // fantasmas continuam atravessando
     expect(MORCEGO_DE_CRISTAL.light.radius).toBeGreaterThan(0);
     expect(MORCEGO_DE_CRISTAL.light.strength).toBeLessThanOrEqual(1);
   });

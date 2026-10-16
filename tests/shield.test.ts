@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { blocksHit, createGuard, updateGuard } from '../src/logic/shield';
+import { blocksHit, createGuard, shownDirection, updateGuard } from '../src/logic/shield';
 
 const CFG = { turnLagMs: 400 };
 
@@ -43,5 +43,19 @@ describe('escudo', () => {
     updateGuard(guard, 1, 200, CFG);
     updateGuard(guard, 1, -500, CFG);
     expect(guard.pendingMs).toBe(200);
+  });
+
+  it('atacando (snap) a guarda acompanha o corpo na hora', () => {
+    const guard = createGuard(-1);
+    updateGuard(guard, 1, 16, CFG, true);
+    expect(guard.dir).toBe(1);
+    expect(guard.pendingMs).toBe(0);
+  });
+
+  it('com a guarda erguida o desenho mostra o lado do escudo, não o do corpo', () => {
+    const guard = createGuard(-1);
+    updateGuard(guard, 1, 200, CFG); // o corpo já olha para a direita, a guarda ainda não virou
+    expect(shownDirection(guard, true, 1)).toBe(-1);
+    expect(shownDirection(guard, false, 1)).toBe(1); // guarda baixa: segue o corpo
   });
 });

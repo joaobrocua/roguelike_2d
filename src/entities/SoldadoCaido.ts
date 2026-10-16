@@ -2,7 +2,7 @@ import type Phaser from 'phaser';
 import { SOLDADO_CAIDO } from '../data/enemies';
 import { createGroundMelee, updateGroundMelee } from '../logic/ai/groundMelee';
 import { isStunned } from '../logic/health';
-import { blocksHit, createGuard, updateGuard } from '../logic/shield';
+import { blocksHit, createGuard, shownDirection, updateGuard } from '../logic/shield';
 import { Enemy, type EnemyOptions, type EnemyWorld } from './Enemy';
 
 /**
@@ -26,12 +26,20 @@ export class SoldadoCaido extends Enemy {
 
   protected think(dtMs: number): void {
     updateGroundMelee(this.ai, this.out, this.sense, dtMs, SOLDADO_CAIDO.ai);
-    updateGuard(this.guard, this.out.facing >= 0 ? 1 : -1, dtMs, SOLDADO_CAIDO.guard);
+    const attacking = this.sense.attackPhase !== 'idle';
+    updateGuard(this.guard, this.out.facing >= 0 ? 1 : -1, dtMs, SOLDADO_CAIDO.guard, attacking);
+  }
+
+  private guardUp(): boolean {
+    return this.attack.phase === 'idle' && !isStunned(this.health);
   }
 
   protected override blocks(sourceX: number): boolean {
-    const guardUp = this.attack.phase === 'idle' && !isStunned(this.health);
-    return blocksHit(this.guard, guardUp, this.x, sourceX);
+    return blocksHit(this.guard, this.guardUp(), this.x, sourceX);
+  }
+
+  protected override visualFacing(): number {
+    return shownDirection(this.guard, this.guardUp(), this.facing >= 0 ? 1 : -1);
   }
 
   protected override resetAi(): void {

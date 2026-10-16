@@ -640,7 +640,7 @@ export class GameScene extends Phaser.Scene {
           break;
       }
       // Voadores atravessam plataformas: só os terrestres colidem com o cenário.
-      if (type !== 'vulto' && type !== 'fatuo' && type !== 'morcego') {
+      if (type !== 'vulto' && type !== 'fatuo') {
         this.physics.add.collider(enemy, solids);
       }
       this.enemies.push(enemy);

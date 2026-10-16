@@ -106,6 +106,7 @@ export function updateFlyer(
 
   const sees =
     sense.targetAlive &&
+    sense.targetVisible &&
     Math.abs(sense.dx) <= cfg.sightRangeX &&
     Math.abs(sense.dy) <= cfg.sightRangeY;
   if (!sees) return; // paira parado
