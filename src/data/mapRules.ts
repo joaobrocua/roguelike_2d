@@ -85,6 +85,12 @@ export const RUN_PLAN: readonly RunStage[] = [
   { options: ['catacumbas'] },
 ];
 
+/**
+ * Áreas cuja entrada passa por uma sala-santuário (o "portão" do castelo): entre as demais áreas a
+ * porta de saída leva direto à próxima. O santuário também aparece ao acordar depois de morrer ou vencer.
+ */
+export const SANCTUARY_BEFORE: readonly BiomeId[] = ['muralhas'];
+
 /** Nome curto da área (cabe na placa sobre a passagem). */
 export const BIOME_SHORT_NAMES: Readonly<Record<BiomeId, string>> = {
   muralhas: 'MURALHAS',

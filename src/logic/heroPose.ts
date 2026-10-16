@@ -67,19 +67,27 @@ export function heroJoints(pose: HeroPose, geo: HeroGeometry): HeroJoints {
     footBackY = geo.footY + feet.back.dy;
   }
 
+  const handFrontX = shoulderFrontX + Math.cos(pose.armFront) * armLen;
+  const handFrontY = shoulderY + Math.sin(pose.armFront) * armLen;
+  let handBackX = shoulderBackX + Math.cos(pose.armBack) * armLen;
+  let handBackY = shoulderY + Math.sin(pose.armBack) * armLen;
+  if (pose.backHold !== undefined && pose.weaponAngle !== undefined) {
+    // Duas mãos: a de trás vai ao ponto do cabo que o ângulo da arma indica, até onde o braço alcança
+    const targetX = handFrontX + Math.sin(pose.weaponAngle) * pose.backHold;
+    const targetY = handFrontY - Math.cos(pose.weaponAngle) * pose.backHold;
+    const reach = Math.hypot(targetX - shoulderBackX, targetY - shoulderY);
+    const scale = reach > armLen ? armLen / reach : 1;
+    handBackX = shoulderBackX + (targetX - shoulderBackX) * scale;
+    handBackY = shoulderY + (targetY - shoulderY) * scale;
+  }
+
   return {
     hipY: r(hipY),
     torsoTop: r(torsoTop),
     shoulderFront: point(shoulderFrontX, shoulderY),
     shoulderBack: point(shoulderBackX, shoulderY),
-    handFront: point(
-      shoulderFrontX + Math.cos(pose.armFront) * armLen,
-      shoulderY + Math.sin(pose.armFront) * armLen,
-    ),
-    handBack: point(
-      shoulderBackX + Math.cos(pose.armBack) * armLen,
-      shoulderY + Math.sin(pose.armBack) * armLen,
-    ),
+    handFront: point(handFrontX, handFrontY),
+    handBack: point(handBackX, handBackY),
     hipFront: point(hipFrontX, hipY),
     hipBack: point(hipBackX, hipY),
     kneeFront: point((hipFrontX + footFrontX) / 2 + geo.kneeBend, (hipY + footFrontY) / 2),

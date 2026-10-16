@@ -92,6 +92,17 @@ export interface HeroPose {
   tuck: boolean;
   /** Giro do corpo todo (rad): a rolagem gira de 90 em 90 graus; a morte deita o herói. */
   rotation: number;
+  /**
+   * Ângulo da arma na mão da frente (rad; 0 = apontando para cima, positivo gira para a frente e
+   * para baixo, 1,57 = na horizontal para a frente). Sem valor, vale o do estado (HERO_WEAPON_ANGLE).
+   */
+  weaponAngle?: number;
+  /**
+   * Armas de duas mãos: distância (px) ao longo do cabo, a partir da mão da frente, onde a mão de
+   * trás segura (positivo = rumo à ponta, negativo = rumo à base). Sem valor, o braço de trás fica
+   * solto no ângulo `armBack`.
+   */
+  backHold?: number;
 }
 
 export const HERO_BASE_POSE: HeroPose = {
@@ -115,7 +126,18 @@ function pose(overrides: Partial<HeroPose>): HeroPose {
 }
 
 export type HeroState =
-  'idle' | 'run' | 'jump' | 'fall' | 'roll' | 'windup' | 'swing' | 'recover' | 'hurt' | 'dead';
+  | 'idle'
+  | 'run'
+  | 'jump'
+  | 'apex'
+  | 'fall'
+  | 'land'
+  | 'roll'
+  | 'windup'
+  | 'swing'
+  | 'recover'
+  | 'hurt'
+  | 'dead';
 
 export interface HeroFrame {
   /** Nome do quadro na textura (ex.: 'run-3'). */
@@ -164,12 +186,215 @@ function rollFrames(): HeroFrame[] {
   }));
 }
 
+/**
+ * Estilos de golpe: cada arma escolhe um por golpe do combo (src/data/weapons.ts). Todos têm 7
+ * quadros: 2 de preparação, 3 de golpe (o arco da arma) e 2 de recuperação, e o jogo escolhe o
+ * quadro pelo andamento da fase (os golpes são rápidos: cada quadro dura poucos milissegundos).
+ * 'slashA' é o corte de cima para baixo com uma mão; 'slashB', o contra-golpe de baixo para cima;
+ * 'thrust' e 'lunge', a estocada com duas mãos e com uma; 'overhead', a pancada pesada de cima;
+ * 'sweep', o varrido largo; 'bow', o arco; 'cast', o gesto de conjurar.
+ */
+export type AttackStyle =
+  'slashA' | 'slashB' | 'thrust' | 'lunge' | 'overhead' | 'sweep' | 'bow' | 'cast';
+
+export const ATTACK_STYLES: readonly AttackStyle[] = [
+  'slashA',
+  'slashB',
+  'thrust',
+  'lunge',
+  'overhead',
+  'sweep',
+  'bow',
+  'cast',
+];
+
+/** Nomes dos quadros de cada fase de um estilo, na ordem em que tocam. */
+export interface AttackSet {
+  windup: readonly string[];
+  swing: readonly string[];
+  recover: readonly string[];
+}
+
+/** Um quadro-chave de um golpe: braço da frente e de trás, inclinação, passada e ângulo da arma. */
+interface AttackKey {
+  arm: number;
+  back: number;
+  lean: number;
+  stride: number;
+  weapon: number;
+  bob?: number;
+  /** Duas mãos: onde a mão de trás segura (ver HeroPose.backHold). */
+  hold?: number;
+  cape?: number;
+}
+
+const ATTACK_KEYS: Readonly<
+  Record<AttackStyle, { windup: AttackKey[]; swing: AttackKey[]; recover: AttackKey[] }>
+> = {
+  slashA: {
+    windup: [
+      { arm: -1.2, back: 1.9, lean: 0, stride: -0.1, weapon: -0.2 },
+      { arm: -2.0, back: 1.8, lean: -1, stride: -0.3, weapon: -0.9 },
+    ],
+    swing: [
+      { arm: -1.0, back: 2.0, lean: 0, stride: 0.1, weapon: 0.6, cape: 12 },
+      { arm: -0.2, back: 2.1, lean: 1, stride: 0.4, weapon: 1.45, cape: 14 },
+      { arm: 0.5, back: 2.2, lean: 2, stride: 0.5, weapon: 2.2, cape: 14 },
+    ],
+    recover: [
+      { arm: 0.9, back: 2.0, lean: 2, stride: 0.3, weapon: 2.1 },
+      { arm: 1.1, back: 1.8, lean: 1, stride: 0.1, weapon: 1.2 },
+    ],
+  },
+  slashB: {
+    windup: [
+      { arm: 0.9, back: 1.6, lean: 1, stride: 0.2, weapon: 2.0 },
+      { arm: 0.6, back: 1.8, lean: 0, stride: 0, weapon: 1.7 },
+    ],
+    swing: [
+      { arm: 0.2, back: 2.0, lean: 1, stride: 0.2, weapon: 1.2, cape: 12 },
+      { arm: -0.5, back: 2.2, lean: 1, stride: 0.4, weapon: 0.3, cape: 14 },
+      { arm: -1.2, back: 2.3, lean: 0, stride: 0.3, weapon: -0.7, cape: 14 },
+    ],
+    recover: [
+      { arm: -1.5, back: 2.0, lean: 0, stride: 0.1, weapon: -0.9 },
+      { arm: -0.6, back: 1.8, lean: 0, stride: 0, weapon: -0.2 },
+    ],
+  },
+  thrust: {
+    windup: [
+      { arm: 1.2, back: 1.8, lean: -1, stride: -0.2, weapon: 1.45, hold: -7 },
+      { arm: 2.6, back: 1.8, lean: -2, stride: -0.4, weapon: 1.5, hold: -7 },
+    ],
+    swing: [
+      { arm: 0.6, back: 1.8, lean: 1, stride: 0.3, weapon: 1.55, hold: -7, cape: 12 },
+      { arm: 0.05, back: 1.8, lean: 2, stride: 0.6, weapon: 1.57, hold: -7, cape: 14 },
+      { arm: -0.05, back: 1.8, lean: 3, stride: 0.6, weapon: 1.57, hold: -7, cape: 14 },
+    ],
+    recover: [
+      { arm: 0.3, back: 1.8, lean: 2, stride: 0.4, weapon: 1.5, hold: -7 },
+      { arm: 0.8, back: 1.8, lean: 1, stride: 0.1, weapon: 1.3, hold: -7 },
+    ],
+  },
+  lunge: {
+    windup: [
+      { arm: 1.2, back: 1.0, lean: -1, stride: -0.2, weapon: 1.45 },
+      { arm: 2.6, back: 0.4, lean: -2, stride: -0.4, weapon: 1.5 },
+    ],
+    swing: [
+      { arm: 0.6, back: 0.8, lean: 1, stride: 0.3, weapon: 1.55, cape: 12 },
+      { arm: 0.05, back: 1.0, lean: 2, stride: 0.6, weapon: 1.57, cape: 14 },
+      { arm: -0.05, back: 1.2, lean: 3, stride: 0.6, weapon: 1.57, cape: 14 },
+    ],
+    recover: [
+      { arm: 0.3, back: 1.4, lean: 2, stride: 0.4, weapon: 1.5 },
+      { arm: 0.8, back: 1.6, lean: 1, stride: 0.1, weapon: 1.3 },
+    ],
+  },
+  overhead: {
+    windup: [
+      { arm: -1.0, back: -0.8, lean: 0, stride: -0.1, weapon: -0.1, hold: 6 },
+      { arm: -2.3, back: -1.9, lean: -2, stride: -0.3, weapon: -0.6, hold: 6, bob: -1 },
+    ],
+    swing: [
+      { arm: -1.3, back: -1.0, lean: -1, stride: 0.1, weapon: 0.5, hold: 6, cape: 12 },
+      { arm: -0.1, back: 0.1, lean: 1, stride: 0.4, weapon: 1.6, hold: 6, cape: 14 },
+      { arm: 0.8, back: 0.9, lean: 3, stride: 0.5, weapon: 2.7, hold: 6, bob: -1, cape: 14 },
+    ],
+    recover: [
+      { arm: 1.0, back: 1.1, lean: 3, stride: 0.4, weapon: 2.8, hold: 6, bob: -1 },
+      { arm: 1.1, back: 1.3, lean: 2, stride: 0.2, weapon: 2.2, hold: 6 },
+    ],
+  },
+  sweep: {
+    windup: [
+      { arm: 1.6, back: 1.4, lean: -1, stride: -0.2, weapon: 0.9, hold: -6 },
+      { arm: 2.5, back: 2.0, lean: -2, stride: -0.4, weapon: 0.2, hold: -6 },
+    ],
+    swing: [
+      { arm: 1.5, back: 1.6, lean: 0, stride: 0.1, weapon: 0.8, hold: -6, cape: 12 },
+      { arm: 0.8, back: 1.2, lean: 1, stride: 0.4, weapon: 1.5, hold: -6, cape: 14 },
+      { arm: 0.3, back: 0.9, lean: 2, stride: 0.5, weapon: 2.1, hold: -6, cape: 14 },
+    ],
+    recover: [
+      { arm: 0.5, back: 1.0, lean: 2, stride: 0.3, weapon: 2.2, hold: -6 },
+      { arm: 0.9, back: 1.3, lean: 1, stride: 0.1, weapon: 1.5, hold: -6 },
+    ],
+  },
+  bow: {
+    windup: [
+      { arm: -0.05, back: 0.6, lean: 0, stride: 0, weapon: 0 },
+      { arm: -0.05, back: 3.0, lean: -1, stride: -0.1, weapon: 0 },
+    ],
+    swing: [
+      { arm: -0.05, back: 2.8, lean: 0, stride: 0, weapon: 0, cape: 12 },
+      { arm: 0, back: 2.2, lean: 1, stride: 0.1, weapon: 0.05, cape: 13 },
+      { arm: 0.05, back: 1.6, lean: 1, stride: 0.1, weapon: 0.08, cape: 13 },
+    ],
+    recover: [
+      { arm: 0.1, back: 1.4, lean: 1, stride: 0, weapon: 0.1 },
+      { arm: 0.6, back: 1.6, lean: 0, stride: 0, weapon: 0.2 },
+    ],
+  },
+  cast: {
+    windup: [
+      { arm: -0.8, back: 1.9, lean: 0, stride: 0, weapon: 0 },
+      { arm: -1.3, back: 2.0, lean: -1, stride: -0.1, weapon: 0, bob: 1 },
+    ],
+    swing: [
+      { arm: -0.5, back: 2.0, lean: 0, stride: 0, weapon: 0, cape: 13 },
+      { arm: -0.1, back: 2.1, lean: 1, stride: 0.1, weapon: 0, cape: 14 },
+      { arm: 0.05, back: 2.1, lean: 1, stride: 0.1, weapon: 0, cape: 14 },
+    ],
+    recover: [
+      { arm: 0.5, back: 1.9, lean: 1, stride: 0, weapon: 0 },
+      { arm: 0.9, back: 1.8, lean: 0, stride: 0, weapon: 0 },
+    ],
+  },
+};
+
+const PHASE_LETTER = { windup: 'w', swing: 's', recover: 'r' } as const;
+
+function attackPose(key: AttackKey): HeroPose {
+  return pose({
+    bob: key.bob ?? 0,
+    lean: key.lean,
+    stride: key.stride,
+    armFront: key.arm,
+    armBack: key.back,
+    capeLen: key.cape ?? 11,
+    capeAmp: key.cape ? 2 : 1,
+    weaponAngle: key.weapon,
+    backHold: key.hold,
+  });
+}
+
+/** Os quadros de todos os estilos de golpe (7 por estilo) e os nomes de cada fase. */
+const ATTACK_FRAMES: HeroFrame[] = [];
+export const HERO_ATTACK_SETS = {} as Record<AttackStyle, AttackSet>;
+for (const style of ATTACK_STYLES) {
+  const keys = ATTACK_KEYS[style];
+  const set: AttackSet = { windup: [], swing: [], recover: [] };
+  for (const phase of ['windup', 'swing', 'recover'] as const) {
+    keys[phase].forEach((key, i) => {
+      const name = `${style}-${PHASE_LETTER[phase]}${i}`;
+      ATTACK_FRAMES.push({ name, pose: attackPose(key) });
+      (set[phase] as string[]).push(name);
+    });
+  }
+  HERO_ATTACK_SETS[style] = set;
+}
+
 export const HERO_FRAMES: readonly HeroFrame[] = [
   ...idleFrames(),
   ...runFrames(),
   {
     name: 'jump-0',
     pose: pose({ legs: 'jump', armFront: -0.9, armBack: -0.3, capeLen: 12, capeAmp: 1.5, lean: 1 }),
+  },
+  {
+    name: 'jump-1',
+    pose: pose({ legs: 'jump', armFront: -0.5, armBack: 0.1, capeLen: 10, capeAmp: 1.5, lean: 1 }),
   },
   {
     name: 'fall-0',
@@ -182,19 +407,20 @@ export const HERO_FRAMES: readonly HeroFrame[] = [
       capePhase: 1,
     }),
   },
+  {
+    name: 'land-0',
+    pose: pose({
+      bob: -2,
+      lean: 1,
+      armFront: 0.9,
+      armBack: 1.2,
+      capeLen: 12,
+      capeAmp: 2,
+      capePhase: 0.5,
+    }),
+  },
   ...rollFrames(),
-  {
-    name: 'windup-0',
-    pose: pose({ lean: -1, stride: -0.3, armFront: -2.2, armBack: 1.8, capeLen: 10 }),
-  },
-  {
-    name: 'swing-0',
-    pose: pose({ lean: 2, stride: 0.5, armFront: 0.05, armBack: 2.2, capeLen: 14, capeAmp: 2 }),
-  },
-  {
-    name: 'recover-0',
-    pose: pose({ lean: 1, stride: 0.2, armFront: 0.8, armBack: 1.9, capeLen: 11 }),
-  },
+  ...ATTACK_FRAMES,
   {
     name: 'hurt-0',
     pose: pose({
@@ -230,11 +456,14 @@ export const HERO_ANIMATIONS: readonly HeroAnimation[] = [
   { state: 'idle', frames: names('idle', IDLE_BOB.length), fps: 4, loop: true },
   { state: 'run', frames: names('run', RUN_FRAMES), fps: 12, loop: true },
   { state: 'jump', frames: ['jump-0'], fps: 1, loop: false },
+  { state: 'apex', frames: ['jump-1'], fps: 1, loop: false },
   { state: 'fall', frames: ['fall-0'], fps: 1, loop: false },
+  { state: 'land', frames: ['land-0'], fps: 1, loop: false },
   { state: 'roll', frames: names('roll', 4), fps: 18, loop: true },
-  { state: 'windup', frames: ['windup-0'], fps: 1, loop: false },
-  { state: 'swing', frames: ['swing-0'], fps: 1, loop: false },
-  { state: 'recover', frames: ['recover-0'], fps: 1, loop: false },
+  // Os golpes escolhem o quadro pelo andamento da fase (HERO_ATTACK_SETS); estes são o reserva.
+  { state: 'windup', frames: ['slashA-w0'], fps: 1, loop: false },
+  { state: 'swing', frames: ['slashA-s1'], fps: 1, loop: false },
+  { state: 'recover', frames: ['slashA-r0'], fps: 1, loop: false },
   { state: 'hurt', frames: ['hurt-0'], fps: 1, loop: false },
   { state: 'dead', frames: ['dead-0'], fps: 1, loop: false },
 ];
@@ -252,27 +481,56 @@ export function heroAnimationKey(state: HeroState): string {
 export const HERO_MARKER_OFFSET_Y = -19;
 
 /**
- * Inclinação da arma da relíquia na mão (rad, 0 = lâmina para cima e para a frente; positivo
- * gira para baixo). Cada estado mostra um "gesto" diferente: armada, golpeando, recuperando.
+ * Ângulo da arma na mão fora dos golpes (rad; 0 = para cima, positivo gira para a frente e para
+ * baixo). Nos golpes, cada quadro traz o seu (HeroPose.weaponAngle). Cada arma soma o seu
+ * `restBias` (src/data/weapons.ts): a lança vai mais em pé, a adaga mais à frente.
  */
 export const HERO_WEAPON_ANGLE: Readonly<Record<HeroState, number>> = {
-  idle: -0.25,
-  run: -0.55,
-  jump: -0.9,
-  fall: -0.1,
+  idle: 0.45,
+  run: 0.9,
+  jump: -0.3,
+  apex: 0.2,
+  fall: 0.75,
+  land: 0.95,
   roll: 0,
-  windup: -1.9,
-  swing: 0.85,
-  recover: 0.5,
-  hurt: -0.3,
+  windup: -0.6,
+  swing: 1.5,
+  recover: 2.1,
+  hurt: -0.7,
   dead: 0,
 };
+
+/** Quanto a arma balança (rad) ao correr e parada, e a velocidade do balanço (ms por volta). */
+export const HERO_WEAPON_SWAY = {
+  run: 0.12,
+  idle: 0.04,
+  runPeriodMs: 330,
+  idlePeriodMs: 1600,
+} as const;
 
 /** Estados em que a arma some da mão (enrolado em bola, caído). */
 export const HERO_WEAPON_HIDDEN: readonly HeroState[] = ['roll', 'dead'];
 
-/** Ponto de empunhadura nos ícones de arma (fração do ícone; o cabo fica embaixo à esquerda). */
-export const HERO_WEAPON_GRIP = { x: 0.12, y: 0.92 } as const;
-
 /** O Tomo flutua ao lado do herói em vez de ser empunhado. */
 export const HERO_TOME_FLOAT = { offsetX: -11, offsetY: -6, bobPx: 2, bobPeriodMs: 1400 } as const;
+
+/** Velocidade vertical (px/s) abaixo da qual, no ar, o herói está no ponto mais alto do pulo. */
+export const HERO_APEX_THRESHOLD = 55;
+
+/** Quanto tempo (ms) o quadro de pouso dura depois de tocar o chão vindo de uma queda. */
+export const HERO_LAND_MS = 90;
+
+/** Queda mínima (px/s de velocidade vertical ao pousar) para o herói se agachar no pouso. */
+export const HERO_LAND_MIN_SPEED = 160;
+
+const POSE_BY_NAME: ReadonlyMap<string, HeroPose> = new Map(
+  HERO_FRAMES.map((frame) => [frame.name, frame.pose]),
+);
+
+/** Pose (quadro) de cada nome, para consultar o ângulo da arma e outros dados por quadro. */
+export function heroFramePose(name: string): HeroPose | undefined {
+  return POSE_BY_NAME.get(name);
+}
+
+/** Opacidade de cada imagem do rastro da arma durante o golpe (da mais recente à mais antiga). */
+export const HERO_WEAPON_TRAIL = [0.38, 0.24, 0.12] as const;

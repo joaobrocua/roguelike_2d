@@ -1,4 +1,10 @@
-import { BIOME_CONFIG, RUN_PLAN, type BiomeId, type RunStage } from '../data/mapRules';
+import {
+  BIOME_CONFIG,
+  RUN_PLAN,
+  SANCTUARY_BEFORE,
+  type BiomeId,
+  type RunStage,
+} from '../data/mapRules';
 import type { WingId } from '../data/wings';
 import { generateBiomeMap } from './map/generateMap';
 import type { BiomeMap, TemplateInfo } from './map/types';
@@ -206,4 +212,17 @@ export function leaveSanctuary(
   run.sanctuary = null;
   if (sanctuary?.leadsTo === 'nextBiome') return advanceBiome(run, catalog, chosen, plan);
   return true;
+}
+
+/**
+ * A saída desta área passa pelo santuário antes de chegar à próxima? Só quando a área seguinte
+ * (a primeira das opções) é uma das que ficam atrás do "portão" (SANCTUARY_BEFORE): nas demais a
+ * porta leva direto.
+ */
+export function passesThroughSanctuary(
+  options: readonly BiomeId[],
+  gated: readonly BiomeId[] = SANCTUARY_BEFORE,
+): boolean {
+  const first = options[0];
+  return first !== undefined && gated.includes(first);
 }

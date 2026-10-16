@@ -6,6 +6,7 @@ import { DeathScene } from './scenes/DeathScene';
 import { GameScene } from './scenes/GameScene';
 import { RelicChoiceScene } from './scenes/RelicChoiceScene';
 import { PauseScene } from './scenes/PauseScene';
+import { RoadChoiceScene } from './scenes/RoadChoiceScene';
 import { SanctuaryScene } from './scenes/SanctuaryScene';
 import { TitleScene } from './scenes/TitleScene';
 import { VictoryScene } from './scenes/VictoryScene';
@@ -38,6 +39,7 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
     GameScene,
     DeathScene,
     RelicChoiceScene,
+    RoadChoiceScene,
     SanctuaryScene,
     VictoryScene,
     PauseScene,

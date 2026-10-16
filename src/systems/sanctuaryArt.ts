@@ -26,6 +26,7 @@ export const SANCTUARY_TEXTURE = {
   candle: (biome: BiomeId, frame: number): string => `sanct-candle-${biome}-${frame}`,
   gate: (biome: BiomeId): string => `sanct-gate-${biome}`,
   view: (dest: BiomeId): string => `sanct-view-${dest}`,
+  fork: (a: BiomeId, b: BiomeId): string => `sanct-fork-${a}-${b}`,
   shaft: 'sanct-shaft',
   runes: 'sanct-runes',
 } as const;
@@ -460,6 +461,62 @@ function drawRunes(ctx: Ctx): void {
     const y = cy + Math.round(Math.sin(rad) * (ry - 1));
     rect(ctx, 0xffffff, x, y, deg % 30 === 0 ? 2 : 1, 1);
   }
+}
+
+/**
+ * A vista de uma bifurcação: a metade esquerda é a paisagem de uma área e a direita, a de outra,
+ * separadas por um poste fino. Mostra pelo arco que há dois caminhos.
+ */
+function drawFork(ctx: Ctx, a: BiomeId, b: BiomeId): void {
+  const left = document.createElement('canvas');
+  const right = document.createElement('canvas');
+  for (const canvas of [left, right]) {
+    canvas.width = GATE.width;
+    canvas.height = GATE.height;
+  }
+  const lctx = left.getContext('2d');
+  const rctx = right.getContext('2d');
+  if (!lctx || !rctx) return;
+  drawView(lctx, a);
+  drawView(rctx, b);
+  ctx.drawImage(left, 0, 0, ARCH_CX, GATE.height, 0, 0, ARCH_CX, GATE.height);
+  ctx.drawImage(
+    right,
+    ARCH_CX,
+    0,
+    GATE.width - ARCH_CX,
+    GATE.height,
+    ARCH_CX,
+    0,
+    GATE.width - ARCH_CX,
+    GATE.height,
+  );
+  const { top, bottom } = GATE.opening;
+  rect(ctx, 0x0a0806, ARCH_CX - 1, top, 2, bottom - top);
+  rect(ctx, 0x4a3a28, ARCH_CX - 1, top, 1, bottom - top);
+}
+
+/** Cria (uma vez) a vista de uma região, para usar fora do arco (a tela de escolha de caminho). */
+export function ensureViewTexture(scene: Phaser.Scene, dest: BiomeId): string {
+  canvasTexture(scene, SANCTUARY_TEXTURE.view(dest), GATE.width, GATE.height, (ctx) =>
+    drawView(ctx, dest),
+  );
+  return SANCTUARY_TEXTURE.view(dest);
+}
+
+/** Cria (uma vez) o arco de pedra e a vista da bifurcação entre duas regiões. */
+export function ensureForkTextures(
+  scene: Phaser.Scene,
+  biome: BiomeId,
+  a: BiomeId,
+  b: BiomeId,
+): void {
+  canvasTexture(scene, SANCTUARY_TEXTURE.gate(biome), GATE.width, GATE.height, (ctx) =>
+    drawGate(ctx, biome),
+  );
+  canvasTexture(scene, SANCTUARY_TEXTURE.fork(a, b), GATE.width, GATE.height, (ctx) =>
+    drawFork(ctx, a, b),
+  );
 }
 
 /** Cria (uma vez) o arco de pedra e a vista da região de destino que se enxerga por ele. */

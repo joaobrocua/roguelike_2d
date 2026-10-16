@@ -67,11 +67,14 @@ import {
 import type { PlacedRoom, Side } from '../logic/map/types';
 import { bankSouls, earnSouls, loseSoulsOnDeath, recordRunEnd } from '../logic/meta/souls';
 import {
+  advanceBiome,
+  areaOptions,
   createRun,
   enterRoom,
   enterSanctuaryBetweenBiomes,
   isLastStage,
   leaveSanctuary,
+  passesThroughSanctuary,
   propKey,
   startInSanctuary,
   type RunState,
@@ -106,6 +109,7 @@ import { TEXTURE } from '../systems/textures';
 import { createRng, type Rng } from '../utils/rng';
 import { EVENT_DONE, type RelicChoiceData, type RelicChoiceResult } from './RelicChoiceScene';
 import { EVENT_PAUSE_DONE, type PauseChoice } from './PauseScene';
+import { EVENT_ROAD_DONE, type RoadChoiceData } from './RoadChoiceScene';
 import { EVENT_SANCTUARY_CLOSED } from './SanctuaryScene';
 
 /** Índices dos dois slots de relíquia (constante: o update não pode alocar arrays). */
@@ -157,6 +161,8 @@ export class GameScene extends Phaser.Scene {
   private furniture: FurnitureSystem | null = null;
   /** As passagens da sala do santuário (um por área oferecida: 1 ou 2). */
   private sanctuaryGates: SanctuaryGate[] = [];
+  /** O arco da saída só leva adiante depois de o herói ter se afastado dele uma vez. */
+  private exitGateArmed = false;
   private boss: Guardiao | null = null;
   private bossHud: BossHud | null = null;
   private victoryQueued = false;
@@ -345,6 +351,7 @@ export class GameScene extends Phaser.Scene {
     this.spawnProps(room);
     this.spawnShrine(room);
     this.spawnGate(room);
+    this.spawnExitGate(room);
     this.spawnSecretTreasure(room);
 
     this.inputSystem = new InputSystem(this);
@@ -437,6 +444,7 @@ export class GameScene extends Phaser.Scene {
       this.sanctuaryDecor?.update(dt);
       for (const gate of this.sanctuaryGates) gate.update(dt);
       this.checkGate();
+      this.checkExitGate();
       const cam = this.cameras.main;
       this.atmosphere.update(dt, this.player.x, this.player.y, cam.scrollX, cam.scrollY);
       this.checkShrine(this.checkPickups());
@@ -732,9 +740,104 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  /** A sala de saída desta área tem o arco para a próxima (a última área não tem: o fim é o chefe)? */
+  private hasExitGate(): boolean {
+    return !this.run.sanctuary && this.placed?.kind === 'exit' && !isLastStage(this.run.stage);
+  }
+
+  /**
+   * O arco da sala de saída: no lugar da porta, um arco de pedra aberto para a paisagem da próxima
+   * área, com uma placa. Com duas opções, a vista é dividida ao meio e a placa diz CAMINHOS.
+   */
+  private spawnExitGate(room: ParsedRoom): void {
+    if (!this.hasExitGate()) return;
+    const marker = room.markers.find((m) => m.char === 'X');
+    if (!marker) return;
+    const options = areaOptions(this.run.stage + 1, this.run.route);
+    const first = options[0];
+    if (!first) return;
+    const second = options.length > 1 ? options[1] : undefined;
+    const label = second ? BANNER.roads : BIOME_SHORT_NAMES[first];
+    this.sanctuaryGates.push(
+      new SanctuaryGate(
+        this,
+        this.lookBiome,
+        first,
+        marker.col * TILE_SIZE + TILE_SIZE / 2,
+        (marker.row + 1) * TILE_SIZE,
+        label,
+        second,
+      ),
+    );
+    this.exitGateArmed = false; // só vale depois de o herói se afastar do arco (ele nasce perto)
+  }
+
+  /** O herói entrou no arco da saída? Segue para a próxima área (ou abre a bifurcação). */
+  private checkExitGate(): void {
+    if (!this.hasExitGate() || this.transitioning || this.player.isDead() || this.victoryQueued)
+      return;
+    const gate = this.sanctuaryGates[0];
+    if (!gate || this.choiceOpen) return;
+    const inside = boxesOverlap(gate.box, this.player.hurtBox);
+    if (!inside) {
+      this.exitGateArmed = true;
+      return;
+    }
+    if (this.exitGateArmed) this.useExitGate();
+  }
+
+  /** Atravessa o arco da saída: guarda as almas e vai direto à próxima área, à bifurcação ou ao portão. */
+  private useExitGate(): void {
+    const options = areaOptions(this.run.stage + 1, this.run.route);
+    // Ao passar de área, as almas carregadas são guardadas com segurança na base
+    this.run.lastBanked = bankSouls(this.run, this.meta.save);
+    this.meta.commit();
+    if (passesThroughSanctuary(options)) {
+      sfx('passage');
+      enterSanctuaryBetweenBiomes(this.run);
+      this.leave(null);
+      return;
+    }
+    if (options.length > 1) {
+      this.openRoadChoice(options);
+      return;
+    }
+    const dest = options[0];
+    if (dest) this.travelTo(dest);
+  }
+
+  /** Segue direto para a área escolhida (sem passar pelo santuário). */
+  private travelTo(dest: BiomeId): void {
+    sfx('passage');
+    // As "Passagens" compradas valem já no mapa da próxima área
+    this.run.secretRooms = this.meta.effects.secretRooms;
+    advanceBiome(this.run, CATALOG.infos, dest);
+    this.leave(null);
+  }
+
+  /** Abre a escolha entre dois caminhos por cima do jogo parado. */
+  private openRoadChoice(options: readonly BiomeId[]): void {
+    this.choiceOpen = true;
+    const onDone = (choice: BiomeId | null): void => {
+      this.events.off('shutdown', cleanup);
+      this.scene.stop('RoadChoice');
+      this.choiceOpen = false;
+      this.scene.resume('Game');
+      if (choice) this.travelTo(choice);
+      else this.exitGateArmed = false; // voltou: só vale de novo depois de se afastar do arco
+    };
+    const cleanup = (): void => {
+      this.game.events.off(EVENT_ROAD_DONE, onDone);
+    };
+    this.game.events.once(EVENT_ROAD_DONE, onDone);
+    this.events.once('shutdown', cleanup);
+    this.scene.pause();
+    this.scene.launch('RoadChoice', { options } satisfies RoadChoiceData);
+  }
+
   /** O herói entrou em uma passagem? Segue para a região dela. */
   private checkGate(): void {
-    if (this.transitioning || this.player.isDead()) return;
+    if (!this.run.sanctuary || this.transitioning || this.player.isDead()) return;
     for (const gate of this.sanctuaryGates) {
       if (boxesOverlap(gate.box, this.player.hurtBox)) {
         this.leaveSanctuaryRoom(gate.dest);
@@ -828,8 +931,9 @@ export class GameScene extends Phaser.Scene {
   private spawnProps(room: ParsedRoom): void {
     for (const marker of room.markers) {
       const kind: PropKind | undefined = PROP_MARKERS[marker.char as keyof typeof PROP_MARKERS];
-      // Na sala do santuário o 'X' é uma passagem (ver spawnGate), e não uma porta comum
-      if (!kind || (this.run.sanctuary && kind === 'door')) continue;
+      // Na sala do santuário o 'X' é uma passagem (ver spawnGate) e, nas salas de saída, o arco
+      // com a vista da próxima área (ver spawnExitGate): nos dois casos não há porta comum
+      if (!kind || (kind === 'door' && (this.run.sanctuary || this.hasExitGate()))) continue;
       const prop = new Prop(
         this,
         kind,

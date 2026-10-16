@@ -18,6 +18,7 @@ import {
   enterRoom,
   enterSanctuaryBetweenBiomes,
   isLastStage,
+  passesThroughSanctuary,
   pickArea,
   leaveSanctuary,
   propKey,
@@ -176,6 +177,18 @@ describe('santuário na run', () => {
     RUN_PLAN.slice(firstCastle).forEach((stage) => {
       for (const biome of stage.options) expect(castle).toContain(biome);
     });
+  });
+
+  it('a saída só passa pelo santuário antes do castelo; entre as áreas de fora a porta leva direto', () => {
+    expect(passesThroughSanctuary(['muralhas'])).toBe(true);
+    expect(passesThroughSanctuary(['cemiterio', 'minas'])).toBe(false);
+    expect(passesThroughSanctuary(['vila'])).toBe(false);
+    expect(passesThroughSanctuary(['saloes'])).toBe(false);
+    expect(passesThroughSanctuary([])).toBe(false);
+    // Na jornada de verdade: só a etapa da primeira área do castelo fica atrás do portão
+    const gated = RUN_PLAN.map((stage) => passesThroughSanctuary(stage.options));
+    expect(gated.filter(Boolean)).toHaveLength(1);
+    expect(RUN_PLAN[gated.indexOf(true)]?.options).toEqual(['muralhas']);
   });
 
   it('há um algarismo romano de ato para cada etapa da jornada', () => {

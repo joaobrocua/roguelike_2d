@@ -5,6 +5,7 @@ import { createEnemyAnimations, createEnemySheets } from '../systems/enemySprite
 import { createHeroAnimations, createHeroSheet } from '../systems/heroSprites';
 import { createPixelFont } from '../systems/pixelFont';
 import { createPropSheet } from '../systems/propTextures';
+import { createHeldWeaponTextures } from '../systems/heldWeaponArt';
 import { createRelicIcons } from '../systems/relicIcons';
 import { createUiTextures } from '../systems/uiArt';
 import { createPlaceholderTextures } from '../systems/textures';
@@ -21,6 +22,7 @@ export class BootScene extends Phaser.Scene {
     createPlaceholderTextures(this);
     createEnvironmentTextures(this);
     createRelicIcons(this);
+    createHeldWeaponTextures(this);
     createUiTextures(this);
     createHeroSheet(this);
     createHeroAnimations(this);

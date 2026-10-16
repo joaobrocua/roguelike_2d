@@ -9,7 +9,7 @@ import { createBox, type Box } from '../logic/geometry';
 import type { LightSource } from './AtmosphereSystem';
 import { ENV_TEXTURE } from './environmentTextures';
 import { pixelText } from './pixelFont';
-import { ensureGateTextures, SANCTUARY_TEXTURE } from './sanctuaryArt';
+import { ensureForkTextures, ensureGateTextures, SANCTUARY_TEXTURE } from './sanctuaryArt';
 import { TEXTURE } from './textures';
 
 const HALF_GLOW = 64; // metade da textura de brilho (128 px)
@@ -40,10 +40,13 @@ export class SanctuaryGate {
     x: number,
     floorY: number,
     label: string,
+    fork?: BiomeId,
   ) {
     const g = D.gate;
     this.dest = dest;
-    ensureGateTextures(scene, biome, dest);
+    if (fork) ensureForkTextures(scene, biome, dest, fork);
+    else ensureGateTextures(scene, biome, dest);
+    const viewKey = fork ? SANCTUARY_TEXTURE.fork(dest, fork) : SANCTUARY_TEXTURE.view(dest);
     const look = BIOME_LOOK[dest];
     const centerY = floorY - g.height / 2;
 
@@ -54,7 +57,7 @@ export class SanctuaryGate {
       .setScale(g.light.radius / HALF_GLOW)
       .setAlpha(g.glowAlpha)
       .setDepth(DEPTH.warmGlow);
-    scene.add.image(x, centerY, SANCTUARY_TEXTURE.view(dest)).setDepth(D.depth.view);
+    scene.add.image(x, centerY, viewKey).setDepth(D.depth.view);
     scene.add.image(x, centerY, SANCTUARY_TEXTURE.gate(biome)).setDepth(D.depth.gate);
     this.addSign(scene, x, floorY - g.height - g.labelDy, label);
 

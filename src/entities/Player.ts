@@ -8,10 +8,17 @@ import {
   HERO_RUN_THRESHOLD,
   HERO_SHEET_KEY,
   HERO_TOME_FLOAT,
+  HERO_APEX_THRESHOLD,
+  HERO_ATTACK_SETS,
+  HERO_LAND_MIN_SPEED,
+  HERO_LAND_MS,
   HERO_WEAPON_ANGLE,
-  HERO_WEAPON_GRIP,
   HERO_WEAPON_HIDDEN,
+  HERO_WEAPON_SWAY,
+  HERO_WEAPON_TRAIL,
+  heroFramePose,
   heroAnimationKey,
+  type AttackStyle,
   type HeroState,
 } from '../data/hero';
 import { DEPTH } from '../data/atmosphere';
@@ -60,7 +67,7 @@ import {
   updateCooldown,
 } from '../logic/cooldown';
 import { computeDamage, directionAway } from '../logic/damage';
-import { heroAnimState, type HeroAnimInput } from '../logic/heroAnim';
+import { attackFrameIndex, heroAnimState, type HeroAnimInput } from '../logic/heroAnim';
 import { createBox, placeHitbox, type Box } from '../logic/geometry';
 import {
   createHealth,
@@ -95,6 +102,7 @@ import type { InputIntent } from '../systems/InputSystem';
 import type { ProjectileSystem } from '../systems/ProjectileSystem';
 import { ActorShadow } from '../systems/ActorShadow';
 import { SlashVisual } from '../systems/SlashVisual';
+import { WEAPON_HOLD, heldWeaponKey } from '../data/weapons';
 import { getHeroHand } from '../systems/heroSprites';
 import { TEXTURE } from '../systems/textures';
 import { approachZero } from '../utils/math';
@@ -155,6 +163,17 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   onDust: ((x: number, y: number, count: number) => void) | null = null;
 
   private readonly weapon: Phaser.GameObjects.Image;
+  /** Imagens-fantasma da arma durante o golpe (o rastro): as três posições mais recentes. */
+  private readonly trail: Phaser.GameObjects.Image[] = [];
+  private readonly trailX = [0, 0, 0];
+  private readonly trailY = [0, 0, 0];
+  private readonly trailRot = [0, 0, 0];
+  private trailCount = 0;
+  private trailHead = 0;
+  /** Estilo do golpe em andamento (escolhe os quadros da animação de ataque). */
+  private attackStyle: AttackStyle = 'slashA';
+  /** Até quando (relógio do herói, ms) o quadro de pouso fica na tela. */
+  private landUntilMs = 0;
   private readonly shadow: ActorShadow;
   private readonly animInput: HeroAnimInput = {
     grounded: true,
@@ -164,6 +183,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     attackPhase: 'idle',
     stunned: false,
     dead: false,
+    landing: false,
   };
   private heroState: HeroState | null = null;
   private weaponRelicId: string | null = null;
@@ -207,6 +227,14 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       .image(x, y, relicIconKey(relic.id))
       .setDepth(DEPTH.actor + 0.01)
       .setVisible(false);
+    for (let i = 0; i < HERO_WEAPON_TRAIL.length; i++) {
+      this.trail.push(
+        scene.add
+          .image(x, y, relicIconKey(relic.id))
+          .setDepth(DEPTH.actor + 0.005)
+          .setVisible(false),
+      );
+    }
     this.bonusMarker = scene.add.image(x, y, TEXTURE.marker).setVisible(false);
     this.barrier = new Barrier(scene, relic.color);
   }
@@ -364,6 +392,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.onDust?.(body.center.x, body.bottom, DUST_FX.landCount);
       sfx('land');
     }
+    if (grounded && !this.wasGrounded && this.lastVelY > HERO_LAND_MIN_SPEED) {
+      this.landUntilMs = this.clockMs + HERO_LAND_MS; // agacha um instante no pouso
+    }
     this.wasGrounded = grounded;
     this.lastVelY = body.velocity.y;
     const stunned = isStunned(this.health);
@@ -468,10 +499,19 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private beginAttack(special: boolean): void {
     const relic = this.relic;
     if (this.attack.phase !== 'idle') return;
-    const def = special
-      ? relic.special.attack
-      : (relic.basic.steps[advanceCombo(this.combo, relic.basic.steps.length)] as PlayerAttackDef);
+    const hold = WEAPON_HOLD[relic.id];
+    let style: AttackStyle;
+    let def: PlayerAttackDef;
+    if (special) {
+      def = relic.special.attack;
+      style = hold.special;
+    } else {
+      const step = advanceCombo(this.combo, relic.basic.steps.length);
+      def = relic.basic.steps[step] as PlayerAttackDef;
+      style = hold.styles[step % hold.styles.length] ?? 'slashA';
+    }
     if (!startAttack(this.attack)) return;
+    this.attackStyle = style;
 
     this.currentAttack = def;
     this.currentIsSpecial = special;
@@ -632,15 +672,31 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     input.attackPhase = this.attack.phase;
     input.stunned = isStunned(this.health);
     input.dead = this.isDead();
-    const state = heroAnimState(input, HERO_RUN_THRESHOLD);
+    input.landing = this.clockMs < this.landUntilMs;
+    const state = heroAnimState(input, HERO_RUN_THRESHOLD, HERO_APEX_THRESHOLD);
     if (state !== this.heroState) {
       this.heroState = state;
       this.anims.play(heroAnimationKey(state), true);
     }
+    // Nos golpes o quadro vem do andamento da fase (preparar, golpear, recuperar), não do tempo
+    if (state === 'windup' || state === 'swing' || state === 'recover') this.showAttackFrame(state);
     this.updateWeapon(state);
   }
 
-  /** Arma da relíquia: empunhada na mão (gira conforme o golpe) ou, no Tomo, flutuando ao lado. */
+  /** Escolhe o quadro do golpe pela fase e pelo quanto dela já passou. */
+  private showAttackFrame(state: 'windup' | 'swing' | 'recover'): void {
+    const set = HERO_ATTACK_SETS[this.attackStyle];
+    const def = this.currentAttack;
+    const names = state === 'windup' ? set.windup : state === 'swing' ? set.swing : set.recover;
+    const duration =
+      state === 'windup' ? def.windupMs : state === 'swing' ? def.activeMs : def.recoveryMs;
+    const name = names[attackFrameIndex(names.length, this.attack.elapsedMs, duration)];
+    if (!name) return;
+    this.anims.stop();
+    this.setFrame(name);
+  }
+
+  /** Arma da relíquia: empunhada na mão (o ângulo vem do quadro do golpe) ou, no Tomo, flutuando. */
   private updateWeapon(state: HeroState): void {
     const weapon = this.weapon;
     const relic = this.relic;
@@ -650,37 +706,102 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const cy = body.center.y;
     if (HERO_WEAPON_HIDDEN.includes(state)) {
       weapon.setVisible(false);
+      this.hideTrail();
       return;
     }
+    const floating = relic.floatingWeapon;
+    const texture = floating ? relicIconKey(relic.id) : heldWeaponKey(relic.id);
     if (this.weaponRelicId !== relic.id) {
       this.weaponRelicId = relic.id;
-      weapon.setTexture(relicIconKey(relic.id));
+      weapon.setTexture(texture);
+      for (const ghost of this.trail) ghost.setTexture(texture).setTint(relic.color);
     }
     weapon
       .setVisible(true)
       .setFlipX(this.facing < 0)
       .setAlpha(this.alpha);
 
-    if (relic.floatingWeapon) {
+    if (floating) {
       const bob = Math.sin((this.clockMs / HERO_TOME_FLOAT.bobPeriodMs) * Math.PI * 2);
       weapon.setOrigin(0.5, 0.5).setRotation(0);
       weapon.setPosition(
         cx + this.facing * HERO_TOME_FLOAT.offsetX,
         cy + HERO_TOME_FLOAT.offsetY + bob * HERO_TOME_FLOAT.bobPx,
       );
+      this.hideTrail();
       return;
     }
-    const hand = getHeroHand(String(this.frame.name));
+    const frameName = String(this.frame.name);
+    const hand = getHeroHand(frameName);
     if (!hand) {
       weapon.setVisible(false);
+      this.hideTrail();
       return;
     }
-    // Com o herói olhando para a esquerda, o ícone é espelhado e o ponto de empunhadura também
-    weapon.setOrigin(
-      this.facing >= 0 ? HERO_WEAPON_GRIP.x : 1 - HERO_WEAPON_GRIP.x,
-      HERO_WEAPON_GRIP.y,
-    );
-    weapon.setRotation(this.facing * HERO_WEAPON_ANGLE[state]);
-    weapon.setPosition(cx + this.facing * (hand.x - 16), cy + (hand.y - 16));
+    const hold = WEAPON_HOLD[relic.id];
+    const attacking = state === 'windup' || state === 'swing' || state === 'recover';
+    const frameAngle = heroFramePose(frameName)?.weaponAngle;
+    let angle: number;
+    if (attacking && frameAngle !== undefined) {
+      angle = frameAngle;
+    } else {
+      // Fora dos golpes: o ângulo do estado, o jeito de cada arma e um balanço leve
+      let sway = 0;
+      if (state === 'run') {
+        sway =
+          HERO_WEAPON_SWAY.run *
+          Math.sin((this.clockMs / HERO_WEAPON_SWAY.runPeriodMs) * Math.PI * 2);
+      } else if (state === 'idle') {
+        sway =
+          HERO_WEAPON_SWAY.idle *
+          Math.sin((this.clockMs / HERO_WEAPON_SWAY.idlePeriodMs) * Math.PI * 2);
+      }
+      angle = HERO_WEAPON_ANGLE[state] + hold.restBias + sway;
+    }
+    // Com o herói olhando para a esquerda, a textura é espelhada e o ponto de empunhadura também
+    const sprite = hold.sprite;
+    const gripX = sprite.gripX / sprite.width;
+    weapon.setOrigin(this.facing >= 0 ? gripX : 1 - gripX, sprite.gripY / sprite.height);
+    const x = cx + this.facing * (hand.x - 16);
+    const y = cy + (hand.y - 16);
+    weapon.setRotation(this.facing * angle);
+    weapon.setPosition(x, y);
+    this.updateTrail(state === 'swing' && hold.trail, x, y, this.facing * angle);
+  }
+
+  /** Rastro do golpe: as posições dos últimos frames da arma, esmaecendo para trás. */
+  private updateTrail(active: boolean, x: number, y: number, rotation: number): void {
+    if (!active) {
+      this.hideTrail();
+      return;
+    }
+    const weapon = this.weapon;
+    const size = HERO_WEAPON_TRAIL.length;
+    for (let i = 0; i < size; i++) {
+      const ghost = this.trail[i];
+      if (!ghost) continue;
+      if (i >= this.trailCount) {
+        ghost.setVisible(false);
+        continue;
+      }
+      const slot = (this.trailHead - 1 - i + size * 2) % size;
+      ghost
+        .setVisible(true)
+        .setOrigin(weapon.originX, weapon.originY)
+        .setFlipX(weapon.flipX)
+        .setPosition(this.trailX[slot] ?? x, this.trailY[slot] ?? y)
+        .setRotation(this.trailRot[slot] ?? rotation)
+        .setAlpha(HERO_WEAPON_TRAIL[i] ?? 0);
+    }
+    this.trailX[this.trailHead] = x;
+    this.trailY[this.trailHead] = y;
+    this.trailRot[this.trailHead] = rotation;
+    this.trailHead = (this.trailHead + 1) % size;
+    this.trailCount = Math.min(size, this.trailCount + 1);
+  }
+
+  private hideTrail(): void {
+    this.trailCount = 0;
+    for (const ghost of this.trail) ghost.setVisible(false);
   }
 }

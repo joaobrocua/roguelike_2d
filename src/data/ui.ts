@@ -143,6 +143,31 @@ export const RELIC_CHOICE = {
   rowStep: 23,
 } as const;
 
+/** Bifurcação: a tela de escolha entre dois caminhos na saída de uma área. */
+export const ROAD_CHOICE = {
+  title: 'QUAL CAMINHO?',
+  hint: 'SETAS ESCOLHER   J SEGUIR   ESC VOLTAR',
+  overlayAlpha: 0.86,
+  /** Ignora a confirmação por um instante ao abrir, para não escolher sem querer. */
+  inputLockMs: 350,
+  titleY: 20,
+  hintY: 254,
+  /** Opacidade da paisagem da carta que não está escolhida. */
+  dimAlpha: 0.45,
+  card: {
+    width: 124,
+    height: 204,
+    gap: 22,
+    top: 36,
+    /** Distância (px) do topo da carta até o topo da paisagem, e a escala dela. */
+    viewDy: 6,
+    viewScale: 1.25,
+    /** Alturas (px, a partir da base da carta) do nome curto e do nome completo. */
+    nameDy: 42,
+    subtitleDy: 26,
+  },
+} as const;
+
 /** Minimapa (canto superior direito). Medidas em pixels. */
 export const MINIMAP = {
   cellW: 8,
@@ -174,6 +199,8 @@ export const BANNER = {
   /** Números romanos dos biomas ("ATO I"). */
   acts: ['I', 'II', 'III', 'IV', 'V', 'VI'],
   actLabel: 'ATO',
+  /** Texto da placa do arco de saída quando há dois caminhos. */
+  roads: 'CAMINHOS',
   /** Distâncias (px) acima e abaixo do título para o rótulo e os divisores. */
   captionDy: -17,
   dividerDy: 15,
@@ -181,7 +208,7 @@ export const BANNER = {
   /** O nome da ala ao entrar nela (mais discreto que o da área): altura e tempos. */
   wing: { y: 44, fadeMs: 450, holdMs: 1500, dividerDy: 9 },
   /** Rótulo em cima do nome SANTUÁRIO: entre biomas ou ao despertar depois de morrer. */
-  sanctuary: { nextBiome: 'ENTRE OS ATOS', start: 'DESPERTAR' },
+  sanctuary: { nextBiome: 'O PORTÃO DO CASTELO', start: 'DESPERTAR' },
   /** Linha das almas guardadas, abaixo do divisor de baixo. */
   bankedLabel: 'ALMAS GUARDADAS',
   bankedDy: 18,
