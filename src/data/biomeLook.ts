@@ -233,4 +233,32 @@ export const BIOME_LOOK: Readonly<Record<BiomeId, BiomeLook>> = {
     shaft: 0xffd890,
     shaftAlpha: 0.07,
   },
+  // Vila queimada: céu de fumaça avermelhado pelo incêndio, terra carbonizada, cinzas e brasas
+  vila: {
+    stone: {
+      deep: 0x0d0908,
+      dark: 0x1f1613,
+      base: 0x3a2a24,
+      light: 0x57423a,
+      highlight: 0x8a6a58,
+    },
+    back: {
+      deep: 0x080505,
+      dark: 0x120c0a,
+      base: 0x1c1311,
+      light: 0x2c201b,
+      highlight: 0x45322a,
+    },
+    skyTop: 0x0a0507,
+    skyMid: 0x3a1410,
+    skyLow: 0x8a3a1a,
+    moss: 0x3a342e,
+    mossLight: 0x7a6a58,
+    ambient: 0x080304,
+    fog: 0x6a5a58,
+    glow: 0xff7a2a,
+    glowSoft: 0xb8381a,
+    shaft: 0xffb070,
+    shaftAlpha: 0.06,
+  },
 };

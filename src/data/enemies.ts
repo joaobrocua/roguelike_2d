@@ -8,6 +8,7 @@ import type { GroundMeleeConfig } from '../logic/ai/groundMelee';
 import type { HopperConfig } from '../logic/ai/hopper';
 import type { GuardConfig } from '../logic/shield';
 import type { RangedConfig } from '../logic/ai/ranged';
+import type { StraferConfig } from '../logic/ai/strafer';
 import type { AttackConfig, ProjectileData } from '../logic/attack';
 import { PALETTE } from './palette';
 
@@ -507,6 +508,91 @@ export const MORCEGO_DE_CRISTAL = {
   light: { radius: 52, strength: 0.55 },
 } as const satisfies EnemyBody & { ai: FlyerConfig; light: { radius: number; strength: number } };
 
+/**
+ * Aldeão em Chamas (Vila Queimada): um morador em pânico, tomado pelo fogo, que corre direto para
+ * o herói e se agarra a ele num bote longo. Frágil, mas rápido; a chama que carrega ilumina em volta.
+ */
+export const ALDEAO_EM_CHAMAS = {
+  id: 'aldeao',
+  width: 14,
+  height: 24,
+  maxHp: 20,
+  hitStunMs: 140,
+  knockbackFriction: 600,
+  color: PALETTE.ember,
+  flying: false,
+  meleeShape: 'front',
+  attack: {
+    windupMs: 240, // levanta os braços e grita: o aviso é curto, mas ele vem de longe
+    activeMs: 260, // o bote: avança durante a fase ativa
+    recoveryMs: 520,
+    damage: 10,
+    knockbackX: 150,
+    knockbackY: -90,
+    hitbox: { width: 18, height: 20, offsetY: 0 },
+  },
+  ai: {
+    patrolSpeed: 34,
+    chaseSpeed: 92,
+    sightRangeX: 150,
+    sightRangeY: 50,
+    loseSightRangeX: 220,
+    attackRangeX: 40,
+    attackRangeY: 26,
+    attackCooldownMs: 600,
+    turnPauseMs: 250,
+    lungeSpeed: 200,
+    waitDistanceX: 0,
+  } satisfies GroundMeleeConfig,
+  /** A luz da chama que ele carrega (px e força de 0 a 1). */
+  light: { radius: 70, strength: 0.8 },
+} as const satisfies EnemyBody & {
+  ai: GroundMeleeConfig;
+  light: { radius: number; strength: number };
+};
+
+/**
+ * Corvo Carniceiro (Vila Queimada): espera de lado, no alto, e cruza a sala em rasante na altura
+ * do herói, atravessando por ele e seguindo adiante. Quem ouve o grito de aviso sai do caminho.
+ */
+export const CORVO_CARNICEIRO = {
+  id: 'corvo',
+  width: 16,
+  height: 10,
+  maxHp: 16,
+  hitStunMs: 150,
+  knockbackFriction: 500,
+  color: PALETTE.stoneDark,
+  flying: true,
+  sightBlocked: true, // a casa em ruínas o esconde: ele não ataca através da parede
+  meleeShape: 'body',
+  attack: {
+    windupMs: 400, // abre as asas e grasna parado: avisa o rasante
+    activeMs: 520, // a passagem
+    recoveryMs: 600,
+    damage: 11,
+    knockbackX: 140,
+    knockbackY: -90,
+    hitbox: { width: 18, height: 12, offsetY: 0 },
+  },
+  ai: {
+    sightRangeX: 260,
+    sightRangeY: 160,
+    perchHeight: 34,
+    perchOffsetX: 100,
+    hoverSpeed: 90,
+    minPassDx: 50,
+    alignToleranceX: 14,
+    alignToleranceY: 12,
+    passSpeed: 230,
+    passSteerSpeed: 70,
+    riseSpeed: 90,
+    cooldownMs: 900,
+    swayAmplitude: 14,
+    swayPeriodMs: 1100,
+  } satisfies StraferConfig,
+} as const satisfies EnemyBody & { ai: StraferConfig };
+
 /** Bando de cães: quantos atacam ao mesmo tempo e o intervalo mínimo entre os botes. */
 export const DOG_PACK = { maxConcurrent: 2, gapMs: 450 } as const;
 
@@ -524,6 +610,8 @@ export const ENEMY_MARKERS = {
   N: 'necromante',
   U: 'golem',
   M: 'morcego',
+  K: 'aldeao',
+  J: 'corvo',
 } as const;
 
 export type EnemyType = (typeof ENEMY_MARKERS)[keyof typeof ENEMY_MARKERS];
@@ -541,6 +629,8 @@ export const ENEMY_BODIES: readonly EnemyBody[] = [
   NECROMANTE,
   GOLEM_DE_PEDRA,
   MORCEGO_DE_CRISTAL,
+  ALDEAO_EM_CHAMAS,
+  CORVO_CARNICEIRO,
 ];
 
 /** Só a sala de teste faz os inimigos renascerem; nas salas reais eles ficam mortos. */

@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { GUARDIAO } from '../src/data/boss';
 import { ENEMY_BODIES } from '../src/data/enemies';
 import {
+  ALDEAO_SHEET,
   ARQUEIRO_SHEET,
   CAO_SHEET,
   CARNICAL_SHEET,
+  CORVO_SHEET,
   ENEMY_DEATH_FADE,
   ENEMY_WARN_FLICKER,
   FATUO_SHEET,
@@ -34,6 +36,8 @@ const SHEETS: readonly EnemySheet<unknown>[] = [
   NECROMANTE_SHEET,
   GOLEM_SHEET,
   MORCEGO_SHEET,
+  ALDEAO_SHEET,
+  CORVO_SHEET,
   GUARDIAO_SHEET,
 ];
 

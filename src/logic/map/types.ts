@@ -77,6 +77,7 @@ export function oppositeSide(side: Side): Side {
  *   'O' Sapo Peçonhento (pula e cospe veneno)  'W' Fogo-Fátuo (voa, como o 'V')
  *   'Q' Soldado Caído (escudo e lança)  'N' Necromante (orbes em leque, de longe)
  *   'U' Golem de Pedra (lento, bate no chão em volta)  'M' Morcego de Cristal (voa, como o 'V')
+ *   'K' Aldeão em Chamas (corre e agarra)  'J' Corvo Carniceiro (voa e cruza a sala em rasante, como o 'V')
  *   'B' baú (só 'chest')   'F' fogueira de descanso (só 'rest')
  *   'X' porta para o próximo bioma (só 'exit')   'G' o chefe (só 'boss')
  * As dimensões são múltiplos da célula (src/data/mapRules.ts): largura 30 ou 60, altura 17.

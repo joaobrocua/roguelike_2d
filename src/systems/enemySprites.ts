@@ -2,9 +2,11 @@ import type Phaser from 'phaser';
 import { GUARDIAO } from '../data/boss';
 import { ENEMY_BODIES, type EnemyBody } from '../data/enemies';
 import {
+  ALDEAO_SHEET,
   ARQUEIRO_SHEET,
   CAO_SHEET,
   CARNICAL_SHEET,
+  CORVO_SHEET,
   FATUO_SHEET,
   GOLEM_SHEET,
   GUARDIAO_SHEET,
@@ -1126,6 +1128,148 @@ function drawBat(ctx: Ctx, p: BatPose): void {
   }
 }
 
+// --- Aldeão em Chamas --------------------------------------------------------------------
+
+const SOOT = 0x2a2220;
+const SOOT_LIGHT = 0x4a3c36;
+const BURNT_CLOTH = 0x5a3a2a;
+const BURNT_CLOTH_DARK = 0x362218;
+const FIRE_DEEP = 0xb8381a;
+const FIRE = 0xff7a2a;
+const FIRE_HOT = 0xffc04a;
+const FIRE_CORE = 0xfff0c0;
+
+/** Uma língua de fogo: base escura, corpo laranja e miolo claro. A base fica em (x, y + h). */
+function fireTongue(ctx: Ctx, x: number, y: number, h: number, hot: boolean): void {
+  fillPx(ctx, FIRE_DEEP, x - 1, y + 1, 3, h - 1);
+  fillPx(ctx, FIRE, x, y, 2, h);
+  fillPx(ctx, hot ? FIRE_CORE : FIRE_HOT, x, y + 2, 1, Math.max(1, h - 3));
+}
+
+function drawVillager(ctx: Ctx, p: GhoulPose): void {
+  const cx = 13;
+  const ground = 28;
+  ctx.save();
+  withFall(ctx, p.rotation, cx, ground, 3, 9);
+
+  const hipY = 20 - p.bob;
+  const torsoTop = 12 - p.bob;
+  const x0 = cx - 3 + p.lean;
+  const shoulderF: Point = { x: x0 + 5, y: torsoTop + 2 };
+  const shoulderB: Point = { x: x0 + 1, y: torsoTop + 2 };
+
+  const leg = (hipX: number, off: number, lift: number, color: number): void => {
+    const foot: Point = { x: hipX + off, y: ground - 2 - lift };
+    const knee: Point = {
+      x: Math.round((hipX + foot.x) / 2) + 1,
+      y: Math.round((hipY + foot.y) / 2),
+    };
+    drawLimb(ctx, { x: hipX, y: hipY }, knee, color, 2);
+    drawLimb(ctx, knee, foot, color, 2);
+    fillPx(ctx, SOOT, foot.x, ground - 1 - lift, 4, 1);
+  };
+
+  // Perna e braço de trás
+  leg(cx - 2, p.legB, p.liftB, BURNT_CLOTH_DARK);
+  const handB: Point = { x: shoulderB.x + p.armB.dx, y: shoulderB.y + p.armB.dy };
+  drawLimb(ctx, shoulderB, handB, SOOT, 2);
+  fillPx(ctx, SOOT_LIGHT, handB.x, handB.y + 1, 2, 2);
+
+  // Tronco: roupa chamuscada com buracos que deixam ver a pele escurecida
+  fillPx(ctx, BURNT_CLOTH, x0, torsoTop, 7, hipY - torsoTop + 1);
+  fillPx(ctx, BURNT_CLOTH_DARK, x0, torsoTop, 2, hipY - torsoTop + 1);
+  fillPx(ctx, SOOT, x0 + 3, torsoTop + 2, 3, 3);
+  fillPx(ctx, SOOT, x0 + 1, torsoTop + 6, 2, 2);
+  for (let i = 0; i < 7; i += 2)
+    fillPx(ctx, BURNT_CLOTH, x0 + i, hipY + 1, 1, 2 + (i % 4 === 0 ? 1 : 0));
+
+  leg(cx + 1, p.legF, p.liftF, BURNT_CLOTH);
+
+  // Cabeça enegrecida de fuligem, boca aberta num grito
+  const hx = x0 + 3;
+  const hy = torsoTop - 5;
+  fillPx(ctx, SOOT, hx, hy, 6, 6);
+  fillPx(ctx, SOOT_LIGHT, hx + 1, hy, 3, 1);
+  fillPx(ctx, OUTLINE, hx + 3, hy + 1, 3, 2);
+  fillPx(ctx, p.glare ? FIRE_CORE : FIRE_HOT, hx + 4, hy + 2, 1, 1);
+  fillPx(ctx, OUTLINE, hx + 2, hy + 4, 4, 2);
+  fillPx(ctx, PALETTE.bone, hx + 3, hy + 4, 1, 1);
+
+  // Braço da frente, esticado, com a mão em brasa
+  const handF: Point = { x: shoulderF.x + p.armF.dx, y: shoulderF.y + p.armF.dy };
+  drawLimb(ctx, shoulderF, handF, SOOT_LIGHT, 2);
+  fillPx(ctx, SOOT, handF.x, handF.y, 2, 2);
+
+  // Chamas: na cabeça, nos ombros, nas costas e na mão; mais altas ao se preparar para o bote
+  if (p.rotation !== 0) {
+    ctx.restore();
+    return; // caído no chão, sem chamas (o fogo se apagou)
+  }
+  const seed = Math.abs(p.bob * 3 + p.legF + p.lean * 2 + p.liftF + p.liftB);
+  const boost = p.glare ? 2 : 0;
+  fireTongue(ctx, hx + 1, hy - 3 - boost, 4 + boost + (seed % 2), p.glare);
+  fireTongue(ctx, hx + 4, hy - 2 - boost, 3 + boost, p.glare);
+  fireTongue(ctx, x0 + 1, torsoTop - 2 - (seed % 2), 3 + boost, false);
+  fireTongue(ctx, x0 + 6, torsoTop - 1, 3 + boost, p.glare);
+  fireTongue(ctx, handF.x, handF.y - 3, 3 + (seed % 2), false);
+  fireTongue(ctx, x0 - 1, torsoTop + 4, 3, false);
+  ctx.restore();
+}
+
+// --- Corvo Carniceiro --------------------------------------------------------------------
+
+const CROW = 0x1e1a22;
+const CROW_LIGHT = 0x3a3440;
+const CROW_SHEEN = 0x5a5470;
+const CROW_BEAK = 0x9a8a62;
+const CROW_EYE = 0xff4a3a;
+
+function drawCrow(ctx: Ctx, p: BatPose): void {
+  const cx = 18;
+  const cy = 15 - p.bob;
+  const px = (color: number, x: number, y: number, w: number, h: number, a = 1): void =>
+    fillPx(ctx, color, x, y, w, h, a * p.alpha);
+
+  // Asas: penas compridas que saem do ombro; a ponta sobe ou desce conforme o bater
+  const reach = Math.round(4 + p.spread * 10);
+  for (const side of [-1, 1] as const) {
+    for (let i = 0; i < reach; i++) {
+      const t = i / reach;
+      const x = side < 0 ? cx - 3 - i : cx + 2 + i;
+      const top = cy - 1 + Math.round(p.flap * t);
+      const height = Math.max(2, Math.round(5 - t * 2));
+      px(CROW, x, top, 1, height);
+      px(CROW_LIGHT, x, top, 1, 1);
+      if (i % 3 === 2) px(CROW, x, top + height, 1, 2); // pena solta na borda
+    }
+  }
+
+  // Corpo: peito arredondado, cauda de penas para trás e cabeça de bico longo para a frente
+  const bodyH = Math.max(5, 8 - p.squash);
+  const top = cy - 3 + Math.round(p.squash / 2);
+  for (let r = 0; r < bodyH; r++) {
+    const w = r === 0 ? 4 : r < 3 ? 7 : r > bodyH - 3 ? 4 : 8;
+    px(CROW, cx - Math.floor(w / 2), top + r, w, 1);
+    px(CROW_SHEEN, cx + Math.floor(w / 2) - 2, top + r, 1, 1, 0.5);
+  }
+  px(CROW, cx - 7, top + 3, 4, 2); // cauda
+  px(CROW_LIGHT, cx - 8, top + 4, 2, 1);
+  px(CROW, cx + 2, top - 1, 4, 4); // cabeça
+  px(CROW_BEAK, cx + 6, top + 1, 3, 1);
+  px(CROW_BEAK, cx + 6, top + 2, 2, 1, 0.8);
+  if (p.eyes === 'closed') {
+    px(CROW_LIGHT, cx + 4, top, 1, 1);
+  } else {
+    px(p.eyes === 'bright' ? 0xffd0c0 : CROW_EYE, cx + 4, top, 1, 1);
+  }
+  if (p.glow) px(CROW_EYE, cx + 3, top - 1, 3, 1, 0.4);
+
+  // Penas soltas (a morte)
+  for (let i = 0; i < p.scatter; i++) {
+    px(CROW_LIGHT, cx - 8 + i * 3, cy + 4 + (i % 2) * 2, 2, 1, 0.8);
+  }
+}
+
 function sheetCell(def: EnemyBody, sheet: EnemySheet<unknown>): { width: number; height: number } {
   return { width: def.width + sheet.pad.x * 2, height: def.height + sheet.pad.y * 2 };
 }
@@ -1168,6 +1312,8 @@ const SHEETS: readonly EnemySheet<unknown>[] = [
   NECROMANTE_SHEET,
   GOLEM_SHEET,
   MORCEGO_SHEET,
+  ALDEAO_SHEET,
+  CORVO_SHEET,
   GUARDIAO_SHEET,
 ];
 
@@ -1193,6 +1339,8 @@ export function enemyDrawers(): readonly EnemyDrawer[] {
     { sheet: NECROMANTE_SHEET, body: enemyDef('necromante'), draw: drawNecro },
     { sheet: GOLEM_SHEET, body: enemyDef('golem'), draw: drawGolem },
     { sheet: MORCEGO_SHEET, body: enemyDef('morcego'), draw: drawBat },
+    { sheet: ALDEAO_SHEET, body: enemyDef('aldeao'), draw: drawVillager },
+    { sheet: CORVO_SHEET, body: enemyDef('corvo'), draw: drawCrow },
     { sheet: GUARDIAO_SHEET, body: GUARDIAO, draw: drawGuardian },
   ] as unknown as readonly EnemyDrawer[];
 }

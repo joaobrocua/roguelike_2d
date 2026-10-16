@@ -6,6 +6,7 @@ import { MINAS_TEMPLATES } from './templates/minas';
 import { MURALHAS_TEMPLATES } from './templates/muralhas';
 import { PANTANO_TEMPLATES } from './templates/pantano';
 import { SALOES_TEMPLATES } from './templates/saloes';
+import { VILA_TEMPLATES } from './templates/vila';
 
 /**
  * Todos os modelos de sala do jogo. O desenho de cada um fica em data/templates/<bioma>.ts;
@@ -19,4 +20,5 @@ export const ROOM_TEMPLATES: readonly RoomTemplate[] = [
   ...PANTANO_TEMPLATES,
   ...CEMITERIO_TEMPLATES,
   ...MINAS_TEMPLATES,
+  ...VILA_TEMPLATES,
 ];

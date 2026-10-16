@@ -1110,3 +1110,25 @@ export const MORCEGO_SHEET: EnemySheet<BatPose> = {
     dead: { frames: ['dead0', 'dead1'], fps: 7, loop: false },
   },
 };
+
+// --- Aldeão em Chamas --------------------------------------------------------------------
+
+/** O aldeão usa as mesmas poses do carniçal (corpo do mesmo tamanho); só o desenho muda. */
+export const ALDEAO_SHEET: EnemySheet<GhoulPose> = {
+  ...CARNICAL_SHEET,
+  id: 'aldeao',
+  animations: {
+    ...CARNICAL_SHEET.animations,
+    // O aviso do bote dele é mais curto que o do carniçal
+    windup: { frames: ['windup0', 'windup1'], fps: 9, loop: false },
+  },
+};
+
+// --- Corvo Carniceiro --------------------------------------------------------------------
+
+/** O corvo usa as mesmas poses do morcego (bater de asas, recolher, mergulhar); só o desenho muda. */
+export const CORVO_SHEET: EnemySheet<BatPose> = {
+  ...MORCEGO_SHEET,
+  id: 'corvo',
+  pad: { x: 10, y: 10 },
+};

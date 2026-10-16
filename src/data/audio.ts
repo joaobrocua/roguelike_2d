@@ -464,6 +464,23 @@ export const MUSIC_TRACKS = {
     bassOctave: -1,
     seed: 101,
   },
+  // Vila queimada: frígio, um pouco mais vivo e dissonante, como brasas estalando
+  vila: {
+    rootMidi: 41,
+    scale: PHRYGIAN,
+    bpm: 60,
+    beatsPerBar: 4,
+    progression: [
+      [0, 2, 4],
+      [1, 3, 5],
+      [3, 5, 0],
+      [0, 2, 4],
+    ],
+    leadDensity: 0.2,
+    leadOctave: 1,
+    bassOctave: -1,
+    seed: 111,
+  },
 } as const satisfies Record<string, MusicTrackStyle>;
 
 export type MusicTrackId = keyof typeof MUSIC_TRACKS;

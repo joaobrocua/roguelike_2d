@@ -7,6 +7,7 @@ import {
   PROJECTILE_POOL,
 } from '../data/combat';
 import {
+  ALDEAO_EM_CHAMAS,
   ARQUEIRO_OCO,
   CAO_DE_OSSOS,
   CARNICAL,
@@ -34,6 +35,8 @@ import { ROOM_TEMPLATES } from '../data/roomTemplates';
 import { ArqueiroOco } from '../entities/ArqueiroOco';
 import { CaoDeOssos } from '../entities/CaoDeOssos';
 import { FogoFatuo } from '../entities/FogoFatuo';
+import { AldeaoEmChamas } from '../entities/AldeaoEmChamas';
+import { CorvoCarniceiro } from '../entities/CorvoCarniceiro';
 import { GolemDePedra } from '../entities/GolemDePedra';
 import { MorcegoDeCristal } from '../entities/MorcegoDeCristal';
 import { Necromante } from '../entities/Necromante';
@@ -617,6 +620,12 @@ export class GameScene extends Phaser.Scene {
           break;
         case 'fatuo':
           enemy = new FogoFatuo(this, x, marker.row * TILE_SIZE + TILE_SIZE / 2, world);
+          break;
+        case 'aldeao':
+          enemy = new AldeaoEmChamas(this, x, this.markerY(marker, ALDEAO_EM_CHAMAS.height), world);
+          break;
+        case 'corvo':
+          enemy = new CorvoCarniceiro(this, x, marker.row * TILE_SIZE + TILE_SIZE / 2, world);
           break;
         case 'golem':
           enemy = new GolemDePedra(this, x, this.markerY(marker, GOLEM_DE_PEDRA.height), world);

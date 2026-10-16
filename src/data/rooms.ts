@@ -3,7 +3,7 @@
  * Salas são descritas em texto. Cada caractere é um bloco de TILE_SIZE pixels:
  *   '#' = bloco sólido   '.' = vazio   'P' = ponto de nascimento do jogador
  *   'T' tocha de parede (decoração)
- *   'C' Carniçal   'A' Arqueiro Oco   'V' Vulto   'D' Cão de Ossos   'L' Lobo Espectral   'R' Raiz Emboscadora   'O' Sapo Peçonhento   'W' Fogo-Fátuo   'Q' Soldado Caído   'N' Necromante   'U' Golem de Pedra   'M' Morcego de Cristal (ver ENEMY_MARKERS)
+ *   'C' Carniçal   'A' Arqueiro Oco   'V' Vulto   'D' Cão de Ossos   'L' Lobo Espectral   'R' Raiz Emboscadora   'O' Sapo Peçonhento   'W' Fogo-Fátuo   'Q' Soldado Caído   'N' Necromante   'U' Golem de Pedra   'M' Morcego de Cristal   'K' Aldeão em Chamas   'J' Corvo Carniceiro (ver ENEMY_MARKERS)
  * Na etapa 5 estes blocos passam a ser conectáveis pelo gerador de andares.
  *
  * Medidas de referência do pulo: o jogador sobe ~3,5 blocos e mede ~1,4 bloco de altura;

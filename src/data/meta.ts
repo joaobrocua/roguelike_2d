@@ -200,6 +200,8 @@ export const SOUL_REWARD: Readonly<Record<string, number>> = {
   necromante: 6,
   golem: 8,
   morcego: 3,
+  aldeao: 3,
+  corvo: 4,
   guardiao: 40,
 };
 

@@ -46,6 +46,8 @@ interface Pen {
   mossLight: number;
   glow: number;
   glowSoft: number;
+  /** Fuligem (manchas escuras de queimado). */
+  soot: number;
 }
 
 const BOOK_COLORS = [0x7a2a35, 0x2f5f7a, 0x3d6b3a, 0x8a6a2a, 0x5a3a7a, 0x6e6e78] as const;
@@ -74,6 +76,7 @@ function makePen(ctx: Ctx, biome: BiomeId, kind: FurnitureKind, variant: number)
     mossLight: look.mossLight,
     glow: look.glow,
     glowSoft: look.glowSoft,
+    soot: 0x0a0605,
   };
 }
 
@@ -1112,6 +1115,138 @@ function drawStalactite(p: Pen): void {
   }
 }
 
+function drawWell(p: Pen): void {
+  const { ctx, w, h } = p;
+  const collapsed = p.variant === 1;
+  // Anel de pedra, fiadas deslocadas
+  rect(ctx, p.stone.base, 3, h - 13, w - 6, 13);
+  for (let y = h - 13; y < h; y += 4) {
+    rect(ctx, p.stone.deep, 3, y, w - 6, 1);
+    for (let x = 3 + ((y / 4) % 2) * 4; x < w - 3; x += 8) rect(ctx, p.stone.deep, x, y, 1, 4);
+  }
+  rect(ctx, p.stone.light, 3, h - 13, w - 6, 2);
+  rect(ctx, p.stone.dark, w - 6, h - 11, 3, 11);
+  rect(ctx, p.stone.deep, 7, h - 14, w - 14, 3); // a boca escura do poço
+  rect(ctx, p.soot, 3, h - 6, 6, 6, 0.4);
+  if (!collapsed) {
+    // Dois postes, a trave e o telhadinho chamuscado, com o balde pendurado
+    rect(ctx, p.wood.dark, 5, 6, 3, h - 18);
+    rect(ctx, p.wood.dark, w - 8, 6, 3, h - 18);
+    rect(ctx, p.wood.base, 3, 4, w - 6, 3);
+    for (let r = 0; r < 4; r++) rect(ctx, p.wood.dark, 4 + r, r, w - 8 - r * 2, 1);
+    rect(ctx, p.iron.light, w / 2 - 1, 7, 1, 8);
+    rect(ctx, p.wood.base, w / 2 - 3, 15, 6, 5);
+    rect(ctx, p.iron.base, w / 2 - 3, 15, 6, 1);
+  } else {
+    // Telhado caído sobre a borda, um poste quebrado e a corda solta
+    rect(ctx, p.wood.dark, 6, h - 22, 3, 10);
+    line(ctx, p.wood.base, 10, h - 14, 26, h - 20);
+    line(ctx, p.wood.dark, 12, h - 12, 28, h - 17);
+    rect(ctx, p.wood.base, w - 10, h - 17, 6, 4);
+    rect(ctx, p.iron.light, w / 2 - 1, h - 14, 1, 4);
+  }
+}
+
+function drawGallows(p: Pen): void {
+  const { ctx, w, h } = p;
+  const broken = p.variant === 1;
+  // Plataforma de degraus
+  rect(ctx, p.wood.dark, 2, h - 6, w - 4, 6);
+  rect(ctx, p.wood.base, 4, h - 10, w - 14, 4);
+  rect(ctx, p.wood.light, 4, h - 10, w - 14, 1);
+  for (let x = 6; x < w - 12; x += 6) rect(ctx, p.wood.dark, x, h - 10, 1, 4);
+  // Poste, travessa e mão-francesa
+  rect(ctx, p.wood.base, 8, 8, 5, h - 16);
+  rect(ctx, p.wood.light, 8, 8, 1, h - 16);
+  rect(ctx, p.wood.dark, 12, 8, 1, h - 16);
+  line(ctx, p.wood.dark, 13, 24, 25, 9);
+  line(ctx, p.wood.base, 13, 25, 25, 10);
+  if (!broken) {
+    rect(ctx, p.wood.base, 6, 6, 36, 4);
+    rect(ctx, p.wood.light, 6, 6, 36, 1);
+    rect(ctx, p.wood.dark, 6, 9, 36, 1);
+    // A corda e o laço
+    rect(ctx, 0x9a8a62, 36, 10, 1, 17);
+    rect(ctx, 0x9a8a62, 34, 27, 5, 1);
+    rect(ctx, 0x9a8a62, 34, 28, 1, 4);
+    rect(ctx, 0x9a8a62, 38, 28, 1, 4);
+    rect(ctx, 0x9a8a62, 35, 32, 3, 1);
+  } else {
+    // A travessa partida no meio, a corda caída no chão
+    rect(ctx, p.wood.base, 6, 6, 18, 4);
+    rect(ctx, p.wood.light, 6, 6, 18, 1);
+    rect(ctx, p.wood.dark, 24, 7, 3, 2);
+    rect(ctx, p.wood.base, 30, h - 14, 14, 3);
+    rect(ctx, 0x9a8a62, 32, h - 17, 8, 1);
+    rect(ctx, 0x9a8a62, 34, h - 18, 4, 1);
+  }
+  rect(ctx, p.soot, 8, 14, 5, 12, 0.35);
+}
+
+function drawRuinedWall(p: Pen): void {
+  const { ctx, w, h } = p;
+  const v = p.variant;
+  const top = v === 0 ? 4 : v === 1 ? 12 : 22;
+  // Parede de tijolo, com o topo em dentes onde ruiu
+  rect(ctx, p.stone.base, 2, top, w - 4, h - top);
+  for (let y = top; y < h; y += 4) {
+    rect(ctx, p.stone.deep, 2, y, w - 4, 1);
+    for (let x = 2 + ((y / 4) % 2) * 4; x < w - 2; x += 8) rect(ctx, p.stone.deep, x, y, 1, 4);
+  }
+  for (let x = 2; x < w - 2; x += 3) {
+    rect(ctx, p.stone.base, x, top - ((x * 7) % 5), 3, ((x * 7) % 5) + 1);
+  }
+  rect(ctx, p.stone.light, 2, top, 2, h - top);
+  rect(ctx, p.stone.dark, w - 5, top, 3, h - top);
+  // Janela em arco queimada, com o brilho do fogo atrás
+  if (v !== 2) {
+    const wy = top + 10;
+    rect(ctx, p.stone.deep, 10, wy, 10, 14);
+    rect(ctx, p.stone.deep, 11, wy - 2, 8, 2);
+    rect(ctx, p.stone.deep, 12, wy - 3, 6, 1);
+    rect(ctx, p.glow, 12, wy + 4, 6, 9, 0.55);
+    rect(ctx, p.glowSoft, 13, wy + 6, 4, 6, 0.5);
+  } else {
+    // Só um vão de porta, escuro
+    rect(ctx, p.stone.deep, 9, h - 20, 12, 20);
+  }
+  // Fuligem subindo da janela e uma viga carbonizada que se projeta
+  rect(ctx, p.soot, 8, top, 14, 10, 0.4);
+  rect(ctx, p.wood.dark, w - 4, top + 6, 6, 3);
+  rect(ctx, p.iron.base, w - 2, top + 9, 1, 8, 0.8);
+}
+
+function drawCharredBeam(p: Pen): void {
+  const { ctx, w, h } = p;
+  const v = p.variant;
+  const beam = (x0: number, y0: number, x1: number, y1: number): void => {
+    line(ctx, p.wood.dark, x0, y0, x1, y1);
+    line(ctx, p.wood.dark, x0 + 1, y0, x1 + 1, y1);
+    line(ctx, p.wood.base, x0 + 2, y0, x1 + 2, y1);
+    line(ctx, p.soot, x0 + 3, y0, x1 + 3, y1);
+  };
+  rect(ctx, p.wood.dark, 0, 0, w, 3); // o resto do teto que ainda prende a viga
+  if (v === 0) {
+    beam(6, 3, 14, h - 2);
+  } else if (v === 1) {
+    beam(4, 3, 12, h - 4);
+    beam(20, 3, 12, h - 6);
+  } else {
+    beam(10, 3, 22, h - 2);
+    rect(ctx, p.wood.dark, 18, h - 10, 8, 3); // pedaço de travessa pendurado
+  }
+  // Brasas ainda acesas nas rachaduras
+  for (const [x, y] of [
+    [9, 10],
+    [12, h - 8],
+    [20, h - 12],
+    [14, 16],
+  ] as const) {
+    rect(ctx, 0xff7a2a, x, y, 1, 2, 0.9);
+    rect(ctx, 0xffc04a, x, y, 1, 1);
+  }
+}
+
 const DRAWERS: Readonly<Record<FurnitureKind, (p: Pen) => void>> = {
   barrel: drawBarrel,
   crates: drawCrates,
@@ -1149,6 +1284,10 @@ const DRAWERS: Readonly<Record<FurnitureKind, (p: Pen) => void>> = {
   rubble: drawRubble,
   crystals: drawCrystals,
   stalactite: drawStalactite,
+  well: drawWell,
+  gallows: drawGallows,
+  ruinedWall: drawRuinedWall,
+  charredBeam: drawCharredBeam,
   net: drawNet,
   tapestry: drawTapestry,
   chandelier: drawChandelier,

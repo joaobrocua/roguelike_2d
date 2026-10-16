@@ -4,6 +4,7 @@ import { createRng, randomInt, type Rng } from '../utils/rng';
 import { farFloresta, midFloresta, nearFloresta } from './forestBackgrounds';
 import { farCemiterio, midCemiterio, nearCemiterio } from './graveyardBackgrounds';
 import { farMinas, midMinas, nearMinas } from './mineBackgrounds';
+import { farVila, midVila, nearVila } from './villageBackgrounds';
 import { farPantano, midPantano, nearPantano } from './swampBackgrounds';
 import { disc, ditherGradientV, mix, rect, type Ctx } from './pixelCanvas';
 
@@ -671,6 +672,7 @@ const FAR: Record<BiomeId, LayerDraw> = {
   pantano: farPantano,
   cemiterio: farCemiterio,
   minas: farMinas,
+  vila: farVila,
 };
 const MID: Record<BiomeId, LayerDraw> = {
   muralhas: midMuralhas,
@@ -680,6 +682,7 @@ const MID: Record<BiomeId, LayerDraw> = {
   pantano: midPantano,
   cemiterio: midCemiterio,
   minas: midMinas,
+  vila: midVila,
 };
 const NEAR: Record<BiomeId, LayerDraw> = {
   muralhas: nearMuralhas,
@@ -689,6 +692,7 @@ const NEAR: Record<BiomeId, LayerDraw> = {
   pantano: nearPantano,
   cemiterio: nearCemiterio,
   minas: nearMinas,
+  vila: nearVila,
 };
 
 export type BackgroundLayer = 'far' | 'mid' | 'near';

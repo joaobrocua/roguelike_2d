@@ -90,6 +90,13 @@ export const SANCTUARY_LOOK: Readonly<Record<BiomeId, SanctuaryLook>> = {
     bannerTrim: 0xffb04a,
     rune: 0xffc870,
   },
+  // Vila: chama de incêndio, pano chamuscado e runas cor de brasa
+  vila: {
+    flame: [0xc23a14, 0xff7a2a, 0xffe0a0],
+    banner: 0x4a1812,
+    bannerTrim: 0xff7a2a,
+    rune: 0xffa060,
+  },
 };
 
 /** Onde cada peça de cenário fica (px de mundo; o chão da sala está em y = 240). */

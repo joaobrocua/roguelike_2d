@@ -40,6 +40,9 @@ export type FurnitureKind =
   | 'pickaxes'
   | 'rubble'
   | 'crystals'
+  | 'well'
+  | 'gallows'
+  | 'ruinedWall'
   // Teto
   | 'tapestry'
   | 'chandelier'
@@ -48,7 +51,8 @@ export type FurnitureKind =
   | 'lantern'
   | 'cocoon'
   | 'net'
-  | 'stalactite';
+  | 'stalactite'
+  | 'charredBeam';
 
 export type FurniturePlacement = 'floor' | 'ceiling';
 
@@ -150,6 +154,10 @@ export const FURNITURE: Readonly<Record<FurnitureKind, FurnitureSpec>> = {
     light: { radius: 56, strength: 0.65, dy: 14 },
   },
   stalactite: { placement: 'ceiling', widthTiles: 1, heightTiles: 2, variants: 3 },
+  well: { placement: 'floor', widthTiles: 2, heightTiles: 2, variants: 2 },
+  gallows: { placement: 'floor', widthTiles: 3, heightTiles: 4, variants: 2 },
+  ruinedWall: { placement: 'floor', widthTiles: 2, heightTiles: 3, variants: 3 },
+  charredBeam: { placement: 'ceiling', widthTiles: 2, heightTiles: 2, variants: 3 },
   net: { placement: 'ceiling', widthTiles: 2, heightTiles: 2, variants: 2 },
   chandelier: {
     placement: 'ceiling',
@@ -177,7 +185,9 @@ export type WingId =
   | 'jazigos'
   | 'campo'
   | 'galeria'
-  | 'gruta';
+  | 'gruta'
+  | 'casas'
+  | 'praca';
 
 export interface WingDef {
   id: WingId;
@@ -398,6 +408,37 @@ export const WINGS: Readonly<Record<BiomeId, readonly WingDef[]>> = {
         { kind: 'skulls', weight: 1 },
         { kind: 'stalactite', weight: 4 },
         { kind: 'roots', weight: 1 },
+      ],
+      count: { min: 3, max: 5 },
+    },
+  ],
+  vila: [
+    {
+      id: 'casas',
+      name: 'CASAS EM CINZAS',
+      furniture: [
+        { kind: 'ruinedWall', weight: 5 },
+        { kind: 'table', weight: 2 },
+        { kind: 'chair', weight: 2 },
+        { kind: 'barrel', weight: 2 },
+        { kind: 'crates', weight: 2 },
+        { kind: 'bookshelf', weight: 1 },
+        { kind: 'charredBeam', weight: 3 },
+      ],
+      count: { min: 3, max: 5 },
+    },
+    {
+      id: 'praca',
+      name: 'PRAÇA DA FORCA',
+      furniture: [
+        { kind: 'well', weight: 3 },
+        { kind: 'gallows', weight: 2 },
+        { kind: 'cart', weight: 2 },
+        { kind: 'campfire', weight: 2 },
+        { kind: 'skulls', weight: 1 },
+        { kind: 'bannerPole', weight: 1 },
+        { kind: 'stakes', weight: 1 },
+        { kind: 'charredBeam', weight: 1 },
       ],
       count: { min: 3, max: 5 },
     },

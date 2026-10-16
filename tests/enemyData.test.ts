@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
+  ALDEAO_EM_CHAMAS,
   CAO_DE_OSSOS,
   CARNICAL,
   ENEMY_BODIES,
   ENEMY_MARKERS,
+  CORVO_CARNICEIRO,
   FOGO_FATUO,
   GOLEM_DE_PEDRA,
   LOBO_ESPECTRAL,
@@ -124,5 +126,34 @@ describe('inimigos da floresta (dados)', () => {
     expect(ENEMY_BODIES.find((b) => b.id === 'vulto')?.sightBlocked).toBeUndefined(); // fantasmas continuam atravessando
     expect(MORCEGO_DE_CRISTAL.light.radius).toBeGreaterThan(0);
     expect(MORCEGO_DE_CRISTAL.light.strength).toBeLessThanOrEqual(1);
+  });
+
+  it('o aldeão é frágil, corre mais que qualquer outro de chão e a chama ilumina', () => {
+    const { ai, attack } = ALDEAO_EM_CHAMAS;
+    expect(ALDEAO_EM_CHAMAS.maxHp).toBeLessThan(CARNICAL.maxHp);
+    expect(ai.chaseSpeed).toBeGreaterThan(CAO_DE_OSSOS.ai.chaseSpeed * 0.6);
+    expect(ai.chaseSpeed).toBeGreaterThan(CARNICAL.ai.chaseSpeed);
+    expect(attack.windupMs).toBeGreaterThanOrEqual(200); // ainda há um aviso
+    // O bote alcança além do alcance de ataque da IA (ele avança durante a fase ativa)
+    const reach = ALDEAO_EM_CHAMAS.width / 2 + attack.hitbox.width;
+    expect(reach + ai.lungeSpeed * (attack.activeMs / 1000)).toBeGreaterThanOrEqual(
+      ai.attackRangeX,
+    );
+    expect(ALDEAO_EM_CHAMAS.light.radius).toBeGreaterThan(0);
+    expect(ALDEAO_EM_CHAMAS.light.strength).toBeLessThanOrEqual(1);
+  });
+
+  it('o corvo cruza o herói na passagem e o rasante tem aviso e a rocha o esconde', () => {
+    const { ai, attack } = CORVO_CARNICEIRO;
+    const passPx = ai.passSpeed * (attack.activeMs / 1000);
+    expect(passPx).toBeGreaterThanOrEqual(ai.perchOffsetX + 10); // passa do outro lado do herói
+    expect(ai.minPassDx).toBeLessThan(ai.perchOffsetX); // de uma parede ele ataca de mais perto
+    expect(passPx).toBeGreaterThan(ai.minPassDx); // e mesmo assim cruza o herói
+    expect(attack.windupMs).toBeGreaterThanOrEqual(350);
+    expect(CORVO_CARNICEIRO.sightBlocked).toBe(true);
+    expect(CORVO_CARNICEIRO.flying).toBe(true);
+    expect(ai.sightRangeX).toBeGreaterThan(ai.perchOffsetX);
+    // Chega à altura do herói durante a passagem: desce o que falta em menos tempo que a passagem
+    expect(ai.perchHeight / ai.passSteerSpeed).toBeLessThanOrEqual(attack.activeMs / 1000);
   });
 });
