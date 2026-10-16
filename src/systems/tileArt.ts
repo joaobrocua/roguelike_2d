@@ -2,7 +2,7 @@ import type Phaser from 'phaser';
 import { TILE_VARIANTS } from '../data/atmosphere';
 import { BIOME_LOOK, type BiomeLook } from '../data/biomeLook';
 import type { BiomeId } from '../data/mapRules';
-import { ALL_BIOMES } from '../data/mapRules';
+import { ALL_BIOMES, OUTDOOR_BIOMES } from '../data/mapRules';
 import { TILE_SIZE } from '../data/rooms';
 import { TILE_EDGE, type TileLook } from '../logic/tileVariant';
 import { createRng, randomInt, type Rng } from '../utils/rng';
@@ -184,7 +184,7 @@ export function createTileTextures(scene: Phaser.Scene): void {
               kind,
               edges,
               100 + variant * 7 + edges * 31,
-              biome === 'floresta' || biome === 'pantano',
+              OUTDOOR_BIOMES.includes(biome),
             ),
           );
         }

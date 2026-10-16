@@ -6,6 +6,7 @@ import { ENEMY_BODIES } from '../data/enemies';
 export const TEXTURE = {
   arrow: 'arrow',
   spit: 'spit',
+  orb: 'orb',
   bolt: 'bolt',
   barrier: 'barrier',
   pickup: 'pickup',
@@ -52,6 +53,18 @@ export function createPlaceholderTextures(scene: Phaser.Scene): void {
     g.fillStyle(0xb8ffd0, 1);
     g.fillRect(1, 1, 2, 2);
     g.generateTexture(TEXTURE.spit, 6, 6);
+  }
+
+  // Orbe do Necromante: uma esfera pálida com o miolo claro (a cor vem do tint do tiro)
+  if (!scene.textures.exists(TEXTURE.orb)) {
+    g.clear();
+    g.fillStyle(0xffffff, 1);
+    g.fillRect(2, 0, 3, 7);
+    g.fillRect(0, 2, 7, 3);
+    g.fillRect(1, 1, 5, 5);
+    g.fillStyle(0xf4eaff, 1);
+    g.fillRect(2, 2, 3, 3);
+    g.generateTexture(TEXTURE.orb, 7, 7);
   }
 
   // Raio do Tomo (quadrado roxo com núcleo claro), barreira e item de relíquia (brancos: o tint

@@ -7,10 +7,10 @@
 import { CELL, DOOR } from '../../data/mapRules';
 import type { ExitInfo, RoomKind, RoomTemplate, Side, TemplateInfo } from './types';
 
-const ALLOWED_CHARS = '#.PCAVDLROWTBFXG';
-const ENEMY_CHARS = 'CAVDLROW';
+const ALLOWED_CHARS = '#.PCAVDLROWQNTBFXG';
+const ENEMY_CHARS = 'CAVDLROWQN';
 /** Marcadores que ficam em pé sobre o chão (o 'V' e o 'W' voam e têm regra própria). */
-const GROUNDED_CHARS = 'CADLROPBFXG';
+const GROUNDED_CHARS = 'CADLROQNPBFXG';
 
 /** Marcadores que só existem em um tipo de sala (e quantos devem existir nele). */
 const OWNED_MARKERS: readonly { char: string; kind: RoomKind; exactlyOne: boolean }[] = [

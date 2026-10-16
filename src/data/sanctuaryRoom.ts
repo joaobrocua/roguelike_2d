@@ -76,6 +76,13 @@ export const SANCTUARY_LOOK: Readonly<Record<BiomeId, SanctuaryLook>> = {
     bannerTrim: 0x7fe8ff,
     rune: 0x7fe8ff,
   },
+  // Cemitério: chama azul-pálida de vela de defunto, pano roxo-escuro e runas lilases
+  cemiterio: {
+    flame: [0x6a7acc, 0xb4c4ff, 0xf0f4ff],
+    banner: 0x3a2448,
+    bannerTrim: 0xb4c4ff,
+    rune: 0xc8b8ff,
+  },
 };
 
 /** Onde cada peça de cenário fica (px de mundo; o chão da sala está em y = 240). */

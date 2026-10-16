@@ -750,3 +750,190 @@ export const GUARDIAO_SHEET: EnemySheet<GuardianPose> = {
     dead: { frames: ['dead0', 'dead1'], fps: 3, loop: false },
   },
 };
+
+// --- Soldado Caído -----------------------------------------------------------------------
+
+export interface SoldierPose {
+  bob: number;
+  lean: number;
+  legF: number;
+  legB: number;
+  liftF: number;
+  liftB: number;
+  /** O escudo está erguido na frente do corpo (senão fica baixo, junto da perna)? */
+  shieldUp: boolean;
+  /** Pontas da lança, em px a partir da mão da frente: a ponta de trás (cabo) e a de ferro. */
+  butt: { dx: number; dy: number };
+  tip: { dx: number; dy: number };
+  /** Olhos acesos mais forte (preparando a estocada). */
+  glare: boolean;
+  rotation: number;
+}
+
+const SOLDIER_BASE: SoldierPose = {
+  bob: 0,
+  lean: 0,
+  legF: 0,
+  legB: 0,
+  liftF: 0,
+  liftB: 0,
+  shieldUp: true,
+  butt: { dx: -12, dy: 9 },
+  tip: { dx: 7, dy: -14 },
+  glare: false,
+  rotation: 0,
+};
+
+const soldier = (o: Partial<SoldierPose>): SoldierPose => ({ ...SOLDIER_BASE, ...o });
+
+export const SOLDADO_SHEET: EnemySheet<SoldierPose> = {
+  id: 'soldado',
+  pad: { x: 24, y: 4 },
+  frames: [
+    { name: 'idle0', pose: soldier({}) },
+    { name: 'idle1', pose: soldier({ bob: 1 }) },
+    { name: 'walk0', pose: soldier({ lean: 1, legF: 3, legB: -3, liftB: 1 }) },
+    { name: 'walk1', pose: soldier({ lean: 1, bob: 1, legF: 1, legB: -1 }) },
+    { name: 'walk2', pose: soldier({ lean: 1, legF: -3, legB: 3, liftF: 1 }) },
+    { name: 'walk3', pose: soldier({ lean: 1, bob: 1, legF: -1, legB: 1 }) },
+    {
+      name: 'windup0',
+      pose: soldier({
+        lean: -1,
+        shieldUp: false,
+        butt: { dx: -14, dy: 2 },
+        tip: { dx: 8, dy: -3 },
+        glare: true,
+      }),
+    },
+    {
+      name: 'windup1',
+      pose: soldier({
+        lean: -2,
+        shieldUp: false,
+        butt: { dx: -17, dy: 0 },
+        tip: { dx: 5, dy: -5 },
+        glare: true,
+      }),
+    },
+    {
+      name: 'strike',
+      pose: soldier({
+        lean: 3,
+        legF: 3,
+        legB: -2,
+        shieldUp: false,
+        butt: { dx: -7, dy: 1 },
+        tip: { dx: 20, dy: 1 },
+        glare: true,
+      }),
+    },
+    {
+      name: 'recover',
+      pose: soldier({
+        lean: 2,
+        bob: -1,
+        shieldUp: false,
+        butt: { dx: -9, dy: 3 },
+        tip: { dx: 19, dy: 4 },
+      }),
+    },
+    {
+      name: 'hurt',
+      pose: soldier({
+        lean: -3,
+        shieldUp: false,
+        butt: { dx: -10, dy: 8 },
+        tip: { dx: 2, dy: -12 },
+      }),
+    },
+    {
+      name: 'dead0',
+      pose: soldier({
+        lean: -3,
+        rotation: -0.8,
+        shieldUp: false,
+        butt: { dx: -10, dy: 6 },
+        tip: { dx: 3, dy: -8 },
+      }),
+    },
+    {
+      name: 'dead1',
+      pose: soldier({
+        rotation: -Math.PI / 2,
+        shieldUp: false,
+        butt: { dx: -8, dy: 5 },
+        tip: { dx: 2, dy: -5 },
+      }),
+    },
+  ],
+  animations: {
+    idle: { frames: ['idle0', 'idle1'], fps: 2, loop: true },
+    walk: { frames: ['walk0', 'walk1', 'walk2', 'walk3'], fps: 5, loop: true },
+    jump: { frames: ['idle0'], fps: 1, loop: false },
+    windup: { frames: ['windup0', 'windup1'], fps: 4, loop: false },
+    strike: { frames: ['strike'], fps: 1, loop: false },
+    recover: { frames: ['recover'], fps: 1, loop: false },
+    hurt: { frames: ['hurt'], fps: 1, loop: false },
+    dead: { frames: ['dead0', 'dead1'], fps: 7, loop: false },
+  },
+};
+
+// --- Necromante --------------------------------------------------------------------------
+
+export interface NecroPose {
+  bob: number;
+  lean: number;
+  /** Balanço da barra do manto (-1 a 1). */
+  sway: number;
+  /** Braço do cajado: 0 = apoiado ao lado, 1 = erguido, 2 = apontado para a frente. */
+  arm: 0 | 1 | 2;
+  /** Orbe na ponta do cajado: 0 = nenhum, 1 a 3 = cada vez maior. */
+  orb: 0 | 1 | 2 | 3;
+  /** Olhos: 'normal', 'bright' (acesos mais forte), 'closed'. */
+  eyes: 'normal' | 'bright' | 'closed';
+  rotation: number;
+}
+
+const NECRO_BASE: NecroPose = {
+  bob: 0,
+  lean: 0,
+  sway: 0,
+  arm: 0,
+  orb: 0,
+  eyes: 'normal',
+  rotation: 0,
+};
+
+const necro = (o: Partial<NecroPose>): NecroPose => ({ ...NECRO_BASE, ...o });
+
+export const NECROMANTE_SHEET: EnemySheet<NecroPose> = {
+  id: 'necromante',
+  pad: { x: 12, y: 10 },
+  frames: [
+    { name: 'idle0', pose: necro({ sway: -1 }) },
+    { name: 'idle1', pose: necro({ bob: 1, sway: 1 }) },
+    { name: 'walk0', pose: necro({ lean: 1, sway: -1 }) },
+    { name: 'walk1', pose: necro({ lean: 1, bob: 1, sway: 0 }) },
+    { name: 'walk2', pose: necro({ lean: 1, sway: 1 }) },
+    { name: 'walk3', pose: necro({ lean: 1, bob: 1, sway: 0 }) },
+    { name: 'windup0', pose: necro({ arm: 1, orb: 1, eyes: 'bright', lean: -1 }) },
+    { name: 'windup1', pose: necro({ arm: 1, orb: 2, eyes: 'bright', lean: -1, bob: 1 }) },
+    { name: 'windup2', pose: necro({ arm: 1, orb: 3, eyes: 'bright', lean: -2 }) },
+    { name: 'strike', pose: necro({ arm: 2, orb: 0, eyes: 'bright', lean: 2 }) },
+    { name: 'recover', pose: necro({ arm: 2, lean: 1, sway: 1 }) },
+    { name: 'hurt', pose: necro({ lean: -3, eyes: 'closed', sway: -1 }) },
+    { name: 'dead0', pose: necro({ lean: -3, rotation: -0.8, eyes: 'closed' }) },
+    { name: 'dead1', pose: necro({ rotation: -Math.PI / 2, eyes: 'closed' }) },
+  ],
+  animations: {
+    idle: { frames: ['idle0', 'idle1'], fps: 2.5, loop: true },
+    walk: { frames: ['walk0', 'walk1', 'walk2', 'walk3'], fps: 6, loop: true },
+    jump: { frames: ['idle0'], fps: 1, loop: false },
+    windup: { frames: ['windup0', 'windup1', 'windup2'], fps: 4.4, loop: false },
+    strike: { frames: ['strike'], fps: 1, loop: false },
+    recover: { frames: ['recover'], fps: 1, loop: false },
+    hurt: { frames: ['hurt'], fps: 1, loop: false },
+    dead: { frames: ['dead0', 'dead1'], fps: 7, loop: false },
+  },
+};

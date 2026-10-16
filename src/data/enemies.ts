@@ -6,6 +6,7 @@ import type { AmbusherConfig } from '../logic/ai/ambusher';
 import type { FlyerConfig } from '../logic/ai/flyer';
 import type { GroundMeleeConfig } from '../logic/ai/groundMelee';
 import type { HopperConfig } from '../logic/ai/hopper';
+import type { GuardConfig } from '../logic/shield';
 import type { RangedConfig } from '../logic/ai/ranged';
 import type { AttackConfig, ProjectileData } from '../logic/attack';
 import { PALETTE } from './palette';
@@ -335,6 +336,98 @@ export const FOGO_FATUO = {
   light: { radius: 76, strength: 0.8 },
 } as const satisfies EnemyBody & { ai: FlyerConfig; light: { radius: number; strength: number } };
 
+/**
+ * Soldado Caído (Cemitério dos Caídos): um soldado morto com escudo e lança. O escudo cobre a
+ * frente e só baixa quando ele estoca (telegrafia longa); é preciso rolar ou pular para as costas
+ * dele, ou esperar a estocada e punir a recuperação. Quase não sai do lugar quando é atingido.
+ */
+export const SOLDADO_CAIDO = {
+  id: 'soldado',
+  width: 14,
+  height: 24,
+  maxHp: 44,
+  hitStunMs: 170,
+  knockbackFriction: 700,
+  knockbackScale: 0.5,
+  color: PALETTE.stoneLight,
+  flying: false,
+  meleeShape: 'front',
+  attack: {
+    windupMs: 520, // abaixa o escudo e leva a lança para trás: dá tempo de rolar
+    activeMs: 130,
+    recoveryMs: 560, // a guarda continua baixa: é a hora de punir
+    damage: 14,
+    knockbackX: 170,
+    knockbackY: -90,
+    hitbox: { width: 20, height: 12, offsetY: -2 },
+  },
+  ai: {
+    patrolSpeed: 24,
+    chaseSpeed: 44,
+    sightRangeX: 130,
+    sightRangeY: 48,
+    loseSightRangeX: 190,
+    attackRangeX: 26,
+    attackRangeY: 28,
+    attackCooldownMs: 500,
+    turnPauseMs: 500,
+    lungeSpeed: 60, // um passo curto junto da estocada
+    waitDistanceX: 0,
+  } satisfies GroundMeleeConfig,
+  guard: { turnLagMs: 450 } satisfies GuardConfig,
+} as const satisfies EnemyBody & { ai: GroundMeleeConfig; guard: GuardConfig };
+
+/**
+ * Necromante (Cemitério dos Caídos): mantém distância e, depois de erguer o cajado (telegrafia),
+ * solta três orbes em leque. Frágil: quem alcança ele ganha o duelo.
+ */
+export const NECROMANTE = {
+  id: 'necromante',
+  width: 12,
+  height: 24,
+  maxHp: 26,
+  hitStunMs: 200,
+  knockbackFriction: 600,
+  color: PALETTE.wraith,
+  flying: false,
+  meleeShape: 'none',
+  // Só a linha do tempo da conjuração: o golpe real são os orbes, que saem ao fim da preparação.
+  attack: {
+    windupMs: 760,
+    activeMs: 80,
+    recoveryMs: 500,
+    damage: 0,
+    knockbackX: 0,
+    knockbackY: 0,
+    hitbox: { width: 0, height: 0, offsetY: 0 },
+  },
+  ai: {
+    sightRangeX: 250,
+    sightRangeY: 80,
+    shootRangeY: 48, // o leque cobre uma faixa de altura
+    minDistanceX: 100,
+    maxDistanceX: 180,
+    retreatSpeed: 60,
+    approachSpeed: 40,
+    shootCooldownMs: 1300,
+  } satisfies RangedConfig,
+} as const satisfies EnemyBody & { ai: RangedConfig };
+
+/** Os três orbes do leque do necromante: um reto e dois que sobem e descem devagar. */
+export const NECROMANTE_ORBS: readonly ArrowData[] = [-28, 0, 28].map((speedY) => ({
+  speed: 105,
+  speedY,
+  lifeMs: 2600,
+  width: 7,
+  height: 7,
+  damage: 10,
+  knockbackX: 110,
+  knockbackY: -60,
+  spawnOffsetY: -6,
+  textureKey: 'orb', // a mesma chave de TEXTURE.orb (src/systems/textures.ts)
+  tint: 0xb48cff,
+}));
+
 /** Bando de cães: quantos atacam ao mesmo tempo e o intervalo mínimo entre os botes. */
 export const DOG_PACK = { maxConcurrent: 2, gapMs: 450 } as const;
 
@@ -348,6 +441,8 @@ export const ENEMY_MARKERS = {
   R: 'raiz',
   O: 'sapo',
   W: 'fatuo',
+  Q: 'soldado',
+  N: 'necromante',
 } as const;
 
 export type EnemyType = (typeof ENEMY_MARKERS)[keyof typeof ENEMY_MARKERS];
@@ -361,6 +456,8 @@ export const ENEMY_BODIES: readonly EnemyBody[] = [
   RAIZ_EMBOSCADORA,
   SAPO_PECONHENTO,
   FOGO_FATUO,
+  SOLDADO_CAIDO,
+  NECROMANTE,
 ];
 
 /** Só a sala de teste faz os inimigos renascerem; nas salas reais eles ficam mortos. */

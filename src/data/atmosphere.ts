@@ -72,4 +72,5 @@ export const BIOME_DARKNESS = {
   catacumbas: 0.6,
   floresta: 0.5,
   pantano: 0.52,
+  cemiterio: 0.5,
 } as const;

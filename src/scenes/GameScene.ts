@@ -12,8 +12,10 @@ import {
   CARNICAL,
   DOG_PACK,
   LOBO_ESPECTRAL,
+  NECROMANTE,
   RAIZ_EMBOSCADORA,
   SAPO_PECONHENTO,
+  SOLDADO_CAIDO,
   ENEMY_MARKERS,
   type EnemyType,
 } from '../data/enemies';
@@ -31,6 +33,8 @@ import { ROOM_TEMPLATES } from '../data/roomTemplates';
 import { ArqueiroOco } from '../entities/ArqueiroOco';
 import { CaoDeOssos } from '../entities/CaoDeOssos';
 import { FogoFatuo } from '../entities/FogoFatuo';
+import { Necromante } from '../entities/Necromante';
+import { SoldadoCaido } from '../entities/SoldadoCaido';
 import { LoboEspectral } from '../entities/LoboEspectral';
 import { RaizEmboscadora } from '../entities/RaizEmboscadora';
 import { SapoPeconhento } from '../entities/SapoPeconhento';
@@ -347,6 +351,7 @@ export class GameScene extends Phaser.Scene {
       onPlayerHit: (damage) => this.fx.playerHit(this.player.x, this.player.y, damage),
       onPerfectDodge: () => this.onPerfectDodge(),
       onProjectileBlocked: (arrow) => this.fx.projectileBlocked(arrow.x, arrow.y),
+      onEnemyBlocked: (enemy) => this.fx.projectileBlocked(enemy.x, enemy.y),
       onSwapStrike: (strike) =>
         this.fx.swapStrike(this.player.x, this.player.y, this.player.relic.color, strike.radius),
     });
@@ -609,6 +614,12 @@ export class GameScene extends Phaser.Scene {
           break;
         case 'fatuo':
           enemy = new FogoFatuo(this, x, marker.row * TILE_SIZE + TILE_SIZE / 2, world);
+          break;
+        case 'soldado':
+          enemy = new SoldadoCaido(this, x, this.markerY(marker, SOLDADO_CAIDO.height), world);
+          break;
+        case 'necromante':
+          enemy = new Necromante(this, x, this.markerY(marker, NECROMANTE.height), world);
           break;
         case 'raiz':
           enemy = new RaizEmboscadora(

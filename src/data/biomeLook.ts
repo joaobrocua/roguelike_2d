@@ -177,4 +177,32 @@ export const BIOME_LOOK: Readonly<Record<BiomeId, BiomeLook>> = {
     shaft: 0xaee8f5,
     shaftAlpha: 0.06,
   },
+  // Cemitério dos caídos: noite fria de lua baixa, terra cinzenta, névoa lilás e o brilho dos mortos
+  cemiterio: {
+    stone: {
+      deep: 0x0e0d12,
+      dark: 0x1c1b24,
+      base: 0x34323f,
+      light: 0x4c4a5c,
+      highlight: 0x77748c,
+    },
+    back: {
+      deep: 0x07070b,
+      dark: 0x0f0e16,
+      base: 0x181723,
+      light: 0x252433,
+      highlight: 0x3a3950,
+    },
+    skyTop: 0x06050e,
+    skyMid: 0x1a1830,
+    skyLow: 0x3a3558,
+    moss: 0x4a5a3a,
+    mossLight: 0x8aa05a,
+    ambient: 0x05040a,
+    fog: 0x8a86b0,
+    glow: 0xb48cff,
+    glowSoft: 0x6a4aa8,
+    shaft: 0xc8c0ff,
+    shaftAlpha: 0.07,
+  },
 };

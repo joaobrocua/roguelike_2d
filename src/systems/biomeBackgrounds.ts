@@ -2,6 +2,7 @@ import type { BiomeId } from '../data/mapRules';
 import { BIOME_LOOK, type BiomeLook, type StoneRamp } from '../data/biomeLook';
 import { createRng, randomInt, type Rng } from '../utils/rng';
 import { farFloresta, midFloresta, nearFloresta } from './forestBackgrounds';
+import { farCemiterio, midCemiterio, nearCemiterio } from './graveyardBackgrounds';
 import { farPantano, midPantano, nearPantano } from './swampBackgrounds';
 import { disc, ditherGradientV, mix, rect, type Ctx } from './pixelCanvas';
 
@@ -667,6 +668,7 @@ const FAR: Record<BiomeId, LayerDraw> = {
   catacumbas: farCatacumbas,
   floresta: farFloresta,
   pantano: farPantano,
+  cemiterio: farCemiterio,
 };
 const MID: Record<BiomeId, LayerDraw> = {
   muralhas: midMuralhas,
@@ -674,6 +676,7 @@ const MID: Record<BiomeId, LayerDraw> = {
   catacumbas: midCatacumbas,
   floresta: midFloresta,
   pantano: midPantano,
+  cemiterio: midCemiterio,
 };
 const NEAR: Record<BiomeId, LayerDraw> = {
   muralhas: nearMuralhas,
@@ -681,6 +684,7 @@ const NEAR: Record<BiomeId, LayerDraw> = {
   catacumbas: nearCatacumbas,
   floresta: nearFloresta,
   pantano: nearPantano,
+  cemiterio: nearCemiterio,
 };
 
 export type BackgroundLayer = 'far' | 'mid' | 'near';

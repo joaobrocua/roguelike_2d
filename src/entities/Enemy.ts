@@ -100,6 +100,7 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
   private readonly spawnY: number;
   private readonly respawnMs: number;
   private respawnTimerMs = 0;
+  private blockedFlag = false;
   private clockMs = 0;
   /** O inimigo tem quadros desenhados (os que ainda são blocos lisos não animam). */
   private readonly animated: boolean;
@@ -198,8 +199,16 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
     return this.attackShape !== 'none' && isHitboxActive(this.attack);
   }
 
-  /** Aplica um golpe do jogador. Retorna o dano causado (0 se não acertou). */
+  /**
+   * Aplica um golpe do jogador. Retorna o dano causado (0 se não acertou ou se o escudo bloqueou:
+   * nesse caso `consumeBlocked` devolve true, uma vez).
+   */
   receiveHit(sourceX: number, cfg: HitData, multiplier: number): number {
+    if (this.blocks(sourceX)) {
+      this.blockedFlag = true;
+      this.onBlocked(sourceX);
+      return 0;
+    }
     const damage = computeDamage(cfg.damage, multiplier);
     if (
       !takeDamage(
@@ -218,6 +227,13 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.setVelocity(dir * cfg.knockbackX * scale, cfg.knockbackY * scale);
     if (isDead(this.health)) this.die();
     return damage;
+  }
+
+  /** O último golpe foi bloqueado pelo escudo? Lê e apaga o aviso (a cena toca o som e as faíscas). */
+  consumeBlocked(): boolean {
+    const blocked = this.blockedFlag;
+    this.blockedFlag = false;
+    return blocked;
   }
 
   update(dtMs: number, target: EnemyTarget): void {
@@ -287,6 +303,16 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
 
   /** Chamado ao renascer, para o tipo reiniciar o estado da sua IA. */
   protected resetAi(): void {}
+
+  /** O escudo para o golpe que vem de `sourceX`? Só quem tem escudo sobrescreve. */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  protected blocks(_sourceX: number): boolean {
+    return false;
+  }
+
+  /** O escudo acabou de bloquear um golpe vindo de `sourceX`. */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  protected onBlocked(_sourceX: number): void {}
 
   /** Pode ser acertado agora? Quem se esconde (a raiz dormindo) devolve false. */
   protected hurtable(): boolean {

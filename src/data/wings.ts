@@ -32,6 +32,10 @@ export type FurnitureKind =
   | 'boat'
   | 'reeds'
   | 'stakes'
+  | 'tombstone'
+  | 'grave'
+  | 'weapons'
+  | 'bannerPole'
   // Teto
   | 'tapestry'
   | 'chandelier'
@@ -126,6 +130,10 @@ export const FURNITURE: Readonly<Record<FurnitureKind, FurnitureSpec>> = {
   boat: { placement: 'floor', widthTiles: 3, heightTiles: 1, variants: 2 },
   reeds: { placement: 'floor', widthTiles: 1, heightTiles: 2, variants: 3 },
   stakes: { placement: 'floor', widthTiles: 1, heightTiles: 1, variants: 2 },
+  tombstone: { placement: 'floor', widthTiles: 1, heightTiles: 2, variants: 4 },
+  grave: { placement: 'floor', widthTiles: 3, heightTiles: 1, variants: 2 },
+  weapons: { placement: 'floor', widthTiles: 2, heightTiles: 2, variants: 3 },
+  bannerPole: { placement: 'floor', widthTiles: 1, heightTiles: 3, variants: 2 },
   net: { placement: 'ceiling', widthTiles: 2, heightTiles: 2, variants: 2 },
   chandelier: {
     placement: 'ceiling',
@@ -149,7 +157,9 @@ export type WingId =
   | 'bosque'
   | 'raizes'
   | 'charco'
-  | 'palafitas';
+  | 'palafitas'
+  | 'jazigos'
+  | 'campo';
 
 export interface WingDef {
   id: WingId;
@@ -312,6 +322,35 @@ export const WINGS: Readonly<Record<BiomeId, readonly WingDef[]>> = {
         { kind: 'net', weight: 3 },
         { kind: 'lantern', weight: 2 },
         { kind: 'boat', weight: 1 },
+        { kind: 'cage', weight: 1 },
+      ],
+      count: { min: 3, max: 5 },
+    },
+  ],
+  cemiterio: [
+    {
+      id: 'jazigos',
+      name: 'JAZIGOS ESQUECIDOS',
+      furniture: [
+        { kind: 'tombstone', weight: 6 },
+        { kind: 'grave', weight: 3 },
+        { kind: 'urn', weight: 2 },
+        { kind: 'skulls', weight: 2 },
+        { kind: 'lantern', weight: 2 },
+        { kind: 'roots', weight: 1 },
+      ],
+      count: { min: 3, max: 5 },
+    },
+    {
+      id: 'campo',
+      name: 'CAMPO DE BATALHA',
+      furniture: [
+        { kind: 'weapons', weight: 5 },
+        { kind: 'bannerPole', weight: 3 },
+        { kind: 'cart', weight: 2 },
+        { kind: 'campfire', weight: 2 },
+        { kind: 'skulls', weight: 2 },
+        { kind: 'crates', weight: 1 },
         { kind: 'cage', weight: 1 },
       ],
       count: { min: 3, max: 5 },

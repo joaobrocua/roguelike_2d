@@ -1,12 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import {
   CAO_DE_OSSOS,
+  CARNICAL,
   ENEMY_BODIES,
   ENEMY_MARKERS,
   FOGO_FATUO,
   LOBO_ESPECTRAL,
+  NECROMANTE,
+  NECROMANTE_ORBS,
   RAIZ_EMBOSCADORA,
   SAPO_PECONHENTO,
+  SOLDADO_CAIDO,
   VULTO,
 } from '../src/data/enemies';
 import { SOUL_REWARD } from '../src/data/meta';
@@ -61,5 +65,39 @@ describe('inimigos da floresta (dados)', () => {
     expect(FOGO_FATUO.attack.windupMs).toBeGreaterThanOrEqual(400);
     expect(FOGO_FATUO.light.radius).toBeGreaterThan(0);
     expect(FOGO_FATUO.light.strength).toBeLessThanOrEqual(1);
+  });
+
+  it('o soldado telegrafa a estocada, a lança alcança o que a IA mira e a guarda dá tempo de contornar', () => {
+    const { attack, ai, guard } = SOLDADO_CAIDO;
+    expect(attack.windupMs).toBeGreaterThanOrEqual(450); // dá tempo de rolar
+    // A estocada alcança até onde a IA começa a atacar (e um pouco mais)
+    const reach = SOLDADO_CAIDO.width / 2 + attack.hitbox.width;
+    expect(reach).toBeGreaterThanOrEqual(ai.attackRangeX);
+    // A guarda demora a virar: menos que uma estocada inteira, mais que um piscar
+    expect(guard.turnLagMs).toBeGreaterThanOrEqual(250);
+    expect(guard.turnLagMs).toBeLessThan(attack.windupMs + attack.activeMs + attack.recoveryMs);
+    expect(SOLDADO_CAIDO.maxHp).toBeGreaterThan(CARNICAL.maxHp); // o escudo o torna o mais duro
+    expect(SOLDADO_CAIDO.knockbackScale).toBeLessThan(1);
+  });
+
+  it('o necromante é frágil, telegrafa o leque e os orbes sobem e descem devagar', () => {
+    const { ai, attack } = NECROMANTE;
+    expect(NECROMANTE.maxHp).toBeLessThan(SOLDADO_CAIDO.maxHp);
+    expect(attack.windupMs).toBeGreaterThanOrEqual(600);
+    expect(ai.minDistanceX).toBeLessThan(ai.maxDistanceX);
+    expect(ai.sightRangeX).toBeGreaterThanOrEqual(ai.maxDistanceX);
+    expect(NECROMANTE_ORBS).toHaveLength(3);
+    const speedsY = NECROMANTE_ORBS.map((orb) => orb.speedY ?? 0);
+    expect(speedsY).toEqual([...speedsY].sort((a, b) => a - b)); // do de cima para o de baixo
+    expect(Math.min(...speedsY)).toBeLessThan(0);
+    expect(Math.max(...speedsY)).toBeGreaterThan(0);
+    for (const orb of NECROMANTE_ORBS) {
+      // Nos extremos do alcance de tiro, o orbe desvia no máximo a faixa que a IA aceita atirar
+      const drift = Math.abs(orb.speedY ?? 0) * (ai.maxDistanceX / orb.speed);
+      expect(drift).toBeLessThanOrEqual(ai.shootRangeY + 10);
+      expect(orb.width).toBe(7); // a textura do orbe é 7 x 7
+      expect(orb.height).toBe(7);
+      expect(orb.lifeMs / 1000).toBeGreaterThan(ai.maxDistanceX / orb.speed);
+    }
   });
 });

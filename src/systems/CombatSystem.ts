@@ -16,6 +16,8 @@ export interface CombatEvents {
   onPerfectDodge(): void;
   /** A barreira do Tomo parou um projétil. */
   onProjectileBlocked(projectile: Projectile): void;
+  /** O escudo de um inimigo bloqueou um golpe do jogador (nenhum dano). */
+  onEnemyBlocked?(enemy: Enemy): void;
   /** O golpe de troca foi resolvido (para o anel de luz). */
   onSwapStrike(strike: SwapStrikeDef): void;
 }
@@ -118,7 +120,10 @@ export class CombatSystem {
     registersHit = true,
   ): number {
     const damage = enemy.receiveHit(sourceX, hit, multiplier);
-    if (damage <= 0) return 0;
+    if (damage <= 0) {
+      if (enemy.consumeBlocked()) this.events.onEnemyBlocked?.(enemy);
+      return 0;
+    }
     if (registersHit) this.player.notifyHit();
     this.events.onEnemyHit(enemy, damage, empowered);
     if (!enemy.alive) this.events.onEnemyKilled(enemy);

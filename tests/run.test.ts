@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ALL_BIOMES, RUN_PLAN, type RunStage } from '../src/data/mapRules';
+import { ALL_BIOMES, OUTDOOR_BIOMES, RUN_PLAN, type RunStage } from '../src/data/mapRules';
 import { ROOM_TEMPLATES } from '../src/data/roomTemplates';
 import { buildCatalog } from '../src/logic/map/catalog';
 import {
@@ -156,7 +156,7 @@ describe('santuário na run', () => {
   });
 
   it('a jornada começa fora do castelo: a primeira área é ao ar livre e o castelo vem depois', () => {
-    const outdoors = ['floresta', 'pantano'];
+    const outdoors = OUTDOOR_BIOMES;
     const castle = ['muralhas', 'saloes', 'catacumbas'];
     const first = RUN_PLAN[0]?.options ?? [];
     expect(first.length).toBeGreaterThan(0);

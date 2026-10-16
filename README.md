@@ -62,6 +62,9 @@ Cada bioma tem o seu clima, definido em `src/data/biomeLook.ts` (rampas de cor d
 - **Muralhas e Pátio:** noite de luar, céu em degradê com _dithering_, lua com crateras, fortaleza em ruínas ao longe, arcadas góticas com janelas e trepadeiras.
 - **Salões e Capela:** salão de pedra roxa com vitrais acesos, feixes de luz, colunas, estandartes e cortinas de veludo.
 - **Catacumbas e Masmorra:** pedra úmida esverdeada, nichos de caveiras, raízes, correntes e lanternas de alma.
+- **Floresta Apodrecida:** céu doente com sol pálido, árvores mortas em silhueta, troncos grossos com raízes e buracos que brilham, vaga-lumes.
+- **Pântano dos Afogados:** céu cinzento, água escura com reflexos, palafitas e troncos tortos, musgo pendurado e fogos-fátuos azulados.
+- **Cemitério dos Caídos:** noite fria de lua baixa, o castelo em ruínas sobre uma colina, lápides, cruzes e cercas de ferro, um mausoléu, lanças com estandartes rasgados e almas lilases.
 
 Cada fundo tem três planos com parallax (distante, médio e primeiro plano). Os blocos de pedra mudam conforme os lados que ficam ao ar livre (quinas iluminadas, bases sombreadas) e a decoração do cenário (tufos, ossos, pedregulho, trepadeiras, correntes, estalactites, teias e rachaduras) é sorteada por sala com a semente da run (`src/logic/decor.ts`). A escuridão é da cor de cada bioma e é "apagada" por luzes de verdade: tochas, fogueiras, a porta e o baú também iluminam. Os personagens têm sombra no chão e a barra de vida tem moldura, rastro de dano e pulso com pouca vida.
 
@@ -107,16 +110,18 @@ Existem **9 relíquias**; o jogador carrega **duas** e alterna entre elas com **
 
 Cada inimigo tem uma IA por **máquina de estados** pura (`src/logic/ai`), que só recebe o que ele "percebe" e devolve o que quer fazer. A entidade Phaser traduz isso em movimento. Piscar em laranja = golpe chegando: dá tempo de rolar.
 
-| Inimigo                     | Comportamento                                                                                                                                |
-| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| Carniçal                    | Patrulha, avança quando vê o jogador e golpeia de perto                                                                                      |
-| Arqueiro Oco                | Mantém distância, mira (telegrafia) e atira flechas                                                                                          |
-| Vulto                       | Flutua, atravessa plataformas e ataca em mergulho                                                                                            |
-| Cão de Ossos                | Rápido, dá botes; em bando, os ataques são escalonados                                                                                       |
-| Lobo Espectral (Floresta)   | O cão da floresta: mais rápido e mais forte; corre no mesmo bando dos cães                                                                   |
-| Raiz Emboscadora (Floresta) | Estacionária: dorme como um monte de raízes (não pode ser acertada), acorda quando o herói chega perto, chicoteia de longe e afunda de volta |
-| Sapo Peçonhento (Pântano)   | Pula para manter a distância e cospe veneno em arco depois de inchar a papada (a telegrafia)                                                 |
-| Fogo-Fátuo (Pântano)        | Chama azulada que paira sobre o charco e mergulha depois de esquentar; ilumina a sala em volta                                               |
+| Inimigo                     | Comportamento                                                                                                                                                |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Carniçal                    | Patrulha, avança quando vê o jogador e golpeia de perto                                                                                                      |
+| Arqueiro Oco                | Mantém distância, mira (telegrafia) e atira flechas                                                                                                          |
+| Vulto                       | Flutua, atravessa plataformas e ataca em mergulho                                                                                                            |
+| Cão de Ossos                | Rápido, dá botes; em bando, os ataques são escalonados                                                                                                       |
+| Lobo Espectral (Floresta)   | O cão da floresta: mais rápido e mais forte; corre no mesmo bando dos cães                                                                                   |
+| Raiz Emboscadora (Floresta) | Estacionária: dorme como um monte de raízes (não pode ser acertada), acorda quando o herói chega perto, chicoteia de longe e afunda de volta                 |
+| Sapo Peçonhento (Pântano)   | Pula para manter a distância e cospe veneno em arco depois de inchar a papada (a telegrafia)                                                                 |
+| Fogo-Fátuo (Pântano)        | Chama azulada que paira sobre o charco e mergulha depois de esquentar; ilumina a sala em volta                                                               |
+| Soldado Caído (Cemitério)   | Marcha com o escudo na frente: golpes de frente são bloqueados. A guarda só cai quando ele estoca (telegrafia longa) e demora a virar se você passa por trás |
+| Necromante (Cemitério)      | Mantém distância e, depois de erguer o cajado (telegrafia), solta três orbes em leque; frágil se alcançado                                                   |
 
 Os inimigos e o chefe são **pixel art desenhada em código**, quadro a quadro, como o herói: cada um tem a sua silhueta (o Carniçal encurvado de trapos vermelhos, o Arqueiro Oco encapuzado com arco de osso, o Vulto de fiapos roxos, o Cão de Ossos de costelas à mostra, o Guardião de armadura rachada) e animações de parado, andando, preparando o golpe, golpeando, recuperando, ferido e morrendo. As poses ficam em `src/data/enemySprites.ts`, o desenho em `src/systems/enemySprites.ts` e a escolha da animação em `src/logic/enemyAnim.ts`. Ao morrer, o corpo cai, fica um instante no chão e some.
 
@@ -124,12 +129,12 @@ Flechas também podem ser esquivadas com a esquiva perfeita. Inimigos derrotados
 
 ## A fortaleza (etapa 5)
 
-Uma run atravessa **4 áreas** do reino em ruínas, cada uma um mapa interligado de salas gerado por semente. O herói não entra direto no castelo: começa por uma área ao ar livre, escolhida em uma passagem do santuário (a **Floresta Apodrecida** ou o **Pântano dos Afogados**), chega às **Muralhas e Pátio** (a entrada do castelo), atravessa os **Salões e Capela** e termina nas **Catacumbas e Masmorra**, com o chefe. Cada mapa tem sala inicial, salas de combate, uma fogueira de descanso, um baú e uma **porta de saída** para o bioma seguinte; o último termina na arena do chefe.
+Uma run atravessa **5 áreas** do reino em ruínas, cada uma um mapa interligado de salas gerado por semente. O herói não entra direto no castelo: começa por uma área ao ar livre, escolhida em uma passagem do santuário (a **Floresta Apodrecida** ou o **Pântano dos Afogados**), cruza o **Cemitério dos Caídos** (um campo de batalha com o castelo se erguendo ao longe), chega às **Muralhas e Pátio** (a entrada do castelo), atravessa os **Salões e Capela** e termina nas **Catacumbas e Masmorra**, com o chefe. Cada mapa tem sala inicial, salas de combate, uma fogueira de descanso, um baú e uma **porta de saída** para o bioma seguinte; o último termina na arena do chefe.
 
 - **Salas:** desenhos em texto (`src/data/templates`), em células de 30x17 blocos, com portas nas quatro direções. Antes de entrar no jogo, todo desenho é validado: as portas se alcançam com os pulos do herói e nada fica fora de alcance (`src/logic/map`).
 - **Geração:** `generateBiomeMap` monta o grafo de salas numa grade, com ligações extras para criar voltas, e sorteia os desenhos pela semente. A mesma semente dá a mesma run.
 - **Viagem:** as portas abertas levam à sala vizinha; as sem ligação são fechadas por parede. O minimapa (canto da tela) mostra as salas visitadas e as vizinhas; as salas secretas (liberadas na árvore com _Passagens_) só aparecem depois de visitadas.
-- **Jornada em etapas:** a run segue o plano `RUN_PLAN` (`src/data/mapRules.ts`): uma lista de etapas, cada uma com as áreas que o jogador pode escolher ao chegar nela. Com uma área só, o santuário tem uma passagem; com duas, tem duas (um de cada lado da sala, cada um com a cor e o nome da área de destino) e o herói escolhe o caminho. Uma área não se repete na mesma run. Hoje só a primeira etapa oferece duas áreas (Floresta ou Pântano); acrescentar áreas e caminhos é preencher dados (os testes conferem que a etapa final só oferece áreas com sala de chefe e as outras, com sala de saída).
+- **Jornada em etapas:** a run segue o plano `RUN_PLAN` (`src/data/mapRules.ts`): uma lista de etapas, cada uma com as áreas que o jogador pode escolher ao chegar nela. Com uma área só, o santuário tem uma passagem; com duas, tem duas (um de cada lado da sala, cada um com a cor e o nome da área de destino) e o herói escolhe o caminho. Uma área não se repete na mesma run. Hoje só a primeira etapa oferece duas áreas (Floresta ou Pântano) e as áreas de fora vêm todas antes do castelo; acrescentar áreas e caminhos é preencher dados (os testes conferem que a etapa final só oferece áreas com sala de chefe e as outras, com sala de saída).
 - **Fogueira:** cura tudo uma vez. **Baú:** solta uma relíquia. **Porta de saída:** abre o próximo bioma.
 - **Guardião Partido:** o chefe também **pula**: salta o obstáculo que o barra, sobe com um pulo alto até quem está num balcão e dá um salto comprido quando você está longe (poeira e tremor ao pousar; valores em `src/data/boss.ts`). Ele tem três ataques (pancada, investida e tremor) e entra numa fase 2 mais agressiva com metade da vida. Ao cair, solta uma relíquia e a tela de vitória aparece. Dados em `src/data/boss.ts`, IA em `src/logic/ai/boss.ts`.
 - Cada bioma tem a sua escuridão e névoa (`BIOME_DARKNESS`).
@@ -138,13 +143,14 @@ Uma run atravessa **4 áreas** do reino em ruínas, cada uma um mapa interligado
 
 Cada área é dividida em **alas**, com ambientes e mobília próprios (`src/data/wings.ts`):
 
-| Área       | Alas                                                                                                                              |
-| ---------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| Muralhas   | Pátio de Armas (barris, caixotes, bonecos de treino, armas), Celeiros e Estábulos (carroças, barris)                              |
-| Salões     | Salão do Trono (mesas, cadeiras, lustres, tapeçarias), Biblioteca (estantes, livros), Capela (bancos, altar, candelabros)         |
-| Catacumbas | Ossuário (caveiras, caixões), Masmorra (celas, gaiolas), Cripta Real (sarcófagos, altar, urnas)                                   |
-| Floresta   | Bosque Morto (troncos caídos, tocos, cogumelos, fogueira abandonada), Túnel de Raízes (raízes penduradas, casulos, lanternas)     |
-| Pântano    | Charco dos Afogados (juncos, estacas, barcos virados, cogumelos), Vila de Palafitas (barris, caixotes, redes de pesca, lanternas) |
+| Área       | Alas                                                                                                                                |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Muralhas   | Pátio de Armas (barris, caixotes, bonecos de treino, armas), Celeiros e Estábulos (carroças, barris)                                |
+| Salões     | Salão do Trono (mesas, cadeiras, lustres, tapeçarias), Biblioteca (estantes, livros), Capela (bancos, altar, candelabros)           |
+| Catacumbas | Ossuário (caveiras, caixões), Masmorra (celas, gaiolas), Cripta Real (sarcófagos, altar, urnas)                                     |
+| Floresta   | Bosque Morto (troncos caídos, tocos, cogumelos, fogueira abandonada), Túnel de Raízes (raízes penduradas, casulos, lanternas)       |
+| Pântano    | Charco dos Afogados (juncos, estacas, barcos virados, cogumelos), Vila de Palafitas (barris, caixotes, redes de pesca, lanternas)   |
+| Cemitério  | Jazigos Esquecidos (lápides, covas, urnas, caveiras, lampiões), Campo de Batalha (armas fincadas, estandartes, carroças, fogueiras) |
 
 - **Como as alas se distribuem:** as salas do mapa ficam em faixas da esquerda para a direita (`src/logic/wings.ts`), então atravessar a área é atravessar ambientes diferentes; a ordem das alas muda a cada run, e o nome da ala aparece ao entrar nela.
 - **Mobília:** `src/logic/furniture.ts` escolhe, de forma determinística por sala, onde cada peça cabe (no chão, sobre um apoio e com espaço livre acima; ou pendurada no teto), sem tapar portas, inimigos, objetos nem o ponto de nascimento, e sem uma peça por cima da outra. A decoração miúda (tufos, ossos, teias) desvia da mobília. O desenho é pixel art de código (`src/systems/furnitureArt.ts`) com as cores de cada área, e as peças com chama (velas, candelabros, lustres) iluminam a sala.

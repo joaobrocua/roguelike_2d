@@ -8,15 +8,19 @@ import {
   FATUO_SHEET,
   GUARDIAO_SHEET,
   LOBO_SHEET,
+  NECROMANTE_SHEET,
   RAIZ_SHEET,
   SAPO_SHEET,
+  SOLDADO_SHEET,
   VULTO_SHEET,
   type ArcherPose,
   type EnemySheet,
   type FrogPose,
   type GhoulPose,
   type HoundPose,
+  type NecroPose,
   type RootPose,
+  type SoldierPose,
   ENEMY_ANIM_STATES,
   type WraithPose,
 } from '../data/enemySprites';
@@ -767,6 +771,188 @@ function drawFrog(ctx: Ctx, p: FrogPose): void {
 
 // --- Criação das texturas e animações ----------------------------------------------------
 
+// --- Soldado Caído -----------------------------------------------------------------------
+
+const STEEL = 0x6c7488;
+const STEEL_DARK = 0x3c4254;
+const STEEL_LIGHT = 0x9aa3b8;
+const RUST = 0x7a4a2c;
+const TABARD = 0x5a2a46;
+const TABARD_DARK = 0x3a1a2e;
+const SPEAR_WOOD = 0x6a4a2c;
+const SOLDIER_EYE = 0xb48cff;
+
+function drawSoldier(ctx: Ctx, p: SoldierPose): void {
+  const cx = 31;
+  const ground = 28;
+  ctx.save();
+  withFall(ctx, p.rotation, cx, ground, 3, 12);
+
+  const hipY = 21 - p.bob;
+  const torsoTop = 12 - p.bob;
+  const x0 = cx - 4 + p.lean;
+
+  const leg = (hipX: number, off: number, lift: number, color: number, boot: number): void => {
+    const foot: Point = { x: hipX + off, y: ground - 3 - lift };
+    drawLimb(ctx, { x: hipX, y: hipY }, foot, color, 3);
+    fillPx(ctx, boot, foot.x - 1, ground - 2 - lift, 5, 2);
+  };
+  leg(cx - 3, p.legB, p.liftB, STEEL_DARK, RUST);
+
+  // Braço de trás, junto do corpo
+  fillPx(ctx, STEEL_DARK, x0 - 1, torsoTop + 1, 2, 7);
+
+  // Tronco: cota de malha enferrujada, tabardo rasgado por cima e cinto
+  fillPx(ctx, STEEL, x0, torsoTop, 8, hipY - torsoTop + 1);
+  fillPx(ctx, STEEL_LIGHT, x0, torsoTop, 8, 1);
+  fillPx(ctx, STEEL_DARK, x0, torsoTop + 1, 1, hipY - torsoTop);
+  fillPx(ctx, TABARD, x0 + 1, torsoTop + 3, 6, hipY - torsoTop + 3);
+  fillPx(ctx, TABARD_DARK, x0 + 1, torsoTop + 3, 1, hipY - torsoTop + 3);
+  for (let i = 1; i < 7; i += 2)
+    fillPx(ctx, TABARD, x0 + i, hipY + 5, 1, 1 + (i % 3 === 1 ? 1 : 0));
+  fillPx(ctx, STEEL_DARK, x0, hipY - 1, 8, 1);
+  fillPx(ctx, RUST, x0 + 3, hipY - 1, 2, 1);
+  fillPx(ctx, TABARD_DARK, x0 + 3, torsoTop + 5, 1, 1); // furo do tabardo
+
+  leg(cx + 1, p.legF, p.liftF, STEEL, RUST);
+
+  // Elmo com a viseira aberta: olhos de brasa lilás e uma pluma esfarrapada
+  const hx = x0;
+  const hy = torsoTop - 8;
+  fillPx(ctx, STEEL, hx + 1, hy, 6, 1);
+  fillPx(ctx, STEEL, hx, hy + 1, 8, 6);
+  fillPx(ctx, STEEL_LIGHT, hx + 1, hy, 4, 1);
+  fillPx(ctx, STEEL_DARK, hx, hy + 1, 1, 6);
+  fillPx(ctx, STEEL_DARK, hx + 7, hy + 5, 1, 2);
+  fillPx(ctx, STEEL_DARK, hx + 1, hy + 6, 6, 2); // gorjal
+  fillPx(ctx, OUTLINE, hx + 3, hy + 3, 5, 2); // fenda da viseira
+  fillPx(ctx, SOLDIER_EYE, hx + 5, hy + 3, 1, 1);
+  fillPx(ctx, SOLDIER_EYE, hx + 7, hy + 3, 1, 1);
+  if (p.glare) fillPx(ctx, PALETTE.glow, hx + 3, hy + 3, 5, 1, 0.55);
+  fillPx(ctx, STEEL_DARK, hx + 5, hy + 1, 1, 3); // protetor do nariz
+  fillPx(ctx, TABARD, hx + 2, hy - 2, 3, 2);
+  fillPx(ctx, TABARD_DARK, hx + 1, hy - 1, 1, 1);
+
+  // Lança: cabo de madeira e ponta de ferro; a mão da frente a segura
+  const hand: Point = { x: cx + 4 + p.lean, y: torsoTop + 7 };
+  const butt: Point = { x: hand.x + p.butt.dx, y: hand.y + p.butt.dy };
+  const tip: Point = { x: hand.x + p.tip.dx, y: hand.y + p.tip.dy };
+  linePx(ctx, SPEAR_WOOD, butt.x, butt.y, tip.x, tip.y, 1);
+  fillPx(ctx, STEEL_LIGHT, tip.x - 2, tip.y - 1, 3, 3);
+  fillPx(ctx, STEEL, tip.x - 1, tip.y, 2, 1);
+
+  // Braço da frente e escudo: erguido cobre o peito, baixo fica junto da perna
+  const shoulder: Point = { x: x0 + 6, y: torsoTop + 2 };
+  drawLimb(ctx, shoulder, hand, STEEL, 2);
+  fillPx(ctx, STEEL_LIGHT, shoulder.x - 1, shoulder.y - 1, 4, 2); // ombreira
+  fillPx(ctx, STEEL_LIGHT, hand.x, hand.y, 2, 2);
+  const rows = p.shieldUp ? 14 : 8;
+  const sx = cx + 5 + p.lean;
+  const sy = p.shieldUp ? torsoTop - 1 : torsoTop + 8;
+  for (let r = 0; r < rows; r++) {
+    const w = 6 - (r > rows - 5 ? r - (rows - 5) : 0);
+    fillPx(ctx, STEEL_DARK, sx + (6 - w), sy + r, w, 1);
+    fillPx(ctx, STEEL, sx + (6 - w), sy + r, Math.max(1, w - 2), 1);
+  }
+  fillPx(ctx, STEEL_LIGHT, sx + 1, sy, 5, 1); // aro do escudo
+  fillPx(ctx, TABARD, sx + 2, sy + 2, 2, rows - 5); // listra pintada, já descascada
+  fillPx(ctx, STEEL_LIGHT, sx + 2, sy + Math.floor(rows / 2) - 1, 2, 2); // o umbo
+  ctx.restore();
+}
+
+// --- Necromante --------------------------------------------------------------------------
+
+const ROBE = 0x2a1f3a;
+const ROBE_DARK = 0x1a1226;
+const ROBE_LIGHT = 0x4a3a66;
+const NECRO_EYE = 0xb48cff;
+const NECRO_EYE_HOT = 0xf0e0ff;
+
+function drawNecro(ctx: Ctx, p: NecroPose): void {
+  const cx = 18;
+  const ground = 34;
+  ctx.save();
+  withFall(ctx, p.rotation, cx, ground, 4, 9);
+
+  const shoulderY = 17 - p.bob;
+  const hemY = ground - 2;
+  const lean = p.lean;
+
+  // Manto: afunila nos ombros e abre na barra rasgada
+  for (let y = shoulderY; y < hemY; y++) {
+    const t = (y - shoulderY) / (hemY - shoulderY);
+    const half = 3 + Math.round(t * 3);
+    const left = cx - half + Math.round(lean * (1 - t));
+    fillPx(ctx, ROBE, left, y, half * 2 + 1, 1);
+    fillPx(ctx, ROBE_DARK, left, y, 2, 1);
+    fillPx(ctx, ROBE_LIGHT, left + half * 2, y, 1, 1);
+  }
+  for (let i = 0; i < 7; i++) {
+    const x = cx - 6 + i * 2 + Math.round(p.sway * (i % 2 === 0 ? 1 : -1));
+    fillPx(ctx, ROBE, x, hemY, 1, 1 + (i % 3));
+    fillPx(ctx, ROBE_DARK, x, hemY, 1, 1);
+  }
+  fillPx(ctx, ROBE_LIGHT, cx - 1 + lean, shoulderY + 3, 1, hemY - shoulderY - 3); // friso do manto
+  fillPx(ctx, PALETTE.bone, cx - 2 + lean, shoulderY + 7, 4, 1); // cinto de ossos
+  fillPx(ctx, PALETTE.mist, cx - 1 + lean, shoulderY + 7, 1, 1);
+
+  // Capuz com a face de caveira e os olhos acesos
+  const hx = cx - 4 + lean;
+  const hy = shoulderY - 8;
+  fillPx(ctx, ROBE, hx + 2, hy, 4, 1);
+  fillPx(ctx, ROBE, hx + 1, hy + 1, 6, 1);
+  fillPx(ctx, ROBE, hx, hy + 2, 8, 6);
+  fillPx(ctx, ROBE_DARK, hx, hy + 2, 2, 6);
+  fillPx(ctx, ROBE_LIGHT, hx + 3, hy, 2, 1);
+  fillPx(ctx, OUTLINE, hx + 3, hy + 2, 5, 5);
+  if (p.eyes === 'closed') {
+    fillPx(ctx, PALETTE.mist, hx + 4, hy + 4, 3, 1, 0.8);
+  } else {
+    const eye = p.eyes === 'bright' ? NECRO_EYE_HOT : NECRO_EYE;
+    fillPx(ctx, eye, hx + 4, hy + 3, 1, 1);
+    fillPx(ctx, eye, hx + 6, hy + 3, 1, 1);
+    if (p.eyes === 'bright') fillPx(ctx, NECRO_EYE, hx + 3, hy + 3, 5, 1, 0.5);
+  }
+  fillPx(ctx, PALETTE.bone, hx + 4, hy + 6, 3, 1); // mandíbula
+  fillPx(ctx, PALETTE.mist, hx + 5, hy + 6, 1, 1);
+
+  // Cajado com a caveira no topo; o braço o apoia, ergue ou aponta para a frente
+  const staffX = cx + 6 + lean + (p.arm === 2 ? 5 : 0);
+  const topY = p.arm === 0 ? shoulderY - 4 : p.arm === 1 ? shoulderY - 6 : shoulderY - 2;
+  const handY = shoulderY + (p.arm === 0 ? 7 : p.arm === 1 ? 3 : 4);
+  linePx(ctx, SPEAR_WOOD, staffX, ground - 1, staffX, topY + 3, 1);
+  fillPx(ctx, PALETTE.bone, staffX - 1, topY, 3, 3);
+  fillPx(ctx, OUTLINE, staffX - 1, topY + 1, 1, 1);
+  fillPx(ctx, OUTLINE, staffX + 1, topY + 1, 1, 1);
+  fillPx(ctx, PALETTE.mist, staffX, topY + 3, 1, 1);
+  const shoulder: Point = { x: cx + 4 + lean, y: shoulderY + 1 };
+  drawLimb(ctx, shoulder, { x: staffX, y: handY }, ROBE_LIGHT, 2);
+  fillPx(ctx, PALETTE.bone, staffX - 1, handY - 1, 2, 2);
+  // Braço de trás
+  const backHand: Point = {
+    x: cx - 5 + lean,
+    y: p.arm === 1 ? shoulderY - 4 : shoulderY + 8,
+  };
+  drawLimb(ctx, { x: cx - 3 + lean, y: shoulderY + 1 }, backHand, ROBE_DARK, 2);
+  fillPx(ctx, PALETTE.bone, backHand.x - 1, backHand.y - 1, 2, 2);
+
+  // Orbe de energia sobre a caveira: cresce enquanto ele conjura
+  if (p.orb > 0) {
+    const r = p.orb;
+    const size = r * 2 + 1;
+    const top = topY - 2 - 2 * r;
+    fillPx(ctx, NECRO_EYE, staffX - r - 1, top - 1, size + 2, size + 2, 0.18);
+    // Esfera: as fileiras de cima e de baixo e as laterais ficam mais curtas (cantos cortados)
+    for (let row = 0; row < size; row++) {
+      const edge = row === 0 || row === size - 1;
+      const inset = edge && r > 1 ? 1 : 0;
+      fillPx(ctx, NECRO_EYE, staffX - r + inset, top + row, size - inset * 2, 1);
+    }
+    fillPx(ctx, NECRO_EYE_HOT, staffX - Math.floor(r / 2), topY - 2 - 2 * r + 1, r, r);
+  }
+  ctx.restore();
+}
+
 function sheetCell(def: EnemyBody, sheet: EnemySheet<unknown>): { width: number; height: number } {
   return { width: def.width + sheet.pad.x * 2, height: def.height + sheet.pad.y * 2 };
 }
@@ -805,6 +991,8 @@ const SHEETS: readonly EnemySheet<unknown>[] = [
   RAIZ_SHEET,
   FATUO_SHEET,
   SAPO_SHEET,
+  SOLDADO_SHEET,
+  NECROMANTE_SHEET,
   GUARDIAO_SHEET,
 ];
 
@@ -826,6 +1014,8 @@ export function enemyDrawers(): readonly EnemyDrawer[] {
     { sheet: RAIZ_SHEET, body: enemyDef('raiz'), draw: drawRoot },
     { sheet: FATUO_SHEET, body: enemyDef('fatuo'), draw: drawWisp },
     { sheet: SAPO_SHEET, body: enemyDef('sapo'), draw: drawFrog },
+    { sheet: SOLDADO_SHEET, body: enemyDef('soldado'), draw: drawSoldier },
+    { sheet: NECROMANTE_SHEET, body: enemyDef('necromante'), draw: drawNecro },
     { sheet: GUARDIAO_SHEET, body: GUARDIAO, draw: drawGuardian },
   ] as unknown as readonly EnemyDrawer[];
 }

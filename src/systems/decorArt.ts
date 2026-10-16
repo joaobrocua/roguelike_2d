@@ -1,7 +1,7 @@
 import type Phaser from 'phaser';
 import { DECOR_RULES, type DecorKind } from '../data/decor';
 import { BIOME_LOOK, type BiomeLook } from '../data/biomeLook';
-import { ALL_BIOMES, type BiomeId } from '../data/mapRules';
+import { ALL_BIOMES, OUTDOOR_BIOMES, type BiomeId } from '../data/mapRules';
 import { createRng, randomInt, type Rng } from '../utils/rng';
 import { canvasTexture, disc, line, mix, rect, type Ctx } from './pixelCanvas';
 
@@ -39,7 +39,7 @@ export function decorTextureKey(biome: BiomeId, kind: DecorKind, variant: number
 
 function drawTuft(ctx: Ctx, look: BiomeLook, variant: number, rng: Rng, biome: BiomeId): void {
   const { height: h } = DECOR_SIZE.tuft;
-  if ((biome === 'catacumbas' || biome === 'floresta' || biome === 'pantano') && variant !== 0) {
+  if ((biome === 'catacumbas' || OUTDOOR_BIOMES.includes(biome)) && variant !== 0) {
     // Cogumelos que brilham
     for (const [x, ch] of [
       [3, 4],

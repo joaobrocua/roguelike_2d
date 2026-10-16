@@ -10,8 +10,10 @@ import {
   FATUO_SHEET,
   GUARDIAO_SHEET,
   LOBO_SHEET,
+  NECROMANTE_SHEET,
   RAIZ_SHEET,
   SAPO_SHEET,
+  SOLDADO_SHEET,
   VULTO_SHEET,
   type EnemySheet,
 } from '../src/data/enemySprites';
@@ -26,6 +28,8 @@ const SHEETS: readonly EnemySheet<unknown>[] = [
   RAIZ_SHEET,
   FATUO_SHEET,
   SAPO_SHEET,
+  SOLDADO_SHEET,
+  NECROMANTE_SHEET,
   GUARDIAO_SHEET,
 ];
 

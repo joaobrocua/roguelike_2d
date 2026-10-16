@@ -775,6 +775,174 @@ function drawNet(p: Pen): void {
   }
 }
 
+function drawTombstone(p: Pen): void {
+  const { ctx, w, h } = p;
+  const v = p.variant;
+  const cx = w / 2;
+  // Montinho de terra ao pé da lápide
+  rect(ctx, p.stone.dark, 1, h - 3, w - 2, 3);
+  rect(ctx, p.stone.base, 3, h - 4, w - 6, 1);
+  if (v === 2) {
+    // Cruz de pedra
+    const top = 3;
+    rect(ctx, p.stone.base, cx - 1, top, 3, h - top - 3);
+    rect(ctx, p.stone.base, cx - 5, top + 5, 11, 3);
+    rect(ctx, p.stone.light, cx - 1, top, 1, h - top - 3);
+    rect(ctx, p.stone.light, cx - 5, top + 5, 11, 1);
+    rect(ctx, p.stone.dark, cx + 1, top + 1, 1, h - top - 4);
+    rect(ctx, p.moss, cx - 1, h - 12, 3, 2);
+    return;
+  }
+  const slabH = v === 3 ? 15 : v === 1 ? 21 : 19;
+  const top = h - 3 - slabH;
+  const sw = 10;
+  const sx = cx - sw / 2;
+  rect(ctx, p.stone.base, sx, top + 2, sw, slabH - 2);
+  if (v === 1) {
+    // Ponta ogival
+    for (let r = 0; r < 4; r++) rect(ctx, p.stone.base, cx - 1 - r, top - 2 + r, 2 + r * 2, 1);
+  } else if (v === 3) {
+    // Quebrada em dentes, com um pedaço caído no chão
+    for (let x = 0; x < sw; x++)
+      rect(ctx, p.stone.base, sx + x, top + 2 - (x % 3 === 1 ? 2 : 0), 1, 2);
+    rect(ctx, p.stone.base, 1, h - 6, 5, 3);
+    rect(ctx, p.stone.dark, 1, h - 4, 5, 1);
+  } else {
+    rect(ctx, p.stone.base, sx + 1, top + 1, sw - 2, 1);
+    rect(ctx, p.stone.base, sx + 2, top, sw - 4, 1);
+  }
+  rect(ctx, p.stone.light, sx, top + 2, 1, slabH - 2);
+  rect(ctx, p.stone.dark, sx + sw - 2, top + 2, 2, slabH - 2);
+  // Inscrição gasta, musgo e uma rachadura
+  rect(ctx, p.stone.dark, sx + 2, top + 6, sw - 4, 1);
+  rect(ctx, p.stone.dark, sx + 3, top + 9, sw - 6, 1);
+  rect(ctx, p.stone.dark, sx + 2, top + 12, sw - 5, 1);
+  rect(ctx, p.moss, sx, h - 8, 4, 2);
+  rect(ctx, p.mossLight, sx + 1, h - 8, 2, 1);
+  rect(ctx, p.stone.deep, sx + 6, top + 4, 1, 4);
+}
+
+function drawGrave(p: Pen): void {
+  const { ctx, w, h } = p;
+  if (p.variant === 0) {
+    // Cova aberta: o buraco escuro entre dois montes de terra, uma pá fincada e um osso
+    rect(ctx, p.stone.dark, 0, h - 4, w, 4);
+    for (const [x0, x1] of [
+      [0, 13],
+      [w - 14, w],
+    ] as const) {
+      for (let x = x0; x < x1; x++) {
+        const t = (x - x0) / (x1 - x0);
+        const rise = Math.round(Math.sin(t * Math.PI) * 5);
+        rect(ctx, p.stone.base, x, h - 4 - rise, 1, rise);
+      }
+    }
+    rect(ctx, p.stone.deep, 12, h - 5, w - 26, 5);
+    rect(ctx, p.stone.light, 12, h - 5, w - 26, 1);
+    rect(ctx, p.wood.base, w - 10, h - 15, 2, 11); // cabo da pá
+    rect(ctx, p.wood.light, w - 10, h - 15, 1, 11);
+    rect(ctx, p.iron.light, w - 12, h - 6, 5, 4); // lâmina
+    rect(ctx, p.iron.base, w - 12, h - 3, 5, 1);
+    rect(ctx, p.bone, 16, h - 6, 5, 1);
+    rect(ctx, p.boneShade, 18, h - 5, 3, 1);
+  } else {
+    // Cova recém-fechada: monte de terra, cruz de madeira torta e uma fita de pano
+    rect(ctx, p.stone.dark, 0, h - 3, w, 3);
+    for (let x = 4; x < w - 4; x++) {
+      const t = (x - 4) / (w - 8);
+      const rise = Math.round(Math.sin(t * Math.PI) * 6);
+      rect(ctx, p.stone.base, x, h - 3 - rise, 1, rise);
+      if (x % 4 === 0) rect(ctx, p.stone.light, x, h - 3 - rise, 1, 1);
+    }
+    const cx = w / 2 + 3;
+    rect(ctx, p.wood.base, cx, 2, 2, h - 6);
+    rect(ctx, p.wood.base, cx - 4, 5, 10, 2);
+    rect(ctx, p.wood.light, cx, 2, 1, h - 6);
+    rect(ctx, p.cloth, cx - 4, 7, 2, 5);
+    rect(ctx, p.clothDark, cx - 4, 11, 2, 1);
+    rect(ctx, p.mossLight, 6, h - 5, 3, 1);
+  }
+}
+
+function drawWeapons(p: Pen): void {
+  const { ctx, w, h } = p;
+  const v = p.variant;
+  // Chão revolvido
+  rect(ctx, p.stone.dark, 1, h - 3, w - 2, 3);
+  rect(ctx, p.stone.base, 4, h - 4, w - 10, 1);
+  const sword = (x: number, lean: number, len: number): void => {
+    for (let y = 0; y < len; y++) {
+      const dx = Math.round((y / len) * lean);
+      rect(ctx, y % 5 === 0 ? p.iron.base : p.iron.light, x + dx, h - 3 - y, 1, 1);
+      rect(ctx, p.iron.base, x + dx + 1, h - 3 - y, 1, 1);
+    }
+    const gx = x + lean;
+    rect(ctx, p.wood.base, gx - 2, h - 3 - len - 1, 6, 2); // guarda
+    rect(ctx, p.wood.light, gx - 2, h - 3 - len - 1, 6, 1);
+    rect(ctx, p.wood.dark, gx, h - 3 - len - 4, 2, 3); // punho
+  };
+  const spear = (x: number, lean: number, len: number, broken: boolean): void => {
+    for (let y = 0; y < len; y++) {
+      const dx = Math.round((y / len) * lean);
+      rect(ctx, y % 4 === 0 ? p.wood.dark : p.wood.light, x + dx, h - 3 - y, 1, 1);
+    }
+    if (!broken) {
+      rect(ctx, p.iron.light, x + lean - 1, h - 3 - len - 3, 3, 4);
+      rect(ctx, p.iron.base, x + lean, h - 3 - len - 3, 1, 4);
+    }
+  };
+  if (v === 0) {
+    sword(6, -2, 20);
+    sword(14, 1, 24);
+    sword(22, 3, 18);
+  } else if (v === 1) {
+    spear(7, -1, 26, false);
+    spear(15, 2, 22, true);
+    spear(23, 4, 24, false);
+  } else {
+    // Escudo caído de lado, uma espada e um elmo
+    disc(ctx, p.iron.base, 10, h - 9, 6);
+    disc(ctx, p.iron.light, 10, h - 9, 4);
+    rect(ctx, p.trim, 9, h - 12, 2, 6);
+    rect(ctx, p.cloth, 8, h - 10, 4, 2);
+    sword(22, 2, 22);
+    rect(ctx, p.iron.base, 14, h - 8, 7, 5); // elmo
+    rect(ctx, p.iron.light, 14, h - 8, 7, 1);
+    rect(ctx, p.stone.deep, 17, h - 6, 3, 1);
+  }
+  rect(ctx, p.moss, 3, h - 4, 4, 1);
+}
+
+function drawBannerPole(p: Pen): void {
+  const { ctx, w, h } = p;
+  const broken = p.variant === 1;
+  if (!broken) {
+    rect(ctx, p.wood.base, w / 2 - 1, 2, 2, h - 2);
+    rect(ctx, p.wood.light, w / 2 - 1, 2, 1, h - 2);
+    rect(ctx, p.iron.light, w / 2 - 2, 0, 4, 3); // ponta de ferro
+    rect(ctx, p.wood.base, 2, 5, w - 4, 2); // travessa
+    // Pano comprido, rasgado embaixo
+    for (let x = 3; x < w - 3; x++) {
+      const tear = x % 3 === 0 ? 5 : x % 3 === 1 ? 0 : 2;
+      rect(ctx, x < w / 2 ? p.cloth : p.clothDark, x, 7, 1, 24 - tear);
+    }
+    rect(ctx, p.trim, 3, 12, w - 6, 1);
+    rect(ctx, p.clothDark, w / 2 - 1, 14, 3, 3);
+    rect(ctx, p.stone.dark, 1, h - 3, w - 2, 3);
+  } else {
+    // Mastro quebrado, torto, com o pano caído no chão
+    for (let y = 0; y < h - 14; y++) {
+      const dx = Math.round((y / (h - 14)) * 4);
+      rect(ctx, p.wood.base, 5 + dx, h - 3 - y, 2, 1);
+    }
+    rect(ctx, p.wood.light, 5, h - 3 - 5, 1, 4);
+    rect(ctx, p.cloth, 2, h - 6, 12, 3);
+    rect(ctx, p.clothDark, 2, h - 4, 12, 1);
+    rect(ctx, p.trim, 4, h - 5, 6, 1);
+    rect(ctx, p.stone.dark, 1, h - 3, w - 2, 3);
+  }
+}
+
 const DRAWERS: Readonly<Record<FurnitureKind, (p: Pen) => void>> = {
   barrel: drawBarrel,
   crates: drawCrates,
@@ -803,6 +971,10 @@ const DRAWERS: Readonly<Record<FurnitureKind, (p: Pen) => void>> = {
   boat: drawBoat,
   reeds: drawReeds,
   stakes: drawStakes,
+  tombstone: drawTombstone,
+  grave: drawGrave,
+  weapons: drawWeapons,
+  bannerPole: drawBannerPole,
   net: drawNet,
   tapestry: drawTapestry,
   chandelier: drawChandelier,

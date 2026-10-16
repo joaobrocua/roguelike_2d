@@ -430,6 +430,23 @@ export const MUSIC_TRACKS = {
     bassOctave: -1,
     seed: 81,
   },
+  // Cemitério: frígio, lento e grave, com um sino fúnebre ao longe
+  cemiterio: {
+    rootMidi: 45,
+    scale: PHRYGIAN,
+    bpm: 50,
+    beatsPerBar: 4,
+    progression: [
+      [0, 2, 4],
+      [1, 3, 5],
+      [0, 2, 4],
+      [6, 1, 3],
+    ],
+    leadDensity: 0.16,
+    leadOctave: 1,
+    bassOctave: -1,
+    seed: 91,
+  },
 } as const satisfies Record<string, MusicTrackStyle>;
 
 export type MusicTrackId = keyof typeof MUSIC_TRACKS;
