@@ -937,3 +937,176 @@ export const NECROMANTE_SHEET: EnemySheet<NecroPose> = {
     dead: { frames: ['dead0', 'dead1'], fps: 7, loop: false },
   },
 };
+
+// --- Golem de Pedra ----------------------------------------------------------------------
+
+export interface GolemPose {
+  bob: number;
+  lean: number;
+  legF: number;
+  legB: number;
+  liftF: number;
+  liftB: number;
+  /** Punhos em relação ao ombro correspondente. */
+  armF: { dx: number; dy: number };
+  armB: { dx: number; dy: number };
+  /** Brilho das rachaduras: 0 = apagado, 1 = brasa, 2 = aceso (preparando a pancada). */
+  glow: 0 | 1 | 2;
+  /** Desmoronamento (a morte): 0 = inteiro, 1 = pedaços caindo, 3 = só o monte de pedras. */
+  crumble: 0 | 1 | 3;
+}
+
+const GOLEM_BASE: GolemPose = {
+  bob: 0,
+  lean: 0,
+  legF: 0,
+  legB: 0,
+  liftF: 0,
+  liftB: 0,
+  armF: { dx: 3, dy: 10 },
+  armB: { dx: -2, dy: 10 },
+  glow: 1,
+  crumble: 0,
+};
+
+const golem = (o: Partial<GolemPose>): GolemPose => ({ ...GOLEM_BASE, ...o });
+
+export const GOLEM_SHEET: EnemySheet<GolemPose> = {
+  id: 'golem',
+  pad: { x: 12, y: 14 },
+  frames: [
+    { name: 'idle0', pose: golem({}) },
+    { name: 'idle1', pose: golem({ bob: 1, armF: { dx: 3, dy: 9 }, armB: { dx: -2, dy: 9 } }) },
+    { name: 'walk0', pose: golem({ lean: 1, legF: 3, legB: -3, liftB: 1 }) },
+    { name: 'walk1', pose: golem({ lean: 1, bob: 1, legF: 1, legB: -1 }) },
+    { name: 'walk2', pose: golem({ lean: 1, legF: -3, legB: 3, liftF: 1 }) },
+    { name: 'walk3', pose: golem({ lean: 1, bob: 1, legF: -1, legB: 1 }) },
+    {
+      name: 'windup0',
+      pose: golem({ lean: -1, armF: { dx: 0, dy: -8 }, armB: { dx: -4, dy: -8 }, glow: 2 }),
+    },
+    {
+      name: 'windup1',
+      pose: golem({
+        lean: -2,
+        bob: 1,
+        armF: { dx: -2, dy: -16 },
+        armB: { dx: -6, dy: -15 },
+        glow: 2,
+      }),
+    },
+    {
+      name: 'strike',
+      pose: golem({
+        lean: 3,
+        bob: -2,
+        armF: { dx: 5, dy: 15 },
+        armB: { dx: 0, dy: 15 },
+        glow: 2,
+      }),
+    },
+    {
+      name: 'recover',
+      pose: golem({ lean: 2, bob: -1, armF: { dx: 5, dy: 14 }, armB: { dx: 0, dy: 14 }, glow: 1 }),
+    },
+    {
+      name: 'hurt',
+      pose: golem({ lean: -2, armF: { dx: -1, dy: 6 }, armB: { dx: -4, dy: 6 }, glow: 0 }),
+    },
+    {
+      name: 'dead0',
+      pose: golem({
+        lean: -2,
+        bob: -5,
+        armF: { dx: 1, dy: 8 },
+        armB: { dx: -4, dy: 8 },
+        glow: 0,
+        crumble: 1,
+      }),
+    },
+    { name: 'dead1', pose: golem({ glow: 0, crumble: 3 }) },
+  ],
+  animations: {
+    idle: { frames: ['idle0', 'idle1'], fps: 1.8, loop: true },
+    walk: { frames: ['walk0', 'walk1', 'walk2', 'walk3'], fps: 4, loop: true },
+    jump: { frames: ['idle0'], fps: 1, loop: false },
+    windup: { frames: ['windup0', 'windup1'], fps: 3, loop: false },
+    strike: { frames: ['strike'], fps: 1, loop: false },
+    recover: { frames: ['recover'], fps: 1, loop: false },
+    hurt: { frames: ['hurt'], fps: 1, loop: false },
+    dead: { frames: ['dead0', 'dead1'], fps: 6, loop: false },
+  },
+};
+
+// --- Morcego de Cristal ------------------------------------------------------------------
+
+export interface BatPose {
+  bob: number;
+  /** Quanto as pontas das asas sobem (-) ou descem (+), em px. */
+  flap: number;
+  /** Abertura das asas: 0 = coladas ao corpo, 1 = abertas. */
+  spread: number;
+  /** Achatamento (+) ou alongamento (-) do corpo, em px de altura. */
+  squash: number;
+  /** Olhos: 'normal', 'bright' (acesos mais forte), 'closed'. */
+  eyes: 'normal' | 'bright' | 'closed';
+  /** Os cristais das costas brilham mais forte (preparando o mergulho). */
+  glow: boolean;
+  /** Opacidade do desenho todo (a morte se desfaz). */
+  alpha: number;
+  /** Quantos cacos de cristal soltos ao redor (a morte). */
+  scatter: number;
+}
+
+const BAT_BASE: BatPose = {
+  bob: 0,
+  flap: 0,
+  spread: 1,
+  squash: 0,
+  eyes: 'normal',
+  glow: false,
+  alpha: 1,
+  scatter: 0,
+};
+
+const bat = (o: Partial<BatPose>): BatPose => ({ ...BAT_BASE, ...o });
+
+export const MORCEGO_SHEET: EnemySheet<BatPose> = {
+  id: 'morcego',
+  pad: { x: 12, y: 10 },
+  frames: [
+    { name: 'flap0', pose: bat({ flap: -5, bob: 1 }) },
+    { name: 'flap1', pose: bat({ flap: -1, spread: 0.9 }) },
+    { name: 'flap2', pose: bat({ flap: 4, spread: 0.8, bob: -1 }) },
+    { name: 'flap3', pose: bat({ flap: 1, spread: 0.9 }) },
+    {
+      name: 'windup0',
+      pose: bat({ flap: 2, spread: 0.35, squash: 2, eyes: 'bright', glow: true }),
+    },
+    {
+      name: 'windup1',
+      pose: bat({ flap: 3, spread: 0.2, squash: 3, eyes: 'bright', glow: true, bob: -1 }),
+    },
+    { name: 'dive', pose: bat({ flap: 4, spread: 0.15, squash: -4, eyes: 'bright', glow: true }) },
+    { name: 'recover', pose: bat({ flap: -3, spread: 0.7, squash: -1 }) },
+    { name: 'hurt', pose: bat({ flap: 5, spread: 0.5, squash: 2, eyes: 'closed' }) },
+    {
+      name: 'dead0',
+      pose: bat({ flap: 6, spread: 0.3, squash: 3, eyes: 'closed', alpha: 0.8, scatter: 3 }),
+    },
+    {
+      name: 'dead1',
+      pose: bat({ flap: 6, spread: 0.1, squash: 5, eyes: 'closed', alpha: 0.4, scatter: 6 }),
+    },
+  ],
+  animations: {
+    idle: { frames: ['flap0', 'flap1', 'flap2', 'flap3'], fps: 10, loop: true },
+    walk: { frames: ['flap0', 'flap1', 'flap2', 'flap3'], fps: 12, loop: true },
+    jump: { frames: ['flap0'], fps: 1, loop: false },
+    windup: { frames: ['windup0', 'windup1'], fps: 9, loop: true },
+    strike: { frames: ['dive'], fps: 1, loop: false },
+    recover: { frames: ['recover'], fps: 1, loop: false },
+    hurt: { frames: ['hurt'], fps: 1, loop: false },
+    dead: { frames: ['dead0', 'dead1'], fps: 7, loop: false },
+  },
+};

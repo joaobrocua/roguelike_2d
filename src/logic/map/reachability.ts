@@ -16,7 +16,7 @@ export interface StandPoint {
 }
 
 /** Marcadores que ficam em pé no chão e precisam ser alcançáveis. */
-const REACHABLE_MARKERS = 'PBFXGCADLROQN';
+const REACHABLE_MARKERS = 'PBFXGCADLROQNU';
 
 function pointKey(col: number, row: number): string {
   return `${col},${row}`;

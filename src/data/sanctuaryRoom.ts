@@ -83,6 +83,13 @@ export const SANCTUARY_LOOK: Readonly<Record<BiomeId, SanctuaryLook>> = {
     bannerTrim: 0xb4c4ff,
     rune: 0xc8b8ff,
   },
+  // Minas: chama de lampião âmbar, pano de lona marrom e runas cor de brasa
+  minas: {
+    flame: [0xc86a1a, 0xffb04a, 0xfff0c0],
+    banner: 0x4a3018,
+    bannerTrim: 0xffb04a,
+    rune: 0xffc870,
+  },
 };
 
 /** Onde cada peça de cenário fica (px de mundo; o chão da sala está em y = 240). */

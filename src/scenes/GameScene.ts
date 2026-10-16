@@ -11,6 +11,7 @@ import {
   CAO_DE_OSSOS,
   CARNICAL,
   DOG_PACK,
+  GOLEM_DE_PEDRA,
   LOBO_ESPECTRAL,
   NECROMANTE,
   RAIZ_EMBOSCADORA,
@@ -33,6 +34,8 @@ import { ROOM_TEMPLATES } from '../data/roomTemplates';
 import { ArqueiroOco } from '../entities/ArqueiroOco';
 import { CaoDeOssos } from '../entities/CaoDeOssos';
 import { FogoFatuo } from '../entities/FogoFatuo';
+import { GolemDePedra } from '../entities/GolemDePedra';
+import { MorcegoDeCristal } from '../entities/MorcegoDeCristal';
 import { Necromante } from '../entities/Necromante';
 import { SoldadoCaido } from '../entities/SoldadoCaido';
 import { LoboEspectral } from '../entities/LoboEspectral';
@@ -615,6 +618,12 @@ export class GameScene extends Phaser.Scene {
         case 'fatuo':
           enemy = new FogoFatuo(this, x, marker.row * TILE_SIZE + TILE_SIZE / 2, world);
           break;
+        case 'golem':
+          enemy = new GolemDePedra(this, x, this.markerY(marker, GOLEM_DE_PEDRA.height), world);
+          break;
+        case 'morcego':
+          enemy = new MorcegoDeCristal(this, x, marker.row * TILE_SIZE + TILE_SIZE / 2, world);
+          break;
         case 'soldado':
           enemy = new SoldadoCaido(this, x, this.markerY(marker, SOLDADO_CAIDO.height), world);
           break;
@@ -631,7 +640,9 @@ export class GameScene extends Phaser.Scene {
           break;
       }
       // Voadores atravessam plataformas: só os terrestres colidem com o cenário.
-      if (type !== 'vulto' && type !== 'fatuo') this.physics.add.collider(enemy, solids);
+      if (type !== 'vulto' && type !== 'fatuo' && type !== 'morcego') {
+        this.physics.add.collider(enemy, solids);
+      }
       this.enemies.push(enemy);
     }
   }

@@ -6,17 +6,21 @@ import {
   CAO_SHEET,
   CARNICAL_SHEET,
   FATUO_SHEET,
+  GOLEM_SHEET,
   GUARDIAO_SHEET,
   LOBO_SHEET,
+  MORCEGO_SHEET,
   NECROMANTE_SHEET,
   RAIZ_SHEET,
   SAPO_SHEET,
   SOLDADO_SHEET,
   VULTO_SHEET,
   type ArcherPose,
+  type BatPose,
   type EnemySheet,
   type FrogPose,
   type GhoulPose,
+  type GolemPose,
   type HoundPose,
   type NecroPose,
   type RootPose,
@@ -953,6 +957,175 @@ function drawNecro(ctx: Ctx, p: NecroPose): void {
   ctx.restore();
 }
 
+// --- Golem de Pedra ----------------------------------------------------------------------
+
+const ROCK = 0x6a6258;
+const ROCK_DARK = 0x3e3832;
+const ROCK_LIGHT = 0x9a8f80;
+const ROCK_MOSS = 0x5f7a3a;
+const GOLEM_CRACK = 0xffb04a;
+const GOLEM_CRACK_HOT = 0xfff0c0;
+
+/** Uma pedra com luz em cima e sombra embaixo. */
+function rockBlock(ctx: Ctx, x: number, y: number, w: number, h: number): void {
+  fillPx(ctx, ROCK, x, y, w, h);
+  fillPx(ctx, ROCK_LIGHT, x, y, w, 1);
+  fillPx(ctx, ROCK_LIGHT, x, y, 1, h);
+  fillPx(ctx, ROCK_DARK, x, y + h - 1, w, 1);
+  fillPx(ctx, ROCK_DARK, x + w - 1, y, 1, h);
+}
+
+function drawGolem(ctx: Ctx, p: GolemPose): void {
+  const cx = 23;
+  const ground = 40;
+
+  if (p.crumble === 3) {
+    // Só o monte de pedras, com a brasa do coração quase apagada
+    rockBlock(ctx, cx - 11, ground - 5, 9, 5);
+    rockBlock(ctx, cx - 3, ground - 8, 10, 8);
+    rockBlock(ctx, cx + 6, ground - 4, 8, 4);
+    rockBlock(ctx, cx - 6, ground - 11, 6, 4);
+    rockBlock(ctx, cx + 1, ground - 12, 5, 4);
+    fillPx(ctx, GOLEM_CRACK, cx + 1, ground - 6, 2, 2, 0.5);
+    return;
+  }
+
+  const hipY = 29 - p.bob;
+  const torsoTop = 15 - p.bob;
+  const x0 = cx - 8 + p.lean;
+
+  const leg = (hipX: number, off: number, lift: number, shade: boolean): void => {
+    const top = hipY - 2;
+    const bottom = ground - 3 - lift;
+    fillPx(ctx, shade ? ROCK_DARK : ROCK, hipX + off, top, 6, bottom - top);
+    fillPx(ctx, shade ? ROCK_DARK : ROCK_LIGHT, hipX + off, top, 1, bottom - top);
+    rockBlock(ctx, hipX + off - 1, bottom, 8, 3);
+  };
+  leg(cx - 6, p.legB, p.liftB, true);
+
+  // Braço de trás
+  const shoulderB = { x: x0 + 1, y: torsoTop + 3 };
+  linePx(
+    ctx,
+    ROCK_DARK,
+    shoulderB.x,
+    shoulderB.y,
+    shoulderB.x + p.armB.dx,
+    shoulderB.y + p.armB.dy,
+    5,
+  );
+  rockBlock(ctx, shoulderB.x + p.armB.dx - 3, shoulderB.y + p.armB.dy, 8, 8);
+
+  // Tronco: um bloco largo em cima que afunila na cintura, com musgo e rachaduras que brilham
+  for (let y = torsoTop; y < hipY + 1; y++) {
+    const t = (y - torsoTop) / Math.max(1, hipY - torsoTop);
+    const half = Math.round(9 - t * 3);
+    fillPx(ctx, ROCK, cx - half + p.lean, y, half * 2, 1);
+    fillPx(ctx, ROCK_DARK, cx + half - 3 + p.lean, y, 3, 1);
+    fillPx(ctx, ROCK_LIGHT, cx - half + p.lean, y, 2, 1);
+  }
+  fillPx(ctx, ROCK_LIGHT, cx - 9 + p.lean, torsoTop, 18, 1);
+  fillPx(ctx, ROCK_MOSS, cx - 6 + p.lean, torsoTop + 1, 5, 2);
+  fillPx(ctx, ROCK_MOSS, cx + 3 + p.lean, hipY - 3, 3, 2);
+  if (p.glow > 0) {
+    const a = p.glow === 2 ? 1 : 0.55;
+    fillPx(ctx, GOLEM_CRACK, cx - 1 + p.lean, torsoTop + 4, 1, 6, a);
+    fillPx(ctx, GOLEM_CRACK, cx + p.lean, torsoTop + 9, 3, 1, a);
+    fillPx(ctx, GOLEM_CRACK, cx - 4 + p.lean, torsoTop + 7, 3, 1, a);
+    if (p.glow === 2) fillPx(ctx, GOLEM_CRACK_HOT, cx - 1 + p.lean, torsoTop + 6, 1, 2);
+  }
+
+  leg(cx, p.legF, p.liftF, false);
+
+  // Cabeça pequena, afundada entre os ombros: olhos de brasa e uma fenda de boca
+  const hx = cx - 4 + p.lean;
+  const hy = torsoTop - 6;
+  rockBlock(ctx, hx, hy, 8, 7);
+  fillPx(ctx, OUTLINE, hx + 1, hy + 2, 6, 2);
+  const eye = p.glow === 0 ? ROCK_LIGHT : p.glow === 2 ? GOLEM_CRACK_HOT : GOLEM_CRACK;
+  fillPx(ctx, eye, hx + 2, hy + 2, 1, 1);
+  fillPx(ctx, eye, hx + 5, hy + 2, 1, 1);
+  fillPx(ctx, OUTLINE, hx + 2, hy + 5, 4, 1);
+
+  // Ombros de pedregulho e o braço da frente
+  const shoulderF = { x: x0 + 15, y: torsoTop + 3 };
+  rockBlock(ctx, x0 - 3, torsoTop - 1, 6, 5);
+  rockBlock(ctx, shoulderF.x - 2, torsoTop - 1, 6, 5);
+  linePx(ctx, ROCK, shoulderF.x, shoulderF.y, shoulderF.x + p.armF.dx, shoulderF.y + p.armF.dy, 5);
+  rockBlock(ctx, shoulderF.x + p.armF.dx - 3, shoulderF.y + p.armF.dy, 8, 8);
+
+  // Pedaços que se soltam (a morte)
+  if (p.crumble === 1) {
+    rockBlock(ctx, cx - 14, ground - 9, 4, 4);
+    rockBlock(ctx, cx + 11, ground - 12, 5, 4);
+    rockBlock(ctx, cx - 10, ground - 3, 5, 3);
+  }
+}
+
+// --- Morcego de Cristal ------------------------------------------------------------------
+
+const BAT = 0x3a2f4a;
+const BAT_DARK = 0x241b30;
+const BAT_LIGHT = 0x5e4e78;
+const CRYSTAL = 0x4ae0d0;
+const CRYSTAL_HOT = 0xc8fff8;
+
+function drawBat(ctx: Ctx, p: BatPose): void {
+  const cx = 18;
+  const cy = 15 - p.bob;
+  const px = (color: number, x: number, y: number, w: number, h: number, a = 1): void =>
+    fillPx(ctx, color, x, y, w, h, a * p.alpha);
+
+  // Asas: uma membrana que sai do ombro, com a ponta subindo ou descendo conforme o bater
+  const reach = Math.round(3 + p.spread * 10);
+  for (const side of [-1, 1] as const) {
+    for (let i = 0; i < reach; i++) {
+      const t = i / reach;
+      const x = side < 0 ? cx - 3 - i : cx + 2 + i;
+      const top = cy - 1 + Math.round(p.flap * t);
+      const height = Math.max(2, Math.round(5 - t * 3));
+      px(BAT_DARK, x, top, 1, height);
+      px(BAT_LIGHT, x, top, 1, 1);
+      if (i % 4 === 3) px(BAT_DARK, x, top + height, 1, 1); // ponta de dedo na borda
+    }
+  }
+
+  // Corpo pequeno e peludo, com orelhas de ponta
+  const bodyH = Math.max(5, 9 - p.squash);
+  const top = cy - 4 + Math.round(p.squash / 2);
+  for (let r = 0; r < bodyH; r++) {
+    const w = r === 0 ? 4 : r < 3 ? 6 : r > bodyH - 3 ? 4 : 7;
+    px(BAT, cx - Math.floor(w / 2), top + r, w, 1);
+    px(BAT_DARK, cx - Math.floor(w / 2), top + r, 1, 1);
+    px(BAT_LIGHT, cx + Math.floor(w / 2) - 1, top + r, 1, 1, 0.6);
+  }
+  px(BAT, cx - 3, top - 2, 2, 2);
+  px(BAT, cx + 1, top - 2, 2, 2);
+
+  // Cristais nas costas e nos ombros
+  const crystal = p.glow ? CRYSTAL_HOT : CRYSTAL;
+  px(CRYSTAL, cx - 1, top - 3, 1, 3);
+  px(crystal, cx, top - 4, 1, 4);
+  px(CRYSTAL, cx + 2, top - 2, 1, 2);
+  if (p.glow) px(CRYSTAL, cx - 3, top - 2, 7, 2, 0.35);
+
+  // Olhos
+  if (p.eyes === 'closed') {
+    px(BAT_LIGHT, cx - 2, top + 2, 4, 1, 0.8);
+  } else {
+    const eye = p.eyes === 'bright' ? CRYSTAL_HOT : CRYSTAL;
+    px(eye, cx - 2, top + 2, 1, 1);
+    px(eye, cx + 1, top + 2, 1, 1);
+  }
+  px(BAT_DARK, cx - 1, top + 4, 2, 1); // focinho
+  px(PALETTE.bone, cx - 1, top + 5, 1, 1, 0.8); // presa
+
+  // Cacos de cristal soltos (a morte)
+  for (let i = 0; i < p.scatter; i++) {
+    px(CRYSTAL, cx - 8 + i * 3, cy + 4 + (i % 2) * 2, 1, 2, 0.8);
+  }
+}
+
 function sheetCell(def: EnemyBody, sheet: EnemySheet<unknown>): { width: number; height: number } {
   return { width: def.width + sheet.pad.x * 2, height: def.height + sheet.pad.y * 2 };
 }
@@ -993,6 +1166,8 @@ const SHEETS: readonly EnemySheet<unknown>[] = [
   SAPO_SHEET,
   SOLDADO_SHEET,
   NECROMANTE_SHEET,
+  GOLEM_SHEET,
+  MORCEGO_SHEET,
   GUARDIAO_SHEET,
 ];
 
@@ -1016,6 +1191,8 @@ export function enemyDrawers(): readonly EnemyDrawer[] {
     { sheet: SAPO_SHEET, body: enemyDef('sapo'), draw: drawFrog },
     { sheet: SOLDADO_SHEET, body: enemyDef('soldado'), draw: drawSoldier },
     { sheet: NECROMANTE_SHEET, body: enemyDef('necromante'), draw: drawNecro },
+    { sheet: GOLEM_SHEET, body: enemyDef('golem'), draw: drawGolem },
+    { sheet: MORCEGO_SHEET, body: enemyDef('morcego'), draw: drawBat },
     { sheet: GUARDIAO_SHEET, body: GUARDIAO, draw: drawGuardian },
   ] as unknown as readonly EnemyDrawer[];
 }

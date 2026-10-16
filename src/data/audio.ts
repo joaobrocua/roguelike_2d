@@ -447,6 +447,23 @@ export const MUSIC_TRACKS = {
     bassOctave: -1,
     seed: 91,
   },
+  // Minas: frígio dominante, grave e esparso, com pingos que ecoam na rocha
+  minas: {
+    rootMidi: 43,
+    scale: PHRYGIAN_DOMINANT,
+    bpm: 52,
+    beatsPerBar: 4,
+    progression: [
+      [0, 2, 4],
+      [3, 5, 0],
+      [0, 2, 4],
+      [1, 3, 5],
+    ],
+    leadDensity: 0.12,
+    leadOctave: 1,
+    bassOctave: -1,
+    seed: 101,
+  },
 } as const satisfies Record<string, MusicTrackStyle>;
 
 export type MusicTrackId = keyof typeof MUSIC_TRACKS;

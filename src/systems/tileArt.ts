@@ -2,7 +2,7 @@ import type Phaser from 'phaser';
 import { TILE_VARIANTS } from '../data/atmosphere';
 import { BIOME_LOOK, type BiomeLook } from '../data/biomeLook';
 import type { BiomeId } from '../data/mapRules';
-import { ALL_BIOMES, OUTDOOR_BIOMES } from '../data/mapRules';
+import { ALL_BIOMES, EARTH_BIOMES, ROCK_BIOMES } from '../data/mapRules';
 import { TILE_SIZE } from '../data/rooms';
 import { TILE_EDGE, type TileLook } from '../logic/tileVariant';
 import { createRng, randomInt, type Rng } from '../utils/rng';
@@ -61,12 +61,13 @@ function drawTile(
   edges: number,
   seed: number,
   earth = false,
+  rock = false,
 ): void {
   const rng = createRng(seed);
   const s = look.stone;
   const base = kind === 'top' ? s.base : mix(s.base, s.dark, 0.5);
   const mortar = kind === 'top' ? s.deep : mix(s.deep, 0x000000, 0.25);
-  if (earth) drawEarthBody(ctx, look, kind, rng);
+  if (earth || rock) drawEarthBody(ctx, look, kind, rng);
   else drawBrickBody(ctx, look, rng, base, mortar);
   drawTileFinish(ctx, look, kind, edges, rng, earth);
 }
@@ -184,7 +185,8 @@ export function createTileTextures(scene: Phaser.Scene): void {
               kind,
               edges,
               100 + variant * 7 + edges * 31,
-              OUTDOOR_BIOMES.includes(biome),
+              EARTH_BIOMES.includes(biome),
+              ROCK_BIOMES.includes(biome),
             ),
           );
         }

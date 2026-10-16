@@ -205,4 +205,32 @@ export const BIOME_LOOK: Readonly<Record<BiomeId, BiomeLook>> = {
     shaft: 0xc8c0ff,
     shaftAlpha: 0.07,
   },
+  // Minas desabadas: rocha marrom, escuro quase total, lampiões âmbar e poeira no ar
+  minas: {
+    stone: {
+      deep: 0x0c0a09,
+      dark: 0x1d1815,
+      base: 0x332b25,
+      light: 0x4d4036,
+      highlight: 0x7a6652,
+    },
+    back: {
+      deep: 0x060505,
+      dark: 0x0d0b0a,
+      base: 0x161210,
+      light: 0x241d19,
+      highlight: 0x382d26,
+    },
+    skyTop: 0x050404,
+    skyMid: 0x15110e,
+    skyLow: 0x2c231d,
+    moss: 0x6a5a2a,
+    mossLight: 0xc8a64a,
+    ambient: 0x040302,
+    fog: 0x8a7860,
+    glow: 0xffb04a,
+    glowSoft: 0xc86a1a,
+    shaft: 0xffd890,
+    shaftAlpha: 0.07,
+  },
 };

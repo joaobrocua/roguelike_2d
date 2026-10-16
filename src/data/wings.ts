@@ -36,6 +36,10 @@ export type FurnitureKind =
   | 'grave'
   | 'weapons'
   | 'bannerPole'
+  | 'minecart'
+  | 'pickaxes'
+  | 'rubble'
+  | 'crystals'
   // Teto
   | 'tapestry'
   | 'chandelier'
@@ -43,7 +47,8 @@ export type FurnitureKind =
   | 'roots'
   | 'lantern'
   | 'cocoon'
-  | 'net';
+  | 'net'
+  | 'stalactite';
 
 export type FurniturePlacement = 'floor' | 'ceiling';
 
@@ -134,6 +139,17 @@ export const FURNITURE: Readonly<Record<FurnitureKind, FurnitureSpec>> = {
   grave: { placement: 'floor', widthTiles: 3, heightTiles: 1, variants: 2 },
   weapons: { placement: 'floor', widthTiles: 2, heightTiles: 2, variants: 3 },
   bannerPole: { placement: 'floor', widthTiles: 1, heightTiles: 3, variants: 2 },
+  minecart: { placement: 'floor', widthTiles: 3, heightTiles: 2, variants: 3 },
+  pickaxes: { placement: 'floor', widthTiles: 1, heightTiles: 2, variants: 2 },
+  rubble: { placement: 'floor', widthTiles: 2, heightTiles: 1, variants: 3 },
+  crystals: {
+    placement: 'floor',
+    widthTiles: 1,
+    heightTiles: 2,
+    variants: 3,
+    light: { radius: 56, strength: 0.65, dy: 14 },
+  },
+  stalactite: { placement: 'ceiling', widthTiles: 1, heightTiles: 2, variants: 3 },
   net: { placement: 'ceiling', widthTiles: 2, heightTiles: 2, variants: 2 },
   chandelier: {
     placement: 'ceiling',
@@ -159,7 +175,9 @@ export type WingId =
   | 'charco'
   | 'palafitas'
   | 'jazigos'
-  | 'campo';
+  | 'campo'
+  | 'galeria'
+  | 'gruta';
 
 export interface WingDef {
   id: WingId;
@@ -352,6 +370,34 @@ export const WINGS: Readonly<Record<BiomeId, readonly WingDef[]>> = {
         { kind: 'skulls', weight: 2 },
         { kind: 'crates', weight: 1 },
         { kind: 'cage', weight: 1 },
+      ],
+      count: { min: 3, max: 5 },
+    },
+  ],
+  minas: [
+    {
+      id: 'galeria',
+      name: 'GALERIA DE EXTRAÇÃO',
+      furniture: [
+        { kind: 'minecart', weight: 4 },
+        { kind: 'pickaxes', weight: 3 },
+        { kind: 'rubble', weight: 3 },
+        { kind: 'crates', weight: 2 },
+        { kind: 'barrel', weight: 2 },
+        { kind: 'lantern', weight: 3 },
+      ],
+      count: { min: 3, max: 5 },
+    },
+    {
+      id: 'gruta',
+      name: 'GRUTA DE CRISTAIS',
+      furniture: [
+        { kind: 'crystals', weight: 5 },
+        { kind: 'rubble', weight: 3 },
+        { kind: 'mushrooms', weight: 2 },
+        { kind: 'skulls', weight: 1 },
+        { kind: 'stalactite', weight: 4 },
+        { kind: 'roots', weight: 1 },
       ],
       count: { min: 3, max: 5 },
     },

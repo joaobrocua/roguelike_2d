@@ -355,7 +355,7 @@ describe('planFurniture: todos os modelos de sala, todas as alas', () => {
       }
     }
     expect(found).toEqual([]);
-  });
+  }, 30000); // percorre todos os modelos de todas as áreas: cresce a cada área nova
 
   it('sementes diferentes dão resultados diferentes em pelo menos algumas salas', () => {
     let roomsWithVariety = 0;

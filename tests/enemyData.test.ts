@@ -5,7 +5,9 @@ import {
   ENEMY_BODIES,
   ENEMY_MARKERS,
   FOGO_FATUO,
+  GOLEM_DE_PEDRA,
   LOBO_ESPECTRAL,
+  MORCEGO_DE_CRISTAL,
   NECROMANTE,
   NECROMANTE_ORBS,
   RAIZ_EMBOSCADORA,
@@ -99,5 +101,26 @@ describe('inimigos da floresta (dados)', () => {
       expect(orb.height).toBe(7);
       expect(orb.lifeMs / 1000).toBeGreaterThan(ai.maxDistanceX / orb.speed);
     }
+  });
+
+  it('o golem é lento e firme, telegrafa a pancada e a onda alcança o que a IA mira', () => {
+    const { attack, ai } = GOLEM_DE_PEDRA;
+    expect(attack.windupMs).toBeGreaterThanOrEqual(600); // dá tempo de sair do alcance
+    expect(GOLEM_DE_PEDRA.meleeShape).toBe('around');
+    // A onda é centrada nele: o raio dela cobre o alcance de ataque da IA
+    expect(attack.hitbox.width / 2).toBeGreaterThanOrEqual(ai.attackRangeX);
+    expect(attack.hitbox.width / 2).toBeGreaterThan(GOLEM_DE_PEDRA.width / 2);
+    expect(GOLEM_DE_PEDRA.knockbackScale).toBeLessThanOrEqual(0.25);
+    expect(ai.chaseSpeed).toBeLessThan(CARNICAL.ai.chaseSpeed); // mais lento que um carniçal
+    for (const body of ENEMY_BODIES)
+      expect(GOLEM_DE_PEDRA.maxHp).toBeGreaterThanOrEqual(body.maxHp);
+  });
+
+  it('o morcego é uma versão mais frágil e mais rápida do vulto, e os cristais iluminam', () => {
+    expect(MORCEGO_DE_CRISTAL.maxHp).toBeLessThan(VULTO.maxHp);
+    expect(MORCEGO_DE_CRISTAL.ai.diveSpeed).toBeGreaterThan(VULTO.ai.diveSpeed);
+    expect(MORCEGO_DE_CRISTAL.attack.windupMs).toBeGreaterThanOrEqual(250); // dá para ver o aviso
+    expect(MORCEGO_DE_CRISTAL.light.radius).toBeGreaterThan(0);
+    expect(MORCEGO_DE_CRISTAL.light.strength).toBeLessThanOrEqual(1);
   });
 });

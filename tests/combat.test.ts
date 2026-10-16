@@ -155,6 +155,39 @@ describe('CombatSystem: golpe do jogador', () => {
     expect(events.onEnemyHit).toHaveBeenCalledWith(expect.anything(), 10, true);
   });
 
+  it('golpe bloqueado pelo escudo avisa o bloqueio e não conta como acerto', () => {
+    const player = fakePlayer();
+    player.attack.phase = 'active';
+    player.attack.swingId = 9;
+    const enemy = fakeEnemy({ receiveHit: vi.fn(() => 0), consumeBlocked: vi.fn(() => true) });
+    const onEnemyBlocked = vi.fn();
+    const { combat, events } = setup(player, [enemy]);
+    (events as { onEnemyBlocked?: unknown }).onEnemyBlocked = onEnemyBlocked;
+
+    combat.update();
+    combat.update();
+
+    expect(onEnemyBlocked).toHaveBeenCalledTimes(1); // o mesmo golpe só é bloqueado uma vez
+    expect(onEnemyBlocked).toHaveBeenCalledWith(enemy);
+    expect(events.onEnemyHit).not.toHaveBeenCalled();
+    expect(player.notifyHit).not.toHaveBeenCalled();
+  });
+
+  it('golpe ignorado sem bloqueio (ex.: inimigo em invulnerabilidade) não avisa nada', () => {
+    const player = fakePlayer();
+    player.attack.phase = 'active';
+    player.attack.swingId = 4;
+    const enemy = fakeEnemy({ receiveHit: vi.fn(() => 0), consumeBlocked: vi.fn(() => false) });
+    const onEnemyBlocked = vi.fn();
+    const { combat, events } = setup(player, [enemy]);
+    (events as { onEnemyBlocked?: unknown }).onEnemyBlocked = onEnemyBlocked;
+
+    combat.update();
+
+    expect(onEnemyBlocked).not.toHaveBeenCalled();
+    expect(events.onEnemyHit).not.toHaveBeenCalled();
+  });
+
   it('a passiva de dano (multiplicador sem esquiva perfeita) não conta como golpe potencializado', () => {
     const player = fakePlayer({ swingMultiplier: 1.15, swingEmpowered: false });
     player.attack.phase = 'active';

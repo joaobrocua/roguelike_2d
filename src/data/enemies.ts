@@ -428,6 +428,82 @@ export const NECROMANTE_ORBS: readonly ArrowData[] = [-28, 0, 28].map((speedY) =
   tint: 0xb48cff,
 }));
 
+/**
+ * Golem de Pedra (Minas Desabadas): um bloco de rocha que anda devagar e quase não se deixa
+ * empurrar. Ergue os braços (telegrafia longa, as rachaduras acendem) e bate no chão, com uma
+ * onda que pega tudo em volta dele: é preciso sair do alcance ou rolar.
+ */
+export const GOLEM_DE_PEDRA = {
+  id: 'golem',
+  width: 22,
+  height: 26,
+  maxHp: 70,
+  hitStunMs: 110,
+  knockbackFriction: 900,
+  knockbackScale: 0.15,
+  color: PALETTE.stoneLight,
+  flying: false,
+  meleeShape: 'around',
+  attack: {
+    windupMs: 700,
+    activeMs: 140,
+    recoveryMs: 700,
+    damage: 18,
+    knockbackX: 200,
+    knockbackY: -120,
+    hitbox: { width: 64, height: 20, offsetY: 0 },
+  },
+  ai: {
+    patrolSpeed: 14,
+    chaseSpeed: 30,
+    sightRangeX: 120,
+    sightRangeY: 40,
+    loseSightRangeX: 170,
+    attackRangeX: 30,
+    attackRangeY: 28,
+    attackCooldownMs: 700,
+    turnPauseMs: 700,
+    lungeSpeed: 0,
+    waitDistanceX: 0,
+  } satisfies GroundMeleeConfig,
+} as const satisfies EnemyBody & { ai: GroundMeleeConfig };
+
+/** Morcego de Cristal (Minas Desabadas): rápido e nervoso, mergulha de surpresa; os cristais brilham. */
+export const MORCEGO_DE_CRISTAL = {
+  id: 'morcego',
+  width: 12,
+  height: 10,
+  maxHp: 14,
+  hitStunMs: 140,
+  knockbackFriction: 500,
+  color: PALETTE.glow,
+  flying: true,
+  meleeShape: 'body',
+  attack: {
+    windupMs: 320, // dobra as asas e os cristais acendem: avisa o mergulho
+    activeMs: 340,
+    recoveryMs: 520,
+    damage: 9,
+    knockbackX: 120,
+    knockbackY: -90,
+    hitbox: { width: 14, height: 12, offsetY: 0 },
+  },
+  ai: {
+    sightRangeX: 220,
+    sightRangeY: 160,
+    hoverHeight: 46,
+    hoverSpeed: 95,
+    swayAmplitude: 34,
+    swayPeriodMs: 900,
+    diveTriggerRangeX: 54,
+    diveCooldownMs: 900,
+    diveSpeed: 260,
+    riseSpeed: 110,
+  } satisfies FlyerConfig,
+  /** A luz dos cristais nas costas dele (px e força de 0 a 1). */
+  light: { radius: 52, strength: 0.55 },
+} as const satisfies EnemyBody & { ai: FlyerConfig; light: { radius: number; strength: number } };
+
 /** Bando de cães: quantos atacam ao mesmo tempo e o intervalo mínimo entre os botes. */
 export const DOG_PACK = { maxConcurrent: 2, gapMs: 450 } as const;
 
@@ -443,6 +519,8 @@ export const ENEMY_MARKERS = {
   W: 'fatuo',
   Q: 'soldado',
   N: 'necromante',
+  U: 'golem',
+  M: 'morcego',
 } as const;
 
 export type EnemyType = (typeof ENEMY_MARKERS)[keyof typeof ENEMY_MARKERS];
@@ -458,6 +536,8 @@ export const ENEMY_BODIES: readonly EnemyBody[] = [
   FOGO_FATUO,
   SOLDADO_CAIDO,
   NECROMANTE,
+  GOLEM_DE_PEDRA,
+  MORCEGO_DE_CRISTAL,
 ];
 
 /** Só a sala de teste faz os inimigos renascerem; nas salas reais eles ficam mortos. */

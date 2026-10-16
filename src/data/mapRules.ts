@@ -19,7 +19,8 @@ export const DOOR = {
   verticalCols: [13, 14, 15, 16],
 } as const;
 
-export type BiomeId = 'muralhas' | 'saloes' | 'catacumbas' | 'floresta' | 'pantano' | 'cemiterio';
+export type BiomeId =
+  'muralhas' | 'saloes' | 'catacumbas' | 'floresta' | 'pantano' | 'cemiterio' | 'minas';
 
 /** Todas as áreas que existem no jogo (as texturas e os testes percorrem esta lista). */
 export const ALL_BIOMES: readonly BiomeId[] = [
@@ -29,10 +30,20 @@ export const ALL_BIOMES: readonly BiomeId[] = [
   'floresta',
   'pantano',
   'cemiterio',
+  'minas',
 ];
 
-/** As áreas ao ar livre, fora do castelo (terra e mato no chão, céu aberto). */
-export const OUTDOOR_BIOMES: readonly BiomeId[] = ['floresta', 'pantano', 'cemiterio'];
+/**
+ * As áreas fora do castelo (as Minas são subterrâneas, mas ficam fora dele): vêm todas antes das
+ * Muralhas na jornada (um teste confere) e cada uma é de terra (EARTH_BIOMES) ou de rocha (ROCK_BIOMES).
+ */
+export const OUTDOOR_BIOMES: readonly BiomeId[] = ['floresta', 'pantano', 'cemiterio', 'minas'];
+
+/** Áreas de chão de terra e mato (os blocos viram torrões com musgo em cima). */
+export const EARTH_BIOMES: readonly BiomeId[] = ['floresta', 'pantano', 'cemiterio'];
+
+/** Áreas de rocha escavada (os blocos viram torrões de pedra, com veios de minério no lugar do mato). */
+export const ROCK_BIOMES: readonly BiomeId[] = ['minas'];
 
 export const BIOME_NAMES: Readonly<Record<BiomeId, string>> = {
   muralhas: 'Muralhas e Pátio',
@@ -41,6 +52,7 @@ export const BIOME_NAMES: Readonly<Record<BiomeId, string>> = {
   floresta: 'Floresta Apodrecida',
   pantano: 'Pântano dos Afogados',
   cemiterio: 'Cemitério dos Caídos',
+  minas: 'Minas Desabadas',
 };
 
 /**
@@ -58,7 +70,7 @@ export interface RunStage {
  */
 export const RUN_PLAN: readonly RunStage[] = [
   { options: ['floresta', 'pantano'] },
-  { options: ['cemiterio'] },
+  { options: ['cemiterio', 'minas'] },
   { options: ['muralhas'] },
   { options: ['saloes'] },
   { options: ['catacumbas'] },
@@ -72,6 +84,7 @@ export const BIOME_SHORT_NAMES: Readonly<Record<BiomeId, string>> = {
   floresta: 'FLORESTA',
   pantano: 'PÂNTANO',
   cemiterio: 'CEMITÉRIO',
+  minas: 'MINAS',
 };
 
 /** Tamanho de um bioma (em salas) e o que deve existir nele. */
@@ -142,6 +155,16 @@ export const BIOME_CONFIG: Readonly<Record<BiomeId, BiomeConfig>> = {
     extraLinks: 1,
   },
   cemiterio: {
+    minRooms: 6,
+    maxRooms: 7,
+    gridCols: 5,
+    gridRows: 3,
+    chests: 1,
+    rests: 1,
+    secrets: 1,
+    extraLinks: 1,
+  },
+  minas: {
     minRooms: 6,
     maxRooms: 7,
     gridCols: 5,

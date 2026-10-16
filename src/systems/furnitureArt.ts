@@ -943,6 +943,175 @@ function drawBannerPole(p: Pen): void {
   }
 }
 
+const CRYSTAL = 0x4ae0d0;
+const CRYSTAL_HOT = 0xc8fff8;
+const CRYSTAL_DARK = 0x1a7a78;
+
+function drawMinecart(p: Pen): void {
+  const { ctx, w, h } = p;
+  const v = p.variant;
+  // Trilho com dormentes
+  rect(ctx, p.iron.base, 0, h - 3, w, 1);
+  rect(ctx, p.iron.light, 0, h - 3, w, 1);
+  for (let x = 2; x < w; x += 8) rect(ctx, p.wood.dark, x, h - 2, 4, 2);
+  if (v === 2) {
+    // Tombado de lado, com o minério esparramado
+    rect(ctx, p.iron.base, 8, h - 12, 26, 9);
+    rect(ctx, p.iron.light, 8, h - 12, 26, 1);
+    rect(ctx, p.iron.dark, 8, h - 4, 26, 1);
+    for (let x = 12; x < 32; x += 7) rect(ctx, p.iron.dark, x, h - 11, 1, 7);
+    rect(ctx, p.stone.base, 35, h - 5, 4, 3);
+    rect(ctx, p.stone.light, 39, h - 4, 3, 2);
+    rect(ctx, CRYSTAL, 42, h - 5, 2, 2);
+    disc(ctx, p.iron.base, 14, h - 2, 2);
+    return;
+  }
+  // Caçamba de ferro com aro, rebites e duas rodas
+  rect(ctx, p.iron.base, 5, h - 17, w - 10, 12);
+  rect(ctx, p.iron.light, 4, h - 18, w - 8, 2);
+  rect(ctx, p.iron.dark, 5, h - 7, w - 10, 2);
+  for (let x = 9; x < w - 8; x += 8) rect(ctx, p.iron.dark, x, h - 15, 1, 8);
+  for (const x of [8, w - 11]) rect(ctx, p.iron.light, x, h - 16, 1, 1);
+  for (const x of [12, w - 14]) {
+    disc(ctx, p.iron.dark, x, h - 4, 3);
+    rect(ctx, p.iron.light, x, h - 5, 1, 1);
+  }
+  rect(ctx, p.wood.dark, w / 2 - 2, h - 5, 4, 2); // engate
+  if (v === 0) {
+    // Carregado de pedras e cristais
+    for (let x = 6; x < w - 8; x += 5) {
+      const top = h - 22 + ((x * 7) % 4);
+      rect(ctx, p.stone.base, x, top, 6, 6);
+      rect(ctx, p.stone.light, x, top, 6, 1);
+    }
+    rect(ctx, CRYSTAL, 18, h - 25, 2, 4);
+    rect(ctx, CRYSTAL_HOT, 18, h - 25, 1, 2);
+    rect(ctx, CRYSTAL, 28, h - 24, 2, 3);
+  } else {
+    rect(ctx, p.stone.dark, 7, h - 7, w - 14, 1); // poeira no fundo
+    rect(ctx, p.bone, 20, h - 9, 4, 2); // um osso esquecido
+  }
+}
+
+function drawPickaxes(p: Pen): void {
+  const { ctx, h } = p;
+  const v = p.variant;
+  // Poste de escora
+  rect(ctx, p.wood.base, 6, 3, 4, h - 3);
+  rect(ctx, p.wood.light, 6, 3, 1, h - 3);
+  rect(ctx, p.wood.dark, 5, h - 3, 6, 3);
+  // Picaretas penduradas num prego
+  const pick = (x: number, y: number, flip: number): void => {
+    rect(ctx, p.wood.base, x, y, 1, 14);
+    rect(ctx, p.wood.light, x, y, 1, 6);
+    rect(ctx, p.iron.light, x - 4 * flip, y - 1, 9, 2);
+    rect(ctx, p.iron.base, x - 4 * flip, y + 1, 9, 1);
+    rect(ctx, p.iron.light, x - 5 * flip, y, 1, 2);
+    rect(ctx, p.iron.light, x + 5 * flip, y, 1, 2);
+  };
+  if (v === 0) {
+    pick(12, 6, 1);
+    pick(3, 9, -1);
+  } else {
+    pick(12, 5, 1);
+    // Elmo de mineiro com o lampião apagado, pendurado do poste
+    rect(ctx, p.iron.base, 1, 13, 5, 3);
+    rect(ctx, p.iron.light, 1, 13, 5, 1);
+    rect(ctx, p.iron.dark, 5, 12, 2, 2);
+    rect(ctx, 0xc86a1a, 6, 12, 1, 1);
+  }
+}
+
+function drawRubble(p: Pen): void {
+  const { ctx, w, h } = p;
+  const v = p.variant;
+  const stone = (x: number, y: number, sw: number, sh: number): void => {
+    rect(ctx, p.stone.base, x, y, sw, sh);
+    rect(ctx, p.stone.light, x, y, sw, 1);
+    rect(ctx, p.stone.light, x, y, 1, sh);
+    rect(ctx, p.stone.deep, x, y + sh - 1, sw, 1);
+    rect(ctx, p.stone.dark, x + sw - 1, y, 1, sh);
+  };
+  stone(2, h - 5, 9, 5);
+  stone(10, h - 8, 10, 8);
+  stone(19, h - 5, 8, 5);
+  stone(6, h - 10, 6, 5);
+  stone(14, h - 13, 5, 5);
+  rect(ctx, p.stone.dark, 0, h - 1, w, 1);
+  rect(ctx, p.stone.light, 25, h - 3, 3, 1);
+  if (v === 1) {
+    rect(ctx, CRYSTAL, 21, h - 9, 2, 4);
+    rect(ctx, CRYSTAL_HOT, 21, h - 9, 1, 2);
+    rect(ctx, CRYSTAL_DARK, 23, h - 8, 1, 3);
+  } else if (v === 2) {
+    // Uma escora quebrada no meio das pedras
+    rect(ctx, p.wood.base, 4, h - 12, 3, 9);
+    rect(ctx, p.wood.light, 4, h - 12, 1, 9);
+    rect(ctx, p.wood.dark, 3, h - 13, 5, 1);
+    rect(ctx, p.wood.base, 16, h - 6, 12, 2);
+  } else {
+    rect(ctx, p.bone, 26, h - 3, 3, 1); // um osso entre as pedras
+  }
+}
+
+function drawCrystals(p: Pen): void {
+  const { ctx, w, h } = p;
+  const v = p.variant;
+  rect(ctx, p.stone.dark, 1, h - 3, w - 2, 3);
+  rect(ctx, p.stone.base, 3, h - 4, w - 6, 1);
+  const shard = (x: number, height: number, lean: number): void => {
+    for (let y = 0; y < height; y++) {
+      const t = y / height;
+      const half = Math.max(1, Math.round(2 - t * 2));
+      const cx = x + Math.round(lean * t);
+      rect(ctx, CRYSTAL, cx - half, h - 4 - y, half * 2 + 1, 1);
+      rect(ctx, CRYSTAL_HOT, cx - half, h - 4 - y, 1, 1);
+      rect(ctx, CRYSTAL_DARK, cx + half, h - 4 - y, 1, 1);
+    }
+    rect(ctx, CRYSTAL_HOT, x + lean, h - 4 - height, 1, 1);
+  };
+  if (v === 0) {
+    shard(8, 24, 1);
+    shard(4, 15, -3);
+    shard(12, 12, 3);
+  } else if (v === 1) {
+    shard(7, 18, -2);
+    shard(11, 22, 2);
+  } else {
+    shard(5, 12, -1);
+    shard(8, 17, 0);
+    shard(11, 10, 2);
+    shard(13, 6, 3);
+  }
+}
+
+function drawStalactite(p: Pen): void {
+  const { ctx, w } = p;
+  const v = p.variant;
+  // Base grudada no teto
+  rect(ctx, p.stone.dark, 0, 0, w, 2);
+  const spike = (x: number, len: number): void => {
+    for (let y = 0; y < len; y++) {
+      const half = Math.max(0, Math.round(3 - (y / len) * 3));
+      rect(ctx, p.stone.base, x - half, y, half * 2 + 1, 1);
+      rect(ctx, p.stone.light, x - half, y, 1, 1);
+      rect(ctx, p.stone.deep, x + half, y, 1, 1);
+    }
+  };
+  if (v === 0) {
+    spike(8, 26);
+    spike(3, 12);
+  } else if (v === 1) {
+    spike(6, 20);
+    spike(11, 14);
+  } else {
+    spike(8, 18);
+    rect(ctx, CRYSTAL, 12, 2, 2, 7); // cristais brotando do teto
+    rect(ctx, CRYSTAL_HOT, 12, 2, 1, 4);
+    rect(ctx, CRYSTAL_DARK, 14, 3, 1, 5);
+  }
+}
+
 const DRAWERS: Readonly<Record<FurnitureKind, (p: Pen) => void>> = {
   barrel: drawBarrel,
   crates: drawCrates,
@@ -975,6 +1144,11 @@ const DRAWERS: Readonly<Record<FurnitureKind, (p: Pen) => void>> = {
   grave: drawGrave,
   weapons: drawWeapons,
   bannerPole: drawBannerPole,
+  minecart: drawMinecart,
+  pickaxes: drawPickaxes,
+  rubble: drawRubble,
+  crystals: drawCrystals,
+  stalactite: drawStalactite,
   net: drawNet,
   tapestry: drawTapestry,
   chandelier: drawChandelier,
