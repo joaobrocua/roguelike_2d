@@ -8,6 +8,8 @@ export const PLAYER_COMBAT = {
   chestHealFraction: 0.3,
   /** Invulnerabilidade após levar dano. */
   hurtInvulnerableMs: 700,
+  /** Quanto (px/s) um golpe bloqueado pela guarda do escudo empurra o herói para trás. */
+  guardPushSpeed: 70,
   /** Tempo sem controle após levar dano. */
   hitStunMs: 220,
   /** Atrito do knockback (px/s perdidos por segundo). */

@@ -365,6 +365,8 @@ export class GameScene extends Phaser.Scene {
       onPerfectDodge: () => this.onPerfectDodge(),
       onProjectileBlocked: (arrow) => this.fx.projectileBlocked(arrow.x, arrow.y),
       onEnemyBlocked: (enemy) => this.fx.projectileBlocked(enemy.x, enemy.y),
+      onPlayerBlocked: () =>
+        this.fx.projectileBlocked(this.player.x + this.player.lookDir * 10, this.player.y),
       onSwapStrike: (strike) =>
         this.fx.swapStrike(this.player.x, this.player.y, this.player.relic.color, strike.radius),
     });

@@ -1,8 +1,10 @@
 import type Phaser from 'phaser';
-import { WEAPON_HOLD, heldWeaponKey } from '../data/weapons';
+import { WEAPON_HOLD, heldOffhandKey, heldWeaponKey } from '../data/weapons';
 import { RELIC_IDS, RELICS, type RelicId } from '../data/relics';
 import { PALETTE } from '../data/palette';
 import { drawAdaga, drawLamina } from './heldWeapons/blades';
+import { drawChicote, drawCajado, drawBesta } from './heldWeapons/crew2';
+import { drawEscudo, drawEscudoEspada, drawLaminas } from './heldWeapons/crew1';
 import { drawMachado, drawMangual, drawMartelo } from './heldWeapons/hafted';
 import type { HeldDrawer } from './heldWeapons/kit';
 import { drawArco, drawFoice, drawLanca } from './heldWeapons/polearms';
@@ -22,6 +24,17 @@ export const HELD_WEAPON_DRAWERS: Readonly<Partial<Record<RelicId, HeldDrawer>>>
   machado: drawMachado,
   arco: drawArco,
   mangual: drawMangual,
+  laminas: drawLaminas,
+  escudo: drawEscudoEspada,
+  chicote: drawChicote,
+  cajado: drawCajado,
+  besta: drawBesta,
+};
+
+/** A segunda arma (mão de trás): a outra lâmina e o escudo. */
+export const HELD_OFFHAND_DRAWERS: Readonly<Partial<Record<RelicId, HeldDrawer>>> = {
+  laminas: drawLaminas,
+  escudo: drawEscudo,
 };
 
 /** Contorno de 1 px nos pixels transparentes que encostam na arma. */
@@ -59,5 +72,14 @@ export function createHeldWeaponTextures(scene: Phaser.Scene): void {
       draw(ctx);
       outline(ctx, width, height, PALETTE.void);
     });
+    const offhand = WEAPON_HOLD[id].offhand;
+    const drawOff = HELD_OFFHAND_DRAWERS[id];
+    if (offhand && drawOff) {
+      const { width: ow, height: oh } = offhand.sprite;
+      canvasTexture(scene, heldOffhandKey(id), ow, oh, (ctx) => {
+        drawOff(ctx);
+        outline(ctx, ow, oh, PALETTE.void);
+      });
+    }
   }
 }

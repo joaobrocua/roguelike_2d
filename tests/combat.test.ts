@@ -29,6 +29,7 @@ function fakePlayer(overrides: Record<string, unknown> = {}) {
     isDead: () => false,
     isRollInvulnerable: () => false,
     receiveHit: vi.fn(() => 15),
+    consumeGuard: vi.fn(() => 0),
     notifyHit: vi.fn(),
     heal: vi.fn(() => 0),
     ...overrides,
@@ -65,6 +66,8 @@ function fakeArrow(overrides: Record<string, unknown> = {}) {
     multiplier: 1,
     empowered: false,
     despawn: vi.fn(),
+    hasHit: vi.fn(() => false),
+    registerHit: vi.fn(() => true),
     ...overrides,
   };
 }
@@ -336,6 +339,80 @@ describe('CombatSystem: raios do jogador', () => {
     expect(a.receiveHit).toHaveBeenCalledTimes(1);
     expect(b.receiveHit).not.toHaveBeenCalled();
     expect(off.despawn).not.toHaveBeenCalled();
+  });
+});
+
+describe('CombatSystem: tiros que atravessam e a guarda do escudo', () => {
+  it('um tiro que atravessa acerta os dois inimigos da fila e só some quando a perfuração acaba', () => {
+    const player = fakePlayer();
+    const a = fakeEnemy();
+    const b = fakeEnemy();
+    let left = 1;
+    const bolt = fakeArrow({
+      box: { x: 112, y: 5, width: 8, height: 8 },
+      hasHit: vi.fn((target: unknown) => (target === a ? hitA : false)),
+      registerHit: vi.fn(() => {
+        if (left > 0) {
+          left -= 1;
+          return false;
+        }
+        return true;
+      }),
+    });
+    let hitA = false;
+    const { combat } = setup(player, [a, b], [], [bolt]);
+    a.receiveHit.mockImplementation(() => {
+      hitA = true;
+      return 10;
+    });
+
+    combat.update();
+
+    expect(a.receiveHit).toHaveBeenCalledTimes(1);
+    expect(b.receiveHit).toHaveBeenCalledTimes(1);
+    expect(bolt.despawn).toHaveBeenCalledTimes(1);
+  });
+
+  it('um tiro que atravessa não acerta o mesmo inimigo de novo no frame seguinte', () => {
+    const player = fakePlayer();
+    const a = fakeEnemy();
+    const bolt = fakeArrow({
+      box: { x: 112, y: 5, width: 8, height: 8 },
+      hasHit: vi.fn(() => true),
+      registerHit: vi.fn(() => false),
+    });
+    const { combat } = setup(player, [a], [], [bolt]);
+
+    combat.update();
+
+    expect(a.receiveHit).not.toHaveBeenCalled();
+    expect(bolt.despawn).not.toHaveBeenCalled();
+  });
+
+  it('a guarda que bloqueia consome a flecha e avisa; a defesa perfeita vale como esquiva perfeita', () => {
+    const arrow = fakeArrow({ box: { x: 96, y: 5, width: 10, height: 3 } });
+    const player = fakePlayer({ consumeGuard: vi.fn(() => 2), receiveHit: vi.fn(() => 0) });
+    const { combat, events } = setup(player, [], [arrow]);
+    const onBlocked = vi.fn();
+    (events as { onPlayerBlocked?: unknown }).onPlayerBlocked = onBlocked;
+
+    combat.update();
+
+    expect(onBlocked).toHaveBeenCalledTimes(1);
+    expect(events.onPerfectDodge).toHaveBeenCalledTimes(1);
+    expect(events.onPlayerHit).not.toHaveBeenCalled();
+    expect(arrow.despawn).toHaveBeenCalledTimes(1);
+  });
+
+  it('um bloqueio comum não conta como esquiva perfeita', () => {
+    const arrow = fakeArrow({ box: { x: 96, y: 5, width: 10, height: 3 } });
+    const player = fakePlayer({ consumeGuard: vi.fn(() => 1), receiveHit: vi.fn(() => 0) });
+    const { combat, events } = setup(player, [], [arrow]);
+
+    combat.update();
+
+    expect(events.onPerfectDodge).not.toHaveBeenCalled();
+    expect(events.onPlayerHit).not.toHaveBeenCalled();
   });
 });
 

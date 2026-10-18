@@ -23,6 +23,11 @@ export interface WeaponHold {
   /** Soma (rad) ao ângulo da arma fora dos golpes (parada, correndo, no ar). */
   restBias: number;
   sprite: WeaponSprite;
+  /**
+   * Segunda arma ou escudo na mão de trás (a outra lâmina, o escudo): a textura e o quanto o ângulo
+   * dela fica diferente do da mão da frente fora dos golpes (`restBias`).
+   */
+  offhand?: { sprite: WeaponSprite; restBias: number };
   /** Deixa um rastro de imagens (a arma borra durante o golpe). false para arco e tomo. */
   trail: boolean;
 }
@@ -91,8 +96,50 @@ export const WEAPON_HOLD: Readonly<Record<RelicId, WeaponHold>> = {
     sprite: { width: 12, height: 36, gripX: 5, gripY: 29 },
     trail: true,
   },
+  laminas: {
+    styles: ['dual', 'slashA', 'dual', 'slashB', 'dual'],
+    special: 'dual',
+    restBias: 0.1,
+    sprite: { width: 9, height: 26, gripX: 4, gripY: 21 },
+    offhand: { sprite: { width: 9, height: 26, gripX: 4, gripY: 21 }, restBias: -0.3 },
+    trail: true,
+  },
+  escudo: {
+    styles: ['slashA', 'guard'],
+    special: 'guard',
+    restBias: 0,
+    sprite: { width: 11, height: 30, gripX: 5, gripY: 24 },
+    offhand: { sprite: { width: 16, height: 20, gripX: 8, gripY: 10 }, restBias: 0 },
+    trail: true,
+  },
+  chicote: {
+    styles: ['slashA', 'slashB', 'slashA'],
+    special: 'slashA',
+    restBias: 0.2,
+    sprite: { width: 22, height: 40, gripX: 4, gripY: 36 },
+    trail: true,
+  },
+  cajado: {
+    styles: ['cast'],
+    special: 'cast',
+    restBias: -0.1,
+    sprite: { width: 11, height: 40, gripX: 5, gripY: 29 },
+    trail: false,
+  },
+  besta: {
+    styles: ['crossbow'],
+    special: 'crossbow',
+    restBias: 0.4,
+    sprite: { width: 14, height: 24, gripX: 7, gripY: 17 },
+    trail: false,
+  },
 };
 
 export function heldWeaponKey(id: RelicId): string {
   return `weapon-held-${id}`;
+}
+
+/** Chave da textura da segunda arma (mão de trás) de quem tem `offhand`. */
+export function heldOffhandKey(id: RelicId): string {
+  return `weapon-offhand-${id}`;
 }

@@ -40,6 +40,13 @@ export function getHeroHand(frameName: string): Point | undefined {
   return handByFrame.get(frameName);
 }
 
+/** Posição da mão de trás de cada quadro (onde ficam a segunda lâmina e o escudo). */
+const handBackByFrame = new Map<string, Point>();
+
+export function getHeroHandBack(frameName: string): Point | undefined {
+  return handBackByFrame.get(frameName);
+}
+
 type Ctx = CanvasRenderingContext2D;
 
 /** Perna de duas partes (coxa e canela) com bota. */
@@ -182,7 +189,9 @@ function drawHeroFrame(ctx: Ctx, pose: HeroPose): void {
 /** Cria a textura do herói (todos os quadros) e registra a posição da mão de cada um. */
 export function createHeroSheet(scene: Phaser.Scene): void {
   const frames: SheetFrame[] = HERO_FRAMES.map(({ name, pose }) => {
-    handByFrame.set(name, heroJoints(pose, HERO_GEOMETRY).handFront);
+    const joints = heroJoints(pose, HERO_GEOMETRY);
+    handByFrame.set(name, joints.handFront);
+    handBackByFrame.set(name, joints.handBack);
     return { name, draw: (ctx) => drawHeroFrame(ctx, pose) };
   });
   createSpriteSheet(scene, HERO_SHEET_KEY, HERO_CELL, frames, OUTLINE);

@@ -3,7 +3,7 @@ import { RELIC_DROP, RELIC_IDS, RELICS, SWAP, relicIconKey } from '../src/data/r
 
 describe('dados das relíquias', () => {
   it('toda relíquia do catálogo existe e tem o id certo', () => {
-    expect(RELIC_IDS).toHaveLength(9);
+    expect(RELIC_IDS).toHaveLength(14);
     expect(new Set(RELIC_IDS).size).toBe(RELIC_IDS.length);
     for (const id of RELIC_IDS) expect(RELICS[id].id).toBe(id);
   });
@@ -53,6 +53,16 @@ describe('dados das relíquias', () => {
     expect(RELICS.arco.basic.steps[0]?.projectile).toBeDefined(); // flecha
     expect(RELICS.arco.special.attack.projectile?.stunMs).toBeGreaterThan(0); // flecha pesada
     expect(RELICS.mangual.basic.steps[1]?.shape).toBe('around'); // giro no segundo golpe
+    expect(RELICS.laminas.basic.steps.length).toBe(5); // combo veloz de 5 golpes
+    expect(RELICS.laminas.special.attack.shape).toBe('around'); // redemoinho
+    expect(RELICS.escudo.special.guard?.parryMs).toBeGreaterThan(0); // guarda com defesa perfeita
+    expect(RELICS.escudo.special.attack.activeMs).toBeGreaterThanOrEqual(600); // a guarda dura
+    expect(RELICS.escudo.basic.steps[1]?.stunMs).toBeGreaterThan(0); // golpe de escudo atordoa
+    expect(RELICS.chicote.special.attack.knockbackX).toBeLessThan(0); // o gancho puxa
+    expect(RELICS.chicote.basic.steps[0]?.hitbox.width).toBeGreaterThanOrEqual(56); // alcance longo
+    expect(RELICS.cajado.basic.steps[0]?.projectile?.gravityY).toBeGreaterThan(0); // brasa em arco
+    expect(RELICS.cajado.special.attack.projectiles?.length).toBe(3); // leque de brasas
+    expect(RELICS.besta.special.attack.projectile?.pierce).toBeGreaterThan(0); // virote que atravessa
   });
 
   it('as armas são variadas: nenhuma repete o conjunto de básico e especial de outra', () => {

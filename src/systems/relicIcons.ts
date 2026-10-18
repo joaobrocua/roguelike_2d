@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { relicIconKey, type RelicId } from '../data/relics';
 import { PALETTE } from '../data/palette';
+import { NEW_RELIC_ICONS } from './relicIconsNew';
 
 /**
  * Ícones 16x16 das relíquias, desenhados em código com a paleta do jogo (uma textura por
@@ -229,6 +230,7 @@ const DRAWERS: Readonly<Record<RelicId, (g: Graphics) => void>> = {
   machado: drawAxe,
   arco: drawBow,
   mangual: drawFlail,
+  ...NEW_RELIC_ICONS,
 };
 
 export function createRelicIcons(scene: Phaser.Scene): void {

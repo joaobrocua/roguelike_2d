@@ -102,8 +102,9 @@ import type { InputIntent } from '../systems/InputSystem';
 import type { ProjectileSystem } from '../systems/ProjectileSystem';
 import { ActorShadow } from '../systems/ActorShadow';
 import { SlashVisual } from '../systems/SlashVisual';
-import { WEAPON_HOLD, heldWeaponKey } from '../data/weapons';
-import { getHeroHand } from '../systems/heroSprites';
+import { WEAPON_HOLD, heldOffhandKey, heldWeaponKey } from '../data/weapons';
+import { guardResult, type GuardResult } from '../logic/guard';
+import { getHeroHand, getHeroHandBack } from '../systems/heroSprites';
 import { TEXTURE } from '../systems/textures';
 import { approachZero } from '../utils/math';
 import { Barrier } from './Barrier';
@@ -163,6 +164,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   onDust: ((x: number, y: number, count: number) => void) | null = null;
 
   private readonly weapon: Phaser.GameObjects.Image;
+  /** A segunda arma ou o escudo, na mão de trás (só algumas relíquias têm). */
+  private readonly offhand: Phaser.GameObjects.Image;
+  /** O que a guarda fez com o último golpe recebido (lido uma vez pelo CombatSystem). */
+  private guardOutcome: GuardResult = 0;
   /** Imagens-fantasma da arma durante o golpe (o rastro): as três posições mais recentes. */
   private readonly trail: Phaser.GameObjects.Image[] = [];
   private readonly trailX = [0, 0, 0];
@@ -187,6 +192,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   };
   private heroState: HeroState | null = null;
   private weaponRelicId: string | null = null;
+  private offhandKey: string | null = null;
   private wasGrounded = true;
   private lastVelY = 0;
   private currentIsSpecial = false;
@@ -226,6 +232,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.weapon = scene.add
       .image(x, y, relicIconKey(relic.id))
       .setDepth(DEPTH.actor + 0.01)
+      .setVisible(false);
+    this.offhand = scene.add
+      .image(x, y, relicIconKey(relic.id))
+      .setDepth(DEPTH.actor + 0.012)
       .setVisible(false);
     for (let i = 0; i < HERO_WEAPON_TRAIL.length; i++) {
       this.trail.push(
@@ -347,6 +357,21 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   /** Aplica um golpe inimigo. Retorna o dano causado (0 se não acertou). */
   receiveHit(sourceX: number, cfg: HitData): number {
+    // Guarda do escudo: o golpe de frente é bloqueado (e, no começo da guarda, é uma defesa perfeita)
+    const guard = this.relic.special.guard;
+    const blocked = guardResult(
+      this.isGuarding(),
+      this.facing,
+      this.x,
+      sourceX,
+      this.attack.elapsedMs,
+      guard?.parryMs ?? 0,
+    );
+    if (blocked !== 0) {
+      this.guardOutcome = blocked;
+      this.setVelocityX(directionAway(sourceX, this.x) * PLAYER_COMBAT.guardPushSpeed);
+      return 0;
+    }
     const damage = computeDamage(cfg.damage, this.passive.damageTakenMult);
     const hit = takeDamage(
       this.health,
@@ -363,6 +388,27 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const dir = directionAway(sourceX, this.x);
     this.setVelocity(dir * cfg.knockbackX, cfg.knockbackY);
     return damage;
+  }
+
+  /** A guarda do escudo está erguida (fase ativa do especial do escudo)? */
+  isGuarding(): boolean {
+    return (
+      this.currentIsSpecial &&
+      this.relic.special.guard !== undefined &&
+      this.attack.phase === 'active'
+    );
+  }
+
+  /** Lado para onde o herói olha (-1 ou 1). */
+  get lookDir(): number {
+    return this.facing;
+  }
+
+  /** O que a guarda fez com o último golpe: 0 nada, 1 bloqueou, 2 defesa perfeita. Lê e apaga. */
+  consumeGuard(): GuardResult {
+    const outcome = this.guardOutcome;
+    this.guardOutcome = 0;
+    return outcome;
   }
 
   update(dtMs: number, intent: InputIntent): void {
@@ -550,18 +596,19 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
     sfx(this.currentIsSpecial ? 'special' : 'swing');
     // A esquiva perfeita dobra o dano do golpe; a barreira (sem dano) não gasta o bônus
-    if (def.damage > 0 || def.projectile) {
+    const shots = def.projectiles ?? (def.projectile ? [def.projectile] : []);
+    if (def.damage > 0 || shots.length > 0) {
       const dodgeMultiplier = consumeDodgeBonus(this.dodgeBonus, PERFECT_DODGE.damageMultiplier);
       this.swingEmpowered = dodgeMultiplier > 1;
       this.swingMultiplier =
         dodgeMultiplier * relic.passive.damageMult * this.stats.damageMultiplier;
     }
-    if (def.projectile) {
+    for (const shot of shots) {
       const bolt = this.bolts.fire(
         (this.body as Phaser.Physics.Arcade.Body).center.x + this.facing * (PLAYER.width / 2),
-        (this.body as Phaser.Physics.Arcade.Body).center.y + def.projectile.spawnOffsetY,
+        (this.body as Phaser.Physics.Arcade.Body).center.y + shot.spawnOffsetY,
         this.facing,
-        def.projectile,
+        shot,
       );
       if (bolt) {
         bolt.multiplier = this.swingMultiplier;
@@ -591,6 +638,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const stepping =
       def.shape === 'front' &&
       !def.projectile &&
+      !def.projectiles &&
       (this.attack.phase === 'windup' || this.attack.phase === 'active');
     this.setVelocityX(
       stepping && intent.moveX === 0 ? this.facing * PLAYER_COMBAT.attackStepSpeed : walk,
@@ -706,6 +754,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const cy = body.center.y;
     if (HERO_WEAPON_HIDDEN.includes(state)) {
       weapon.setVisible(false);
+      this.offhand.setVisible(false);
       this.hideTrail();
       return;
     }
@@ -728,6 +777,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         cx + this.facing * HERO_TOME_FLOAT.offsetX,
         cy + HERO_TOME_FLOAT.offsetY + bob * HERO_TOME_FLOAT.bobPx,
       );
+      this.offhand.setVisible(false);
       this.hideTrail();
       return;
     }
@@ -735,6 +785,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const hand = getHeroHand(frameName);
     if (!hand) {
       weapon.setVisible(false);
+      this.offhand.setVisible(false);
       this.hideTrail();
       return;
     }
@@ -766,7 +817,44 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const y = cy + (hand.y - 16);
     weapon.setRotation(this.facing * angle);
     weapon.setPosition(x, y);
+    this.updateOffhand(hold, state, frameName, cx, cy, attacking);
     this.updateTrail(state === 'swing' && hold.trail, x, y, this.facing * angle);
+  }
+
+  /** A segunda arma ou o escudo, na mão de trás: gira junto com o quadro do golpe. */
+  private updateOffhand(
+    hold: (typeof WEAPON_HOLD)[RelicId],
+    state: HeroState,
+    frameName: string,
+    cx: number,
+    cy: number,
+    attacking: boolean,
+  ): void {
+    const offhand = this.offhand;
+    const spec = hold.offhand;
+    const handBack = getHeroHandBack(frameName);
+    if (!spec || !handBack) {
+      offhand.setVisible(false);
+      return;
+    }
+    const key = heldOffhandKey(this.relic.id);
+    if (this.offhandKey !== key) {
+      this.offhandKey = key;
+      offhand.setTexture(key);
+    }
+    const framePose = heroFramePose(frameName);
+    const angle =
+      attacking && framePose?.offWeaponAngle !== undefined
+        ? framePose.offWeaponAngle
+        : HERO_WEAPON_ANGLE[state] + spec.restBias;
+    const gripX = spec.sprite.gripX / spec.sprite.width;
+    offhand
+      .setVisible(true)
+      .setFlipX(this.facing < 0)
+      .setAlpha(this.alpha)
+      .setOrigin(this.facing >= 0 ? gripX : 1 - gripX, spec.sprite.gripY / spec.sprite.height)
+      .setRotation(this.facing * angle)
+      .setPosition(cx + this.facing * (handBack.x - 16), cy + (handBack.y - 16));
   }
 
   /** Rastro do golpe: as posições dos últimos frames da arma, esmaecendo para trás. */

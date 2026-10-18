@@ -16,6 +16,8 @@ export interface CombatEvents {
   onPerfectDodge(): void;
   /** A barreira do Tomo parou um projétil. */
   onProjectileBlocked(projectile: Projectile): void;
+  /** A guarda do escudo do jogador bloqueou um golpe ou um projétil. */
+  onPlayerBlocked?(): void;
   /** O escudo de um inimigo bloqueou um golpe do jogador (nenhum dano). */
   onEnemyBlocked?(enemy: Enemy): void;
   /** O golpe de troca foi resolvido (para o anel de luz). */
@@ -102,10 +104,13 @@ export class CombatSystem {
     for (const bolt of this.bolts.pool) {
       if (!bolt.live || !bolt.cfg) continue;
       for (const enemy of this.enemies) {
-        if (!enemy.alive || !boxesOverlap(bolt.box, enemy.hurtBox)) continue;
-        this.hitEnemy(enemy, bolt.x, bolt.cfg, bolt.multiplier, bolt.empowered);
-        bolt.despawn();
-        break;
+        if (!enemy.alive || bolt.hasHit(enemy) || !boxesOverlap(bolt.box, enemy.hurtBox)) continue;
+        const dealt = this.hitEnemy(enemy, bolt.x, bolt.cfg, bolt.multiplier, bolt.empowered);
+        // Quem atravessa segue em frente; um golpe bloqueado ou ignorado para o tiro
+        if (dealt <= 0 || bolt.registerHit(enemy)) {
+          bolt.despawn();
+          break;
+        }
       }
     }
   }
@@ -169,6 +174,13 @@ export class CombatSystem {
       return false;
     }
     const damage = player.receiveHit(sourceX, hit);
+    const guard = player.consumeGuard();
+    if (guard !== 0) {
+      // O escudo bloqueou: o golpe (ou o projétil) acaba aqui; a defesa perfeita vale como esquiva perfeita
+      this.events.onPlayerBlocked?.();
+      if (guard === 2) this.events.onPerfectDodge();
+      return true;
+    }
     if (damage > 0) this.events.onPlayerHit(damage);
     return damage > 0;
   }

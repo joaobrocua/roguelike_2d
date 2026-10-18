@@ -19,6 +19,9 @@ export class Projectile extends Phaser.Physics.Arcade.Sprite {
   multiplier = 1;
   /** O disparo veio de uma esquiva perfeita (efeitos de destaque). */
   empowered = false;
+  /** Inimigos que o tiro ainda pode atravessar, e quem ele já atravessou (não acerta o mesmo duas vezes). */
+  pierceLeft = 0;
+  private readonly hitTargets: object[] = [];
 
   private readonly defaultTexture: string;
 
@@ -42,6 +45,8 @@ export class Projectile extends Phaser.Physics.Arcade.Sprite {
     this.resolved = false;
     this.multiplier = 1;
     this.empowered = false;
+    this.pierceLeft = cfg.pierce ?? 0;
+    this.hitTargets.length = 0;
     this.enableBody(true, x, y, true, true);
     // Tiros especiais (o cuspe do sapo) trocam a textura e a cor, e saem em arco
     const body = this.body as Phaser.Physics.Arcade.Body;
@@ -55,6 +60,19 @@ export class Projectile extends Phaser.Physics.Arcade.Sprite {
     this.setVelocity(dirX * cfg.speed, cfg.speedY ?? 0);
     this.setFlipX(dirX < 0);
     this.refreshBox();
+  }
+
+  /** Este alvo já foi atravessado por este tiro? */
+  hasHit(target: object): boolean {
+    return this.hitTargets.includes(target);
+  }
+
+  /** Registra o acerto em `target`; devolve true se o tiro deve sumir (não atravessa mais ninguém). */
+  registerHit(target: object): boolean {
+    this.hitTargets.push(target);
+    if (this.pierceLeft <= 0) return true;
+    this.pierceLeft -= 1;
+    return false;
   }
 
   despawn(): void {

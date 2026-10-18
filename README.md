@@ -91,7 +91,7 @@ O herói é desenhado quadro a quadro em código: elmo com a viseira acesa, arma
 
 ## Relíquias (etapa 4)
 
-Existem **9 relíquias**; o jogador carrega **duas** e alterna entre elas com **Q**. Cada uma define o ataque básico, um **especial com recarga** (K) e um **bônus passivo** (vale enquanto ela está ativa). Os dados ficam em `src/data/relics.ts`.
+Existem **14 relíquias**; o jogador carrega **duas** e alterna entre elas com **Q**. Cada uma define o ataque básico, um **especial com recarga** (K) e um **bônus passivo** (vale enquanto ela está ativa). Os dados ficam em `src/data/relics.ts`.
 
 | Relíquia          | Básico                   | Especial                            | Passiva                       |
 | ----------------- | ------------------------ | ----------------------------------- | ----------------------------- |
@@ -104,7 +104,14 @@ Existem **9 relíquias**; o jogador carrega **duas** e alterna entre elas com **
 | Machado Rachador  | Dois golpes pesados      | Giro que acerta em volta            | +25% de dano                  |
 | Arco de Osso      | Flecha rápida de longe   | Flecha pesada que atordoa           | +10% de dano                  |
 | Mangual Cinéreo   | Golpe e giro em volta    | Rodopio que empurra                 | -25% de recarga dos especiais |
+| Lâminas Gêmeas    | Combo veloz de 5 golpes  | Redemoinho de lâminas               | +10% de velocidade            |
+| Espada e Escudo   | Corte e golpe de escudo  | Guarda: bloqueia de frente          | -10% de dano recebido         |
+| Chicote de Elos   | Golpes longos e rápidos  | Gancho que puxa o inimigo           | +6% de velocidade             |
+| Cajado de Brasas  | Bola de brasa em arco    | Leque de três brasas                | -15% de recarga dos especiais |
+| Besta Enferrujada | Virote forte e lento     | Virote que atravessa inimigos       | +12% de dano                  |
 
+- **Guarda (Espada e Escudo):** durante o especial, o escudo bloqueia o que vem de frente (golpes e flechas) e empurra o jogador de leve; bloquear nos primeiros 150 ms é uma **defesa perfeita** (conta como esquiva perfeita). Por trás não protege. A lógica pura está em `src/logic/guard.ts`.
+- **Virote que atravessa:** projéteis com `pierce` seguem adiante depois de acertar (a Besta atravessa até 3 inimigos, sem acertar o mesmo duas vezes).
 - **Golpe de troca:** trocar de relíquia até 0,7 s depois de acertar um inimigo dispara um golpe curto em área (cada acerto vale um golpe de troca).
 - **Novas relíquias** caem de inimigos derrotados e ficam **no chão, deitadas**, como a arma de verdade. Chegue perto, aperte **E** (ou RT) e escolha qual das duas descartar (**J** ou as teclas **1**, **2** e **3**; a 3 deixa no chão). As teclas **1** e **2** também trocam direto de relíquia em jogo. A relíquia largada por um inimigo **some depois de 14 s** (pisca nos últimos 4 s); as de baús e do chefe esperam para sempre. Os baús das salas de tesouro sempre soltam uma relíquia (ou curam, se não houver nenhuma nova).
 
@@ -169,7 +176,7 @@ Cada área é dividida em **alas**, com ambientes e mobília próprios (`src/dat
 Cada run rende **almas**, e o **Santuário** — uma sala própria, toda voltada para um anjo caído colossal esculpido na parede do fundo, com um altar aos seus pés, que o herói atravessa uma vez, no portão do castelo, e onde acorda depois de morrer ou vencer — troca almas por melhorias permanentes numa árvore de 10 nós, seguindo o modelo do documento de design (20% atributos básicos, 40% agência e consistência, 40% expansão de conteúdo).
 
 - **Almas:** cada inimigo derrotado rende almas (o chefe rende bastante) e elas ficam **carregadas** (contador sob a barra de vida). Só são **guardadas** ao passar para o próximo bioma ou ao vencer o chefe (que ainda dá um prêmio). Se o herói morre, as não guardadas **se perdem**, exceto a fração que a **Retenção** protege.
-- **Árvore:** _Vigor_ e _Força_ (atributos, com teto de +50% de vida e +25% de dano); _Retenção_, _Sorte_, _Colheita_ e _Reflexo_ (agência, até +30 ms na esquiva perfeita); _Arsenal I e II_ (liberam as 5 armas novas), _Passagens_ (uma sala secreta por bioma) e _Mestre_ (escolher a relíquia inicial). Os pré-requisitos são respeitados e o custo do nível _n_ é `custoBase × multiplicador^(n−1)`, com multiplicador entre 1,15 e 1,35. Tudo em `src/data/meta.ts`.
+- **Árvore:** _Vigor_ e _Força_ (atributos, com teto de +50% de vida e +25% de dano); _Retenção_, _Sorte_, _Colheita_ e _Reflexo_ (agência, até +30 ms na esquiva perfeita); _Arsenal I e II_ (liberam as 10 armas extras: Adaga, Lança, Gêmeas e Chicote; depois Machado, Arco, Mangual, Espada e Escudo, Cajado e Besta), _Passagens_ (uma sala secreta por bioma) e _Mestre_ (escolher a relíquia inicial). Os pré-requisitos são respeitados e o custo do nível _n_ é `custoBase × multiplicador^(n−1)`, com multiplicador entre 1,15 e 1,35. Tudo em `src/data/meta.ts`.
 - **Jogo base vencível sem upgrades:** com o save zerado os efeitos são neutros (4 armas originais, nenhuma sala secreta, nenhum bônus), e os tetos garantem que a árvore nunca passa de 1,5x a 2x dos atributos iniciais (há testes para isso).
 - **Save:** `localStorage` do navegador, versionado e validado ao carregar (save corrompido ou editado nunca derruba o jogo; níveis acima do máximo, nós desconhecidos e pré-requisitos faltando são corrigidos). A gravação é em etapas, com cópia de segurança, para uma queda no meio não corromper o progresso. Se o navegador não permitir `localStorage`, o jogo continua com o progresso só daquela sessão. Lógica em `src/logic/meta`.
 - **Controles do Santuário:** **E** (ou RT) diante do altar abre a janela de melhorias, que também guarda as almas carregadas. A sala veste o bioma (pedra, fundo, luz e a cor do fogo, dos estandartes e das runas), tem o anjo colossal sob um feixe de luz, colunas, braseiros e velas, e uma passagem em arco de pedra à direita, aberta para a paisagem da região de destino e com uma placa de madeira com o nome do lugar, que leva adiante. Na janela de melhorias, setas ou WASD escolhem, **J** compra e **E** ou Esc fecha. As melhorias valem na hora, mas _Passagens_ e a relíquia inicial só mudam a próxima run.

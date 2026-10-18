@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ATTACK_STYLES } from '../src/data/hero';
 import { RELIC_IDS, RELICS } from '../src/data/relics';
 import { WEAPON_HOLD, heldWeaponKey } from '../src/data/weapons';
-import { HELD_WEAPON_DRAWERS } from '../src/systems/heldWeaponArt';
+import { HELD_OFFHAND_DRAWERS, HELD_WEAPON_DRAWERS } from '../src/systems/heldWeaponArt';
 
 /**
  * Canvas de mentira que só guarda onde cada retângulo caiu (e quantos pixels), para conferir que
@@ -118,6 +118,52 @@ describe('armas empunhadas (desenho)', () => {
           sprite.gripX >= x && sprite.gripX < x + w && sprite.gripY >= y && sprite.gripY < y + h,
       );
       expect(covered, id).toBe(true);
+    }
+  });
+});
+
+describe('segunda arma e escudo (mão de trás)', () => {
+  it('quem tem offhand nos dados tem o desenho dele, e só esses', () => {
+    for (const id of RELIC_IDS) {
+      expect(Boolean(WEAPON_HOLD[id].offhand), id).toBe(Boolean(HELD_OFFHAND_DRAWERS[id]));
+    }
+    expect(WEAPON_HOLD.laminas.offhand).toBeDefined();
+    expect(WEAPON_HOLD.escudo.offhand).toBeDefined();
+  });
+
+  it('cada desenho da mão de trás cabe na textura e a empunhadura cai sobre ele', () => {
+    for (const id of RELIC_IDS) {
+      const draw = HELD_OFFHAND_DRAWERS[id];
+      const spec = WEAPON_HOLD[id].offhand;
+      if (!draw || !spec) continue;
+      const painted: Array<[number, number, number, number]> = [];
+      let minX = Infinity;
+      let minY = Infinity;
+      let maxX = -Infinity;
+      let maxY = -Infinity;
+      const ctx = {
+        fillStyle: '',
+        globalAlpha: 1,
+        fillRect: (x: number, y: number, w: number, h: number) => {
+          if (w <= 0 || h <= 0) return;
+          painted.push([x, y, w, h]);
+          minX = Math.min(minX, x);
+          minY = Math.min(minY, y);
+          maxX = Math.max(maxX, x + w);
+          maxY = Math.max(maxY, y + h);
+        },
+      } as unknown as CanvasRenderingContext2D;
+      draw(ctx);
+      const { sprite } = spec;
+      expect(minX, `${id} esquerda`).toBeGreaterThanOrEqual(1);
+      expect(minY, `${id} topo`).toBeGreaterThanOrEqual(1);
+      expect(maxX, `${id} direita`).toBeLessThanOrEqual(sprite.width - 1);
+      expect(maxY, `${id} base`).toBeLessThanOrEqual(sprite.height - 1);
+      const covered = painted.some(
+        ([x, y, w, h]) =>
+          sprite.gripX >= x && sprite.gripX < x + w && sprite.gripY >= y && sprite.gripY < y + h,
+      );
+      expect(covered, `${id} empunhadura`).toBe(true);
     }
   });
 });

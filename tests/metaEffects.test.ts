@@ -70,7 +70,7 @@ describe('computeEffects: run de nível 1', () => {
     expect(fx.dodgeWindowBonusMs).toBe(30);
     expect(fx.secretRooms).toBe(1);
     expect(fx.canChooseStart).toBe(true);
-    expect(fx.unlockedRelics).toEqual(RELIC_IDS);
+    expect([...fx.unlockedRelics].sort()).toEqual([...RELIC_IDS].sort());
   });
 });
 
@@ -106,7 +106,7 @@ describe('computeEffects: soma nível x perLevel', () => {
   it('relíquias liberadas: base primeiro, depois a ordem dos nós, sem repetir', () => {
     expect(
       computeEffects(saveWith({ arsenal1: 1 }), undefined, undefined, BASE_HP).unlockedRelics,
-    ).toEqual([...BASE_RELICS, 'adaga', 'lanca']);
+    ).toEqual([...BASE_RELICS, 'adaga', 'lanca', 'laminas', 'chicote']);
 
     const repeated: UpgradeNode[] = [
       {

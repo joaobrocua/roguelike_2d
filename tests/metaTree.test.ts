@@ -207,9 +207,14 @@ describe('unlockedRelicIds', () => {
       'tomo',
       'adaga',
       'lanca',
+      'laminas',
+      'chicote',
       'machado',
       'arco',
       'mangual',
+      'escudo',
+      'cajado',
+      'besta',
     ]);
     expect(new Set(ids).size).toBe(ids.length);
   });

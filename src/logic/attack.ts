@@ -28,6 +28,8 @@ export interface ProjectileData extends HitData {
   speedY?: number;
   /** Gravidade total do tiro (px/s²). Sem isto ele voa em linha reta. */
   gravityY?: number;
+  /** Quantos inimigos a mais o tiro atravessa antes de sumir (0 ou ausente = some no primeiro). */
+  pierce?: number;
   /** Textura própria (a chave) e cor; o corpo do tiro passa a ter `width` x `height`. */
   textureKey?: string;
   tint?: number;

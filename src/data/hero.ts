@@ -98,6 +98,11 @@ export interface HeroPose {
    */
   weaponAngle?: number;
   /**
+   * Ângulo (rad) da arma ou do escudo da mão de trás (a segunda lâmina, o escudo). Sem valor, vale o
+   * do estado (HERO_WEAPON_ANGLE) somado ao `restBias` do item.
+   */
+  offWeaponAngle?: number;
+  /**
    * Armas de duas mãos: distância (px) ao longo do cabo, a partir da mão da frente, onde a mão de
    * trás segura (positivo = rumo à ponta, negativo = rumo à base). Sem valor, o braço de trás fica
    * solto no ângulo `armBack`.
@@ -192,10 +197,22 @@ function rollFrames(): HeroFrame[] {
  * quadro pelo andamento da fase (os golpes são rápidos: cada quadro dura poucos milissegundos).
  * 'slashA' é o corte de cima para baixo com uma mão; 'slashB', o contra-golpe de baixo para cima;
  * 'thrust' e 'lunge', a estocada com duas mãos e com uma; 'overhead', a pancada pesada de cima;
- * 'sweep', o varrido largo; 'bow', o arco; 'cast', o gesto de conjurar.
+ * 'sweep', o varrido largo; 'bow', o arco; 'cast', o gesto de conjurar; 'dual', o corte cruzado
+ * com duas lâminas; 'guard', a guarda com o escudo à frente (também o golpe de escudo); 'crossbow',
+ * a mira da besta, com as duas mãos.
  */
 export type AttackStyle =
-  'slashA' | 'slashB' | 'thrust' | 'lunge' | 'overhead' | 'sweep' | 'bow' | 'cast';
+  | 'slashA'
+  | 'slashB'
+  | 'thrust'
+  | 'lunge'
+  | 'overhead'
+  | 'sweep'
+  | 'bow'
+  | 'cast'
+  | 'dual'
+  | 'guard'
+  | 'crossbow';
 
 export const ATTACK_STYLES: readonly AttackStyle[] = [
   'slashA',
@@ -206,6 +223,9 @@ export const ATTACK_STYLES: readonly AttackStyle[] = [
   'sweep',
   'bow',
   'cast',
+  'dual',
+  'guard',
+  'crossbow',
 ];
 
 /** Nomes dos quadros de cada fase de um estilo, na ordem em que tocam. */
@@ -225,6 +245,8 @@ interface AttackKey {
   bob?: number;
   /** Duas mãos: onde a mão de trás segura (ver HeroPose.backHold). */
   hold?: number;
+  /** Arma ou escudo da mão de trás (ver HeroPose.offWeaponAngle). */
+  off?: number;
   cape?: number;
 }
 
@@ -351,6 +373,51 @@ const ATTACK_KEYS: Readonly<
       { arm: 0.9, back: 1.8, lean: 0, stride: 0, weapon: 0 },
     ],
   },
+  dual: {
+    windup: [
+      { arm: -1.2, back: -1.0, lean: 0, stride: -0.1, weapon: -0.2, off: -0.1 },
+      { arm: -2.0, back: -1.8, lean: -1, stride: -0.3, weapon: -0.9, off: -0.7 },
+    ],
+    swing: [
+      { arm: -0.9, back: -0.7, lean: 0, stride: 0.1, weapon: 0.7, off: 0.9, cape: 12 },
+      { arm: -0.1, back: 0.1, lean: 1, stride: 0.4, weapon: 1.5, off: 1.6, cape: 14 },
+      { arm: 0.6, back: 0.7, lean: 2, stride: 0.5, weapon: 2.3, off: 2.4, cape: 14 },
+    ],
+    recover: [
+      { arm: 1.0, back: 1.1, lean: 2, stride: 0.3, weapon: 2.1, off: 2.2 },
+      { arm: 1.2, back: 1.3, lean: 1, stride: 0.1, weapon: 1.2, off: 1.3 },
+    ],
+  },
+  guard: {
+    windup: [
+      { arm: 1.3, back: 0.6, lean: 0, stride: 0, weapon: 0.2, off: 0 },
+      { arm: 1.2, back: -0.1, lean: 1, stride: 0.1, weapon: 0.3, off: 0 },
+    ],
+    swing: [
+      { arm: 1.2, back: -0.2, lean: 1, stride: 0.1, weapon: 0.3, off: 0, cape: 12 },
+      { arm: 1.2, back: -0.25, lean: 2, stride: 0.2, weapon: 0.3, off: 0, cape: 13 },
+      { arm: 1.2, back: -0.2, lean: 1, stride: 0.1, weapon: 0.3, off: 0, cape: 12 },
+    ],
+    recover: [
+      { arm: 1.3, back: 0.4, lean: 1, stride: 0, weapon: 0.3, off: 0 },
+      { arm: 1.35, back: 1.0, lean: 0, stride: 0, weapon: 0.4, off: 0 },
+    ],
+  },
+  crossbow: {
+    windup: [
+      { arm: -0.3, back: 0.3, lean: 0, stride: 0, weapon: 1.5, hold: -5 },
+      { arm: -0.15, back: 0.2, lean: -1, stride: -0.1, weapon: 1.55, hold: -5 },
+    ],
+    swing: [
+      { arm: -0.1, back: 0.2, lean: -1, stride: 0, weapon: 1.5, hold: -5, cape: 12 },
+      { arm: -0.1, back: 0.2, lean: -2, stride: 0, weapon: 1.45, hold: -5, cape: 13 },
+      { arm: 0, back: 0.2, lean: -1, stride: 0, weapon: 1.4, hold: -5, cape: 13 },
+    ],
+    recover: [
+      { arm: 0.4, back: 0.7, lean: 0, stride: 0, weapon: 1.0, hold: -5 },
+      { arm: 0.9, back: 1.1, lean: 0, stride: 0, weapon: 0.6, hold: -5 },
+    ],
+  },
 };
 
 const PHASE_LETTER = { windup: 'w', swing: 's', recover: 'r' } as const;
@@ -366,6 +433,7 @@ function attackPose(key: AttackKey): HeroPose {
     capeAmp: key.cape ? 2 : 1,
     weaponAngle: key.weapon,
     backHold: key.hold,
+    offWeaponAngle: key.off,
   });
 }
 

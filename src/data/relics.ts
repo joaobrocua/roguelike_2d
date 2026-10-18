@@ -7,7 +7,20 @@ import type { AttackConfig, ProjectileData } from '../logic/attack';
 import { PALETTE } from './palette';
 
 export type RelicId =
-  'lamina' | 'martelo' | 'foice' | 'tomo' | 'adaga' | 'lanca' | 'machado' | 'arco' | 'mangual';
+  | 'lamina'
+  | 'martelo'
+  | 'foice'
+  | 'tomo'
+  | 'adaga'
+  | 'lanca'
+  | 'machado'
+  | 'arco'
+  | 'mangual'
+  | 'laminas'
+  | 'escudo'
+  | 'chicote'
+  | 'cajado'
+  | 'besta';
 
 /** Onde o golpe acerta: na frente, no próprio corpo (investida), em volta dos pés ou em lugar nenhum. */
 export type AttackShape = 'front' | 'body' | 'around' | 'none';
@@ -20,11 +33,13 @@ export interface PlayerAttackDef extends AttackConfig {
   lungeSpeed: number;
   /** Fração do dano causado que volta como vida. */
   lifeSteal: number;
-  /** Projétil lançado no começo da fase ativa (só o Tomo Cinzento). */
+  /** Projétil lançado no começo da fase ativa (o Tomo, o arco, o cajado e a besta). */
   projectile?: ProjectileData;
+  /** Vários projéteis de uma vez (o leque do cajado); vale no lugar de `projectile`. */
+  projectiles?: readonly ProjectileData[];
 }
 
-export type SpecialKind = 'dash' | 'slam' | 'drain' | 'barrier' | 'shot';
+export type SpecialKind = 'dash' | 'slam' | 'drain' | 'barrier' | 'shot' | 'guard' | 'pull';
 
 export interface SpecialDef {
   kind: SpecialKind;
@@ -32,6 +47,11 @@ export interface SpecialDef {
   attack: PlayerAttackDef;
   /** Só para a barreira: duração, tamanho e distância à frente do jogador. */
   barrier?: { durationMs: number; width: number; height: number; offsetX: number };
+  /**
+   * Só para a guarda do escudo: durante a fase ativa do especial os golpes que vêm de frente são
+   * bloqueados; bloquear nos primeiros `parryMs` (a defesa perfeita) dá o bônus da esquiva perfeita.
+   */
+  guard?: { parryMs: number };
 }
 
 /** Multiplicadores que a relíquia ATIVA aplica ao jogador. */
@@ -627,6 +647,328 @@ export const MANGUAL_CINEREO: RelicDef = {
   swapStrike: { damage: 8, knockbackX: 220, knockbackY: -60, radius: 50, stunMs: 0 },
 };
 
+export const LAMINAS_GEMEAS: RelicDef = {
+  id: 'laminas',
+  name: 'Lâminas Gêmeas',
+  passiveText: '+10% de velocidade',
+  summary: { basic: 'Combo veloz de 5 golpes', special: 'Redemoinho de lâminas' },
+  floatingWeapon: false,
+  color: PALETTE.playerAccent,
+  basic: {
+    comboWindowMs: 300,
+    steps: [0, 1, 2, 3, 4].map((i) => ({
+      windupMs: 40,
+      activeMs: i === 4 ? 80 : 60,
+      recoveryMs: i === 4 ? 150 : 80,
+      damage: i === 4 ? 8 : 5,
+      knockbackX: i === 4 ? 150 : 70,
+      knockbackY: i === 4 ? -70 : -30,
+      hitbox: { width: i === 4 ? 34 : 26, height: 22, offsetY: -2 },
+      shape: 'front' as const,
+      moveFactor: 0.6,
+      lungeSpeed: 0,
+      lifeSteal: 0,
+    })),
+  },
+  special: {
+    kind: 'slam',
+    cooldownMs: 3500,
+    attack: {
+      windupMs: 70,
+      activeMs: 130,
+      recoveryMs: 160,
+      damage: 11,
+      knockbackX: 160,
+      knockbackY: -70,
+      hitbox: { width: 66, height: 26, offsetY: 0 },
+      shape: 'around',
+      moveFactor: 0.3,
+      lungeSpeed: 0,
+      lifeSteal: 0,
+    },
+  },
+  passive: { moveSpeedMult: 1.1, damageMult: 1, damageTakenMult: 1, cooldownMult: 1 },
+  swapStrike: { damage: 8, knockbackX: 120, knockbackY: -70, radius: 44, stunMs: 0 },
+};
+
+export const ESPADA_E_ESCUDO: RelicDef = {
+  id: 'escudo',
+  name: 'Espada e Escudo',
+  passiveText: '-10% dano recebido',
+  summary: { basic: 'Corte e golpe de escudo', special: 'Bloqueia de frente' },
+  floatingWeapon: false,
+  color: PALETTE.mist,
+  basic: {
+    comboWindowMs: 360,
+    steps: [
+      {
+        windupMs: 80,
+        activeMs: 90,
+        recoveryMs: 130,
+        damage: 9,
+        knockbackX: 110,
+        knockbackY: -50,
+        hitbox: { width: 30, height: 22, offsetY: -2 },
+        shape: 'front',
+        moveFactor: 0.5,
+        lungeSpeed: 0,
+        lifeSteal: 0,
+      },
+      {
+        windupMs: 110,
+        activeMs: 80,
+        recoveryMs: 190,
+        damage: 7,
+        knockbackX: 230,
+        knockbackY: -60,
+        hitbox: { width: 22, height: 26, offsetY: 0 },
+        shape: 'front',
+        moveFactor: 0.4,
+        lungeSpeed: 0,
+        lifeSteal: 0,
+        stunMs: 350,
+      },
+    ],
+  },
+  special: {
+    kind: 'guard',
+    cooldownMs: 6500,
+    attack: {
+      windupMs: 80,
+      activeMs: 1000,
+      recoveryMs: 160,
+      damage: 0,
+      knockbackX: 0,
+      knockbackY: 0,
+      hitbox: NO_HITBOX,
+      shape: 'none',
+      moveFactor: 0.35,
+      lungeSpeed: 0,
+      lifeSteal: 0,
+    },
+    guard: { parryMs: 150 },
+  },
+  passive: { moveSpeedMult: 1, damageMult: 1, damageTakenMult: 0.9, cooldownMult: 1 },
+  swapStrike: { damage: 6, knockbackX: 200, knockbackY: -60, radius: 40, stunMs: 400 },
+};
+
+export const CHICOTE_DE_CORRENTES: RelicDef = {
+  id: 'chicote',
+  name: 'Chicote de Elos',
+  passiveText: '+6% de velocidade',
+  summary: { basic: 'Golpes longos e rápidos', special: 'Gancho que puxa' },
+  floatingWeapon: false,
+  color: PALETTE.ember,
+  basic: {
+    comboWindowMs: 340,
+    steps: [
+      {
+        windupMs: 70,
+        activeMs: 70,
+        recoveryMs: 100,
+        damage: 6,
+        knockbackX: 60,
+        knockbackY: -20,
+        hitbox: { width: 62, height: 14, offsetY: -2 },
+        shape: 'front',
+        moveFactor: 0.6,
+        lungeSpeed: 0,
+        lifeSteal: 0,
+      },
+      {
+        windupMs: 70,
+        activeMs: 70,
+        recoveryMs: 100,
+        damage: 6,
+        knockbackX: 60,
+        knockbackY: -20,
+        hitbox: { width: 62, height: 14, offsetY: -2 },
+        shape: 'front',
+        moveFactor: 0.6,
+        lungeSpeed: 0,
+        lifeSteal: 0,
+      },
+      {
+        windupMs: 100,
+        activeMs: 90,
+        recoveryMs: 160,
+        damage: 9,
+        knockbackX: 160,
+        knockbackY: -50,
+        hitbox: { width: 72, height: 16, offsetY: -2 },
+        shape: 'front',
+        moveFactor: 0.4,
+        lungeSpeed: 0,
+        lifeSteal: 0,
+      },
+    ],
+  },
+  special: {
+    kind: 'pull',
+    cooldownMs: 5000,
+    attack: {
+      windupMs: 120,
+      activeMs: 90,
+      recoveryMs: 200,
+      damage: 8,
+      knockbackX: -240, // negativo: puxa o inimigo para o herói
+      knockbackY: -40,
+      hitbox: { width: 110, height: 14, offsetY: -2 },
+      shape: 'front',
+      moveFactor: 0.3,
+      lungeSpeed: 0,
+      lifeSteal: 0,
+      stunMs: 350,
+    },
+  },
+  passive: { moveSpeedMult: 1.06, damageMult: 1, damageTakenMult: 1, cooldownMult: 1 },
+  swapStrike: { damage: 7, knockbackX: -140, knockbackY: -40, radius: 56, stunMs: 0 },
+};
+
+export const CAJADO_DE_BRASAS: RelicDef = {
+  id: 'cajado',
+  name: 'Cajado de Brasas',
+  passiveText: 'Recarga -15%',
+  summary: { basic: 'Bola de brasa em arco', special: 'Leque de três brasas' },
+  floatingWeapon: false,
+  color: 0xff7a2a,
+  basic: {
+    comboWindowMs: 0,
+    steps: [
+      {
+        windupMs: 150,
+        activeMs: 60,
+        recoveryMs: 230,
+        damage: 0,
+        knockbackX: 0,
+        knockbackY: 0,
+        hitbox: NO_HITBOX,
+        shape: 'none',
+        moveFactor: 0.6,
+        lungeSpeed: 0,
+        lifeSteal: 0,
+        projectile: {
+          speed: 190,
+          speedY: -70,
+          gravityY: 260,
+          lifeMs: 1400,
+          width: 8,
+          height: 8,
+          damage: 11,
+          knockbackX: 100,
+          knockbackY: -50,
+          spawnOffsetY: -8,
+          tint: 0xff7a2a,
+        },
+      },
+    ],
+  },
+  special: {
+    kind: 'shot',
+    cooldownMs: 4500,
+    attack: {
+      windupMs: 220,
+      activeMs: 60,
+      recoveryMs: 240,
+      damage: 0,
+      knockbackX: 0,
+      knockbackY: 0,
+      hitbox: NO_HITBOX,
+      shape: 'none',
+      moveFactor: 0.3,
+      lungeSpeed: 0,
+      lifeSteal: 0,
+      projectiles: [-150, -90, -30].map((speedY) => ({
+        speed: 190,
+        speedY,
+        gravityY: 260,
+        lifeMs: 1400,
+        width: 8,
+        height: 8,
+        damage: 8,
+        knockbackX: 90,
+        knockbackY: -40,
+        spawnOffsetY: -8,
+        tint: 0xffc04a,
+      })),
+    },
+  },
+  passive: { moveSpeedMult: 1, damageMult: 1, damageTakenMult: 1, cooldownMult: 0.85 },
+  swapStrike: { damage: 7, knockbackX: 110, knockbackY: -80, radius: 52, stunMs: 0 },
+};
+
+export const BESTA_ENFERRUJADA: RelicDef = {
+  id: 'besta',
+  name: 'Besta Enferrujada',
+  passiveText: '+12% de dano',
+  summary: { basic: 'Virote forte e lento', special: 'Virote que atravessa' },
+  floatingWeapon: false,
+  color: 0xb08a50,
+  basic: {
+    comboWindowMs: 0,
+    steps: [
+      {
+        windupMs: 190,
+        activeMs: 50,
+        recoveryMs: 400,
+        damage: 0,
+        knockbackX: 0,
+        knockbackY: 0,
+        hitbox: NO_HITBOX,
+        shape: 'none',
+        moveFactor: 0.5,
+        lungeSpeed: 0,
+        lifeSteal: 0,
+        projectile: {
+          speed: 460,
+          lifeMs: 1100,
+          width: 10,
+          height: 4,
+          damage: 15,
+          knockbackX: 140,
+          knockbackY: -40,
+          spawnOffsetY: -3,
+          textureKey: 'arrow', // a mesma chave de TEXTURE.arrow (src/systems/textures.ts)
+          tint: 0xd9b36a,
+        },
+      },
+    ],
+  },
+  special: {
+    kind: 'shot',
+    cooldownMs: 6000,
+    attack: {
+      windupMs: 300,
+      activeMs: 60,
+      recoveryMs: 260,
+      damage: 0,
+      knockbackX: 0,
+      knockbackY: 0,
+      hitbox: NO_HITBOX,
+      shape: 'none',
+      moveFactor: 0.2,
+      lungeSpeed: 0,
+      lifeSteal: 0,
+      projectile: {
+        speed: 520,
+        lifeMs: 1300,
+        width: 12,
+        height: 5,
+        damage: 22,
+        knockbackX: 200,
+        knockbackY: -60,
+        spawnOffsetY: -3,
+        stunMs: 250,
+        pierce: 3,
+        textureKey: 'arrow',
+        tint: 0xffe08a,
+      },
+    },
+  },
+  passive: { moveSpeedMult: 1, damageMult: 1.12, damageTakenMult: 1, cooldownMult: 1 },
+  swapStrike: { damage: 6, knockbackX: 100, knockbackY: -60, radius: 46, stunMs: 0 },
+};
+
 export const RELICS: Readonly<Record<RelicId, RelicDef>> = {
   lamina: LAMINA_DO_VIGIA,
   martelo: MARTELO_SEPULCRAL,
@@ -637,6 +979,11 @@ export const RELICS: Readonly<Record<RelicId, RelicDef>> = {
   machado: MACHADO_RACHADOR,
   arco: ARCO_DE_OSSO,
   mangual: MANGUAL_CINEREO,
+  laminas: LAMINAS_GEMEAS,
+  escudo: ESPADA_E_ESCUDO,
+  chicote: CHICOTE_DE_CORRENTES,
+  cajado: CAJADO_DE_BRASAS,
+  besta: BESTA_ENFERRUJADA,
 };
 
 export const RELIC_IDS: readonly RelicId[] = [
@@ -649,6 +996,11 @@ export const RELIC_IDS: readonly RelicId[] = [
   'machado',
   'arco',
   'mangual',
+  'laminas',
+  'escudo',
+  'chicote',
+  'cajado',
+  'besta',
 ];
 
 /** Troca de relíquia. */
