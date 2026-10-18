@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { planDecor, type DecorItem } from '../src/logic/decor';
+import { decorChance, planDecor, type DecorItem } from '../src/logic/decor';
 import { isSolidTile, parseRoom, type ParsedRoom } from '../src/logic/roomParser';
 import { ROOM_TEMPLATES } from '../src/data/roomTemplates';
-import { CELL, DOOR } from '../src/data/mapRules';
+import { ALL_BIOMES, CELL, DOOR } from '../src/data/mapRules';
 import {
+  DECOR_BIOME_BOOST,
   DECOR_CLEAR_RADIUS_TILES,
+  DECOR_MAX_CHANCE,
   DECOR_MIN_GAP_TILES,
   DECOR_RULES,
   type DecorKind,
@@ -273,5 +275,90 @@ describe('planDecor: modelos de sala do jogo', () => {
     }
     expect(rooms).toBeGreaterThan(0);
     expect(items / rooms).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe('decoração por área: densidade', () => {
+  const kinds = Object.keys(DECOR_RULES) as DecorKind[];
+
+  it('nenhuma chance, base ou reforçada, passa do teto, e banner continua em 0', () => {
+    for (const kind of kinds) {
+      expect(DECOR_RULES[kind].chance, kind).toBeLessThanOrEqual(DECOR_MAX_CHANCE);
+      for (const biome of ALL_BIOMES) {
+        expect(decorChance(kind, biome), `${biome}/${kind}`).toBeLessThanOrEqual(DECOR_MAX_CHANCE);
+        expect(decorChance(kind, biome)).toBeGreaterThanOrEqual(0);
+      }
+    }
+    for (const biome of ALL_BIOMES) expect(decorChance('banner', biome)).toBe(0);
+  });
+
+  it('sem área vale a regra base; com área, o reforço multiplica (até o teto)', () => {
+    expect(decorChance('bone')).toBe(DECOR_RULES.bone.chance);
+    expect(decorChance('bone', 'cemiterio')).toBeCloseTo(
+      Math.min(DECOR_MAX_CHANCE, DECOR_RULES.bone.chance * (DECOR_BIOME_BOOST.cemiterio.bone ?? 1)),
+    );
+    expect(decorChance('bone', 'cemiterio')).toBeGreaterThan(decorChance('bone', 'muralhas'));
+    expect(decorChance('vine', 'vila')).toBeLessThan(decorChance('vine', 'floresta'));
+  });
+
+  it('o cemitério tem mais ossos que as muralhas, e cada área cobre mais que a regra base', () => {
+    const room = doorRoom();
+    const count = (biome: (typeof ALL_BIOMES)[number] | undefined, kind: DecorKind): number =>
+      SEEDS.reduce(
+        (sum, seed) =>
+          sum + planDecor(room, seed, [], biome).filter((item) => item.kind === kind).length,
+        0,
+      );
+    expect(count('cemiterio', 'bone')).toBeGreaterThan(count('muralhas', 'bone'));
+    expect(count('minas', 'crack')).toBeGreaterThan(count(undefined, 'crack'));
+  });
+
+  it('com área, continua determinístico e respeitando portas, marcadores e distâncias', () => {
+    const violations: string[] = [];
+    for (const biome of ['cemiterio', 'minas'] as const) {
+      for (const template of ROOM_TEMPLATES) {
+        const room = parseRoom(template.layout);
+        for (const seed of SEEDS.slice(0, 2)) {
+          const items = planDecor(room, seed, [], biome);
+          expect(items).toEqual(planDecor(room, seed, [], biome));
+          for (const item of items) {
+            const cell = visualCell(item);
+            for (const m of room.markers) {
+              const dist = Math.max(Math.abs(cell.col - m.col), Math.abs(cell.row - m.row));
+              if (dist <= DECOR_CLEAR_RADIUS_TILES)
+                violations.push(`${biome}/${template.id}: marcador`);
+            }
+            if (item.col === 0 || item.col === room.cols - 1) {
+              if (item.row >= 12 && item.row <= 14)
+                violations.push(`${biome}/${template.id}: porta`);
+            }
+          }
+          for (let i = 0; i < items.length; i++) {
+            const a = items[i] as DecorItem;
+            for (let j = i + 1; j < items.length; j++) {
+              const b = items[j] as DecorItem;
+              if (a.kind !== b.kind) continue;
+              if (a.row === b.row && Math.abs(a.col - b.col) < DECOR_MIN_GAP_TILES) {
+                violations.push(`${biome}/${template.id}: ${a.kind} perto`);
+              }
+            }
+          }
+        }
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+
+  it('a decoração cobre mais a sala do que antes (média de itens por sala)', () => {
+    let rooms = 0;
+    let items = 0;
+    for (const template of ROOM_TEMPLATES) {
+      const room = parseRoom(template.layout);
+      for (const seed of SEEDS) {
+        items += planDecor(room, seed).length;
+        rooms++;
+      }
+    }
+    expect(items / rooms).toBeGreaterThanOrEqual(40);
   });
 });

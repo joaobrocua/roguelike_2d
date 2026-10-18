@@ -2,11 +2,13 @@
  * Planejamento da decoração de uma sala: decide, de forma determinística, onde ficam tufos,
  * vinhas, teias etc. Lógica pura (sem Phaser); roda uma vez por sala, não por frame.
  */
-import { CELL, DOOR } from '../data/mapRules';
+import { CELL, DOOR, type BiomeId } from '../data/mapRules';
 import {
   DECOR_AIR_BELOW_TILES,
+  DECOR_BIOME_BOOST,
   DECOR_CLEAR_RADIUS_TILES,
   DECOR_DOOR_MARGIN_TILES,
+  DECOR_MAX_CHANCE,
   DECOR_MIN_GAP_TILES,
   DECOR_RULES,
   type DecorKind,
@@ -19,7 +21,7 @@ import { isSolidTile, type ParsedRoom } from './roomParser';
  * - tuft, rubble, bone: bloco sólido de chão (o item fica em cima dele);
  * - vine, chain, drip: bloco sólido de teto (o item pende de baixo dele);
  * - cobweb: bloco VAZIO do canto interno (sólido acima e ao lado);
- * - crack: bloco sólido visível (com algum lado vazio).
+ * - crack: bloco sólido visível (com algum lado vazio; a variante final é um crescimento de parede).
  */
 export interface DecorItem {
   kind: DecorKind;
@@ -92,15 +94,30 @@ function buildClearMask(room: ParsedRoom, avoid: readonly DecorAvoid[]): Uint8Ar
   return mask;
 }
 
+/**
+ * Chance de um tipo nascer numa posição candidata, já com o reforço da área (sem `biome`, só a
+ * regra base). Nunca passa de DECOR_MAX_CHANCE; tipos com chance 0 continuam em 0.
+ */
+export function decorChance(kind: DecorKind, biome?: BiomeId): number {
+  const base = DECOR_RULES[kind].chance;
+  if (base <= 0) return 0;
+  const boost = biome ? (DECOR_BIOME_BOOST[biome][kind] ?? 1) : 1;
+  return Math.min(DECOR_MAX_CHANCE, base * boost);
+}
+
 export function planDecor(
   room: ParsedRoom,
   seed: number,
   avoid: readonly DecorAvoid[] = [],
+  biome?: BiomeId,
 ): DecorItem[] {
   const { cols, rows } = room;
   const rng = createRng(seed);
   const clear = buildClearMask(room, avoid);
   const items: DecorItem[] = [];
+  const chances = Object.fromEntries(
+    (Object.keys(DECOR_RULES) as DecorKind[]).map((kind) => [kind, decorChance(kind, biome)]),
+  ) as Record<DecorKind, number>;
 
   // Último item colocado por tipo (coluna e linha dele; a varredura é por linha, então ele é o
   // mais à direita da linha) e última linha usada por tipo em cada coluna: bastam para checar a
@@ -131,7 +148,7 @@ export function planDecor(
     if (isDoorStrip(room, col, row)) return false;
     if (clear[visualRow * cols + col] === 1) return false;
     if (tooClose(kind, col, row)) return false;
-    if (rng() >= rule.chance) return false;
+    if (rng() >= chances[kind]) return false;
     const variant = Math.floor(rng() * rule.variants);
     let flipX = rng() < 0.5;
     if (kind === 'cobweb') {

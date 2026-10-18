@@ -36,7 +36,7 @@ export const ALL_BIOMES: readonly BiomeId[] = [
 
 /**
  * As áreas fora do castelo (as Minas são subterrâneas, mas ficam fora dele): vêm todas antes das
- * Muralhas na jornada (um teste confere) e cada uma é de terra (EARTH_BIOMES) ou de rocha (ROCK_BIOMES).
+ * Muralhas na jornada (um teste confere).
  */
 export const OUTDOOR_BIOMES: readonly BiomeId[] = [
   'floresta',
@@ -45,12 +45,6 @@ export const OUTDOOR_BIOMES: readonly BiomeId[] = [
   'minas',
   'vila',
 ];
-
-/** Áreas de chão de terra e mato (os blocos viram torrões com musgo em cima). */
-export const EARTH_BIOMES: readonly BiomeId[] = ['floresta', 'pantano', 'cemiterio', 'vila'];
-
-/** Áreas de rocha escavada (os blocos viram torrões de pedra, com veios de minério no lugar do mato). */
-export const ROCK_BIOMES: readonly BiomeId[] = ['minas'];
 
 export const BIOME_NAMES: Readonly<Record<BiomeId, string>> = {
   muralhas: 'Muralhas e Pátio',

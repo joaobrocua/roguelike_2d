@@ -1,12 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  ALL_BIOMES,
-  EARTH_BIOMES,
-  OUTDOOR_BIOMES,
-  ROCK_BIOMES,
-  RUN_PLAN,
-  type RunStage,
-} from '../src/data/mapRules';
+import { ALL_BIOMES, OUTDOOR_BIOMES, RUN_PLAN, type RunStage } from '../src/data/mapRules';
 import { ROOM_TEMPLATES } from '../src/data/roomTemplates';
 import { BANNER } from '../src/data/ui';
 import { buildCatalog } from '../src/logic/map/catalog';
@@ -193,13 +186,6 @@ describe('santuário na run', () => {
 
   it('há um algarismo romano de ato para cada etapa da jornada', () => {
     expect(BANNER.acts.length).toBeGreaterThanOrEqual(RUN_PLAN.length);
-  });
-
-  it('toda área fora do castelo é de terra ou de rocha (nunca de tijolo por esquecimento)', () => {
-    for (const biome of OUTDOOR_BIOMES) {
-      const kinds = [EARTH_BIOMES.includes(biome), ROCK_BIOMES.includes(biome)].filter(Boolean);
-      expect(kinds.length, biome).toBe(1);
-    }
   });
 
   it('no despertar a porta não muda de bioma', () => {

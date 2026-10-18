@@ -521,7 +521,7 @@ export class GameScene extends Phaser.Scene {
    */
   private spawnDecor(room: ParsedRoom, avoid: readonly DecorAvoid[]): void {
     const seed = this.roomSeed();
-    for (const item of planDecor(room, seed, avoid)) {
+    for (const item of planDecor(room, seed, avoid, this.lookBiome)) {
       const image = this.add.image(0, 0, decorTextureKey(this.lookBiome, item.kind, item.variant));
       const left = item.col * TILE_SIZE;
       const top = item.row * TILE_SIZE;

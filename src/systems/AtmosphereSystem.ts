@@ -1,5 +1,11 @@
 import Phaser from 'phaser';
-import { ATMOSPHERE, DECOR_MARKERS, DEPTH } from '../data/atmosphere';
+import {
+  ATMOSPHERE,
+  BIOME_AMBIENCE,
+  DECOR_MARKERS,
+  DEPTH,
+  type AmbientEmitter,
+} from '../data/atmosphere';
 import { GAME_SIZE } from '../data/balance';
 import { BIOME_LOOK, type BiomeLook } from '../data/biomeLook';
 import type { BiomeId } from '../data/mapRules';
@@ -103,7 +109,7 @@ export class AtmosphereSystem {
       .setScrollFactor(0)
       .setDepth(DEPTH.fogFront);
 
-    this.createAsh();
+    this.createAmbience(biome);
     this.embers = scene.add
       .particles(0, 0, TEXTURE.spark, {
         lifespan: 1100,
@@ -164,24 +170,45 @@ export class AtmosphereSystem {
     this.redrawDarkness(focusX, focusY, scrollX, scrollY);
   }
 
-  private createAsh(): void {
-    const { frequencyMs, lifespanMs, speedMin, speedMax, alpha } = ATMOSPHERE.ash;
+  /** O clima da área: um emissor de partículas para cada item de BIOME_AMBIENCE. */
+  private createAmbience(biome: BiomeId): void {
+    for (const spec of BIOME_AMBIENCE[biome]) this.createAmbientEmitter(spec);
+  }
+
+  private createAmbientEmitter(spec: AmbientEmitter): void {
+    const { width, height } = GAME_SIZE;
+    const zone =
+      spec.zone === 'top'
+        ? new Phaser.Geom.Rectangle(0, -8, width, 6)
+        : spec.zone === 'floor'
+          ? new Phaser.Geom.Rectangle(0, height - 56, width, 40)
+          : new Phaser.Geom.Rectangle(0, 24, width, height - 70);
+    const peak = spec.alpha;
+    // 'inout': a opacidade sobe e desce ao longo da vida da partícula (t vai de 0 a 1)
+    const alpha =
+      spec.fade === 'out'
+        ? { start: peak, end: 0 }
+        : {
+            onEmit: () => 0,
+            onUpdate: (_particle: unknown, _key: string, t: number) => Math.sin(t * Math.PI) * peak,
+          };
     this.scene.add
-      .particles(0, 0, TEXTURE.spark, {
-        frequency: frequencyMs,
-        lifespan: lifespanMs,
-        speedY: { min: speedMin, max: speedMax },
-        speedX: { min: -8, max: 4 },
-        alpha: { start: alpha, end: 0 },
-        scale: 1,
-        tint: PALETTE.bone,
+      .particles(0, 0, spec.texture === 'glow' ? ENV_TEXTURE.glow : TEXTURE.spark, {
+        frequency: spec.frequencyMs,
+        lifespan: spec.lifespanMs,
+        speedX: spec.speedX,
+        speedY: spec.speedY,
+        scale: spec.scale,
+        alpha,
+        tint: [...spec.tint],
+        blendMode: spec.additive ? 'ADD' : 'NORMAL',
         emitZone: {
           type: 'random',
-          source: new Phaser.Geom.Rectangle(0, -8, GAME_SIZE.width, 6),
+          source: zone,
         } as Phaser.Types.GameObjects.Particles.ParticleEmitterRandomZoneConfig,
-      })
+      } as Phaser.Types.GameObjects.Particles.ParticleEmitterConfig)
       .setScrollFactor(0)
-      .setDepth(DEPTH.fogFront);
+      .setDepth(spec.front ? DEPTH.fogFront : DEPTH.fogBack + 0.5);
   }
 
   private createTorch(x: number, y: number): Torch {
