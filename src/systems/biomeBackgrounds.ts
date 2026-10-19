@@ -6,7 +6,7 @@ import { farCemiterio, midCemiterio, nearCemiterio } from './graveyardBackground
 import { farMinas, midMinas, nearMinas } from './mineBackgrounds';
 import { farVila, midVila, nearVila } from './villageBackgrounds';
 import { farPantano, midPantano, nearPantano } from './swampBackgrounds';
-import { disc, ditherGradientV, mix, rect, type Ctx } from './pixelCanvas';
+import { disc, ditherGradientV, line, mix, rect, type Ctx } from './pixelCanvas';
 
 /**
  * Os três planos do fundo de cada bioma, em pixel art: distante (céu/profundidade), médio
@@ -383,35 +383,340 @@ function farSaloes(ctx: Ctx, look: BiomeLook, rng: Rng, w: number, h: number): v
   stars(ctx, rng, w, 14, look.glow, 40);
 }
 
-function farCatacumbas(ctx: Ctx, look: BiomeLook, rng: Rng, w: number, h: number): void {
-  ditherGradientV(ctx, 0, 0, w, h, [look.skyTop, look.skyMid, look.skyLow]);
-  // Corredores de arcos que se repetem para o fundo, cada fileira menor e mais clara
-  for (let depth = 0; depth < 3; depth++) {
-    const scale = 1 - depth * 0.28;
-    const archW = Math.round(54 * scale);
-    const springY = Math.round(150 - depth * 20);
-    const color = mix(look.back.dark, look.skyLow, 0.2 + depth * 0.18);
-    for (let x = ((depth * 23) % 80) - 20; x < w + 40; x += archW + 18) {
-      archRing(
-        ctx,
-        x,
-        springY,
-        archW,
-        1.05,
-        Math.max(3, Math.round(6 * scale)),
-        color,
-        mix(color, look.back.highlight, 0.4),
-      );
-      rect(ctx, color, x - archW / 2 - 10, springY, 10, h - springY);
-      rect(ctx, color, x + archW / 2, springY, 10, h - springY);
+// --- Catacumbas: peças próprias do ossuário ---------------------------------------------
+
+/** Osso envelhecido; cada plano o mistura com a pedra para que só pontos fiquem claros. */
+const BONE = 0xc9c7b0;
+/** Barro das urnas. */
+const CLAY = 0x6a5a46;
+
+/** O vão em arco (mais `pad` de folga) deixa o retângulo livre? Serve para encaixar lóculos. */
+function cryptFits(
+  cx: number,
+  spring: number,
+  openW: number,
+  ratio: number,
+  rect4: readonly [number, number, number, number],
+  pad: number,
+): boolean {
+  const [x, y, rw, rh] = rect4;
+  const xl = cx - openW / 2;
+  const xr = cx + openW / 2;
+  const dy = spring - (y + rh);
+  if (dy < 0) return x + rw + pad <= xl || x - pad >= xr;
+  const span = archInterval(xl, xr, openW * ratio, -pad, dy);
+  return !span || x + rw <= span[0] || x >= span[1];
+}
+
+/** Caveira de frente (7x6 px): crânio, órbitas, nariz e dentes. */
+function cryptSkull(ctx: Ctx, x: number, y: number, bone: number, socket: number): void {
+  rect(ctx, bone, x + 1, y, 5, 1);
+  rect(ctx, bone, x, y + 1, 7, 3);
+  rect(ctx, mix(bone, 0xffffff, 0.2), x + 1, y, 2, 1);
+  rect(ctx, socket, x + 1, y + 2, 2, 2);
+  rect(ctx, socket, x + 4, y + 2, 2, 2);
+  rect(ctx, socket, x + 3, y + 3, 1, 1);
+  rect(ctx, bone, x + 1, y + 4, 5, 1);
+  rect(ctx, bone, x + 2, y + 5, 3, 1);
+  rect(ctx, socket, x + 3, y + 5, 1, 1, 0.8);
+}
+
+/** Lóculo (nicho de parede, 12x10 ou maior) com uma caveira, ossos empilhados, uma urna ou vazio. */
+function cryptNiche(
+  ctx: Ctx,
+  ramp: StoneRamp,
+  rng: Rng,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+): void {
+  const bone = mix(BONE, ramp.base, 0.6);
+  const boneLit = mix(BONE, ramp.base, 0.45);
+  const hole = mix(ramp.deep, 0x000000, 0.45);
+  rect(ctx, ramp.deep, x - 1, y - 1, w + 2, h + 2, 0.9);
+  rect(ctx, hole, x, y, w, h);
+  rect(ctx, ramp.light, x - 1, y - 2, w + 2, 1, 0.55); // verga com luz no topo
+  rect(ctx, ramp.light, x - 1, y + h + 1, w + 2, 1, 0.3); // peitoril
+  const roll = rng();
+  if (roll < 0.36) {
+    cryptSkull(ctx, x + Math.floor((w - 7) / 2), y + h - 6, bone, hole);
+  } else if (roll < 0.58) {
+    // Ossos longos empilhados
+    rect(ctx, bone, x + 1, y + h - 2, w - 2, 1);
+    rect(ctx, boneLit, x + 2, y + h - 4, w - 4, 1);
+    rect(ctx, bone, x + 1, y + h - 6, w - 3, 1);
+    rect(ctx, boneLit, x + 1, y + h - 3, 1, 2);
+    rect(ctx, boneLit, x + w - 2, y + h - 5, 1, 2);
+  } else if (roll < 0.74) {
+    // Urna de barro com gargalo e uma faixa de luz
+    const clay = mix(CLAY, ramp.base, 0.55);
+    rect(ctx, clay, x + 3, y + 4, w - 6, h - 5);
+    rect(ctx, clay, x + 4, y + 2, w - 8, 2);
+    rect(ctx, mix(clay, 0xffffff, 0.2), x + 3, y + 2, w - 6, 1);
+    rect(ctx, mix(clay, 0xffffff, 0.18), x + 4, y + 4, 1, h - 6);
+    rect(ctx, ramp.deep, x + w - 5, y + 4, 2, h - 5, 0.55);
+  } else if (roll < 0.84) {
+    // Só um monte de ossos miúdos
+    for (let i = 0; i < 4; i++)
+      rect(ctx, i % 2 === 0 ? bone : boneLit, x + 1 + i * 2, y + h - 2 - (i % 2), 3, 1);
+  }
+}
+
+/** Rachadura: um fio de 1 px que desce serpenteando, com um galho aqui e ali. */
+function cryptCrack(
+  ctx: Ctx,
+  rng: Rng,
+  x: number,
+  y: number,
+  length: number,
+  color: number,
+  alpha: number,
+): void {
+  let cx = x;
+  for (let i = 0; i < length; i++) {
+    if (rng() < 0.4) cx += rng() < 0.5 ? -1 : 1;
+    rect(ctx, color, cx, y + i, 1, 1, alpha);
+    if (rng() < 0.07) rect(ctx, color, cx + (rng() < 0.5 ? -2 : 1), y + i, 2, 1, alpha);
+  }
+}
+
+/** Mancha de umidade: faixa de limo que escorre da pedra e esmaece, com uma gota na ponta. */
+function cryptStain(
+  ctx: Ctx,
+  look: BiomeLook,
+  rng: Rng,
+  x: number,
+  y: number,
+  length: number,
+): void {
+  const width = randomInt(rng, 2, 5);
+  for (let i = 0; i < length; i++) {
+    const fade = 1 - i / length;
+    rect(ctx, look.moss, x, y + i, i > length * 0.6 ? width - 1 : width, 1, 0.04 + 0.16 * fade);
+  }
+  rect(ctx, look.mossLight, x + 1, y + length, 1, 1, 0.3);
+}
+
+/** Teia de aranha num canto: raios e fios entre eles. `dir` é 1 se o canto abre para a direita. */
+function cryptWeb(
+  ctx: Ctx,
+  color: number,
+  x: number,
+  y: number,
+  size: number,
+  dir: 1 | -1,
+  alpha: number,
+): void {
+  const rays = 5;
+  const at = (radius: number, i: number): [number, number] => {
+    const angle = (i / (rays - 1)) * (Math.PI / 2);
+    return [x + dir * Math.cos(angle) * radius, y + Math.sin(angle) * radius];
+  };
+  for (let i = 0; i < rays; i++) {
+    const [ex, ey] = at(size, i);
+    line(ctx, color, x, y, ex, ey, alpha);
+  }
+  for (const k of [0.38, 0.68, 0.96]) {
+    for (let i = 0; i < rays - 1; i++) {
+      const [ax, ay] = at(size * k, i);
+      const [bx, by] = at(size * k, i + 1);
+      line(ctx, color, ax, ay, bx, by, alpha * 0.8);
     }
   }
+}
+
+/** Tocha de parede de chama verde: halo, copa de ferro e a chama em três tons. */
+function cryptTorch(ctx: Ctx, look: BiomeLook, ramp: StoneRamp, x: number, y: number): void {
+  disc(ctx, look.glow, x, y - 6, 30, 0.04);
+  disc(ctx, look.glow, x, y - 6, 18, 0.07);
+  disc(ctx, look.glow, x, y - 5, 9, 0.11);
+  rect(ctx, ramp.deep, x - 1, y + 3, 3, 10); // haste
+  rect(ctx, ramp.light, x - 4, y, 9, 3); // copa
+  rect(ctx, ramp.highlight, x - 4, y, 9, 1, 0.6);
+  rect(ctx, ramp.deep, x - 3, y + 3, 7, 1);
+  rect(ctx, look.glowSoft, x - 2, y - 5, 5, 5, 0.9);
+  rect(ctx, look.glowSoft, x - 1, y - 8, 3, 3, 0.9);
+  rect(ctx, look.glow, x - 1, y - 4, 3, 4);
+  rect(ctx, mix(look.glow, 0xffffff, 0.5), x, y - 3, 1, 3);
+}
+
+/** Pilha de ossos junto ao chão: monte escuro, ossos soltos e duas ou três caveiras. */
+function cryptBonePile(
+  ctx: Ctx,
+  ramp: StoneRamp,
+  rng: Rng,
+  x: number,
+  base: number,
+  width: number,
+  height: number,
+): void {
+  const bone = mix(BONE, ramp.base, 0.5);
+  const boneLit = mix(BONE, ramp.base, 0.36);
+  const boneDark = mix(BONE, ramp.deep, 0.78);
+  const halfAt = (row: number): number =>
+    Math.round((width / 2) * Math.sqrt(Math.max(0, 1 - row / height)));
+  for (let row = 0; row < height; row++) {
+    const half = halfAt(row);
+    rect(ctx, ramp.deep, x - half, base - 1 - row, half * 2 + 1, 1, 0.9);
+  }
+  const pieces = Math.round((width * height) / 9);
+  for (let i = 0; i < pieces; i++) {
+    const row = randomInt(rng, 0, height);
+    const half = halfAt(row);
+    const px = x + randomInt(rng, -half, half + 1);
+    const py = base - 1 - row;
+    const tone = rng() < 0.3 ? boneLit : rng() < 0.5 ? bone : boneDark;
+    if (rng() < 0.6) rect(ctx, tone, px, py, randomInt(rng, 3, 6), 1);
+    else rect(ctx, tone, px, py - 2, 1, randomInt(rng, 3, 5));
+  }
+  for (let i = 0; i < 3; i++) {
+    const row = randomInt(rng, 0, Math.max(1, height - 6));
+    const half = halfAt(row);
+    cryptSkull(
+      ctx,
+      x + randomInt(rng, -half, Math.max(-half, half - 7) + 1),
+      base - 6 - row,
+      i === 0 ? boneLit : bone,
+      ramp.deep,
+    );
+  }
+  rect(ctx, ramp.deep, x - Math.round(width / 2) - 2, base - 1, width + 4, 1, 0.7);
+}
+
+/**
+ * Um nível da galeria distante: parede inteira do teto ao chão, com vãos em arco centrados em
+ * `centerX` e repetidos a cada `pitch`. Os níveis mais próximos são desenhados por último e
+ * cobrem os de trás, deixando o fundo à mostra só pelos vãos (um túnel de arcos).
+ */
+function cryptGallery(
+  ctx: Ctx,
+  color: number,
+  rim: number,
+  w: number,
+  h: number,
+  centerX: number,
+  pitch: number,
+  openW: number,
+  spring: number,
+  ratio: number,
+): void {
+  const radius = openW * ratio;
+  const top = Math.ceil(archHeight(openW, radius));
+  const first = -Math.ceil(centerX / pitch) - 1;
+  const last = Math.ceil((w - centerX) / pitch) + 1;
+  rect(ctx, color, 0, 0, w, spring - top); // acima das cumeeiras a parede é inteira
+  const pier = (pitch - openW) / 2;
+  for (let k = first; k <= last; k++) {
+    const cx = centerX + k * pitch;
+    const cellL = cx - pitch / 2;
+    const cellR = cx + pitch / 2;
+    for (let dy = top; dy >= 0; dy--) {
+      const span = archInterval(cx - openW / 2, cx + openW / 2, radius, 0, dy);
+      const y = spring - dy;
+      if (!span) {
+        rect(ctx, color, cellL, y, pitch, 1);
+        continue;
+      }
+      rect(ctx, color, cellL, y, span[0] - cellL, 1);
+      rect(ctx, color, span[1], y, cellR - span[1], 1);
+    }
+    rect(ctx, color, cellL, spring + 1, pier, h - spring - 1);
+    rect(ctx, color, cx + openW / 2, spring + 1, pier, h - spring - 1);
+    archRing(ctx, cx, spring, openW, ratio, 2, rim, mix(rim, 0xffffff, 0.12));
+  }
+}
+
+function farCatacumbas(ctx: Ctx, look: BiomeLook, rng: Rng, w: number, h: number): void {
+  const haze = mix(look.skyLow, look.glowSoft, 0.28);
+  ditherGradientV(ctx, 0, 0, w, h, [look.skyTop, look.skyMid, haze, look.skyLow]);
+  // Ao fundo, no eixo da tela, um corredor distante de onde sai uma luz verde-doente
+  const vx = Math.round(w / 2);
+  disc(ctx, look.glowSoft, vx, 190, 64, 0.05);
+  disc(ctx, look.glowSoft, vx, 190, 40, 0.07);
+  disc(ctx, look.glow, vx, 188, 22, 0.08);
+  archFill(
+    ctx,
+    vx,
+    178,
+    210,
+    16,
+    1,
+    0,
+    (t) => mix(mix(look.glow, look.glowSoft, 0.4), look.skyLow, t * 0.55),
+    0.85,
+  );
+  rect(ctx, look.skyTop, vx - 1, 180, 2, 30, 0.45); // os arcos mais fundos, em fenda
+  // Níveis da galeria, do mais fundo (claro, na névoa) ao mais próximo (silhueta escura)
+  const ratio = 1.05;
+  const levels = [
+    { pitch: 58, openW: 28, spring: 176, floorY: 214, shade: 0.3, veil: 0.07 },
+    { pitch: 78, openW: 42, spring: 166, floorY: 225, shade: 0.58, veil: 0.05 },
+    { pitch: 104, openW: 62, spring: 154, floorY: 237, shade: 0.82, veil: 0 },
+  ] as const;
+  levels.forEach((level, index) => {
+    const color = mix(look.skyLow, look.back.deep, level.shade);
+    const floor = mix(color, haze, 0.32);
+    rect(ctx, floor, 0, level.floorY, w, h - level.floorY);
+    rect(ctx, mix(floor, look.glowSoft, 0.25), 0, level.floorY, w, 1, 0.6);
+    if (index === 0) {
+      // O reflexo da luz do corredor no chão molhado
+      for (let y = level.floorY + 1; y < h - 8; y += 2) {
+        const t = (y - level.floorY) / 24;
+        rect(ctx, look.glow, vx - 4 - t * 6, y, 8 + t * 12, 1, 0.16 * Math.max(0, 1 - t));
+      }
+    }
+    cryptGallery(
+      ctx,
+      color,
+      mix(color, look.glowSoft, 0.12 + index * 0.02),
+      w,
+      h,
+      vx,
+      level.pitch,
+      level.openW,
+      level.spring,
+      ratio,
+    );
+    if (index > 0) {
+      // Lóculos de ossos nos pilares e na parede alta, cada vez mais escuros e maiores
+      const hole = mix(color, look.back.deep, 0.55);
+      const bone = mix(BONE, color, 0.84);
+      const stepX = index === 1 ? 11 : 13;
+      const stepY = index === 1 ? 12 : 14;
+      const first = -Math.ceil(vx / level.pitch) - 1;
+      const last = Math.ceil((w - vx) / level.pitch) + 1;
+      for (let k = first; k <= last; k++) {
+        const cx = vx + k * level.pitch;
+        for (let y = index === 1 ? 138 : 104; y + stepY - 4 <= level.floorY - 4; y += stepY) {
+          for (
+            let x = cx - level.pitch / 2 + 4;
+            x + stepX - 3 <= cx + level.pitch / 2 - 3;
+            x += stepX
+          ) {
+            const box: [number, number, number, number] = [x, y, stepX - 4, stepY - 4];
+            if (!cryptFits(cx, level.spring, level.openW, ratio, box, 3)) continue;
+            rect(ctx, hole, x, y, stepX - 4, stepY - 4);
+            const roll = rng();
+            if (roll < 0.5) {
+              rect(ctx, bone, x + 1, y + 1, stepX - 6, 2);
+              rect(ctx, hole, x + 2, y + 2, 1, 1);
+              rect(ctx, hole, x + stepX - 7, y + 2, 1, 1);
+            } else if (roll < 0.72) {
+              rect(ctx, bone, x + 1, y + stepY - 7, stepX - 6, 1);
+            }
+          }
+        }
+      }
+    }
+    if (level.veil > 0) rect(ctx, look.fog, 0, 0, w, h, level.veil);
+  });
   // Luzes de alma ao longe
-  for (let i = 0; i < 9; i++) {
-    const x = randomInt(rng, 10, w - 10);
-    const y = randomInt(rng, 120, 190);
-    disc(ctx, look.glow, x, y, 10, 0.03);
-    disc(ctx, look.glow, x, y, 5, 0.06);
+  for (let i = 0; i < 6; i++) {
+    const x = randomInt(rng, 14, w - 14);
+    const y = randomInt(rng, 120, 200);
+    disc(ctx, look.glow, x, y, 10, 0.04);
+    disc(ctx, look.glow, x, y, 5, 0.08);
     rect(ctx, look.glow, x, y, 1, 1, 0.8);
   }
   for (let i = 0; i < 22; i++) rect(ctx, look.fog, 0, h - 80 + i * 3, w, 3, 0.013 * (i / 2));
@@ -536,57 +841,139 @@ function midSaloes(ctx: Ctx, look: BiomeLook, rng: Rng, w: number, h: number): v
 }
 
 function midCatacumbas(ctx: Ctx, look: BiomeLook, rng: Rng, w: number, h: number): void {
-  const ramp = look.back;
-  for (let x0 = -30; x0 < w; x0 += SPAN) {
-    const cx = x0 + PILLAR_W + (SPAN - PILLAR_W) / 2;
-    const open = SPAN - PILLAR_W - 8;
-    // Tímpano de tijolos com nichos de caveira
-    bricks(ctx, x0 + PILLAR_W, 0, SPAN - PILLAR_W, 74, ramp, rng, 13, 8);
-    rect(ctx, ramp.deep, x0 + PILLAR_W, 0, SPAN - PILLAR_W, 74, 0.2);
-    for (let nx = x0 + PILLAR_W + 8; nx < x0 + SPAN - 12; nx += 18) {
-      for (const ny of [10, 30, 50]) {
-        rect(ctx, ramp.deep, nx, ny, 9, 10);
-        rect(ctx, ramp.dark, nx + 1, ny + 1, 7, 8);
-        // Caveira no nicho
-        rect(ctx, look.moss, nx + 2, ny + 3, 5, 4, 0.9);
-        rect(ctx, mix(look.glow, look.skyLow, 0.55), nx + 3, ny + 2, 3, 3, 0.85);
-        rect(ctx, ramp.deep, nx + 3, ny + 4, 1, 1);
-        rect(ctx, ramp.deep, nx + 5, ny + 4, 1, 1);
+  // Pedra da cripta: entre a do fundo e a do chão, mas as áreas grandes ficam abaixo das plataformas
+  const ramp = mixRamp(look.back, look.stone, 0.45);
+  const spring = 150;
+  const ratio = 0.62;
+  const open = SPAN - PILLAR_W - 6;
+  const dadoTop = 204;
+  const apex = spring - Math.round(archHeight(open, open * ratio));
+  const centers: number[] = [];
+  for (let x0 = -30; x0 < w; x0 += SPAN) centers.push(x0 + PILLAR_W + (SPAN - PILLAR_W) / 2);
+
+  // 1) Parede alta: tijolos, teto afundado em sombra e fileiras de lóculos fora dos vãos
+  bricks(ctx, -30, 0, w + 60, spring + 4, ramp, rng, 13, 8);
+  for (let i = 0; i < 14; i++) rect(ctx, ramp.deep, 0, i * 8, w, 8, 0.6 - i * 0.035);
+  for (const cx of centers) {
+    for (const ny of [8, 22, 36, 50, 64, 78, 98, 112, 126]) {
+      for (let i = 0; i < 6; i++) {
+        const nx = cx - open / 2 - 2 + i * 16;
+        if (!cryptFits(cx, spring, open, ratio, [nx, ny, 12, 10], 5)) continue;
+        if (rng() < 0.22) continue; // alguns trechos ficam só de tijolo, para não virar papel de parede
+        cryptNiche(ctx, ramp, rng, nx, ny, 12, 10);
       }
     }
-    archRing(ctx, cx, 130, open, 1.0, 9, ramp.base, ramp.highlight);
-    // Vão entre o tímpano e o arco: escuro
-    rect(ctx, ramp.dark, x0 + PILLAR_W, 74, SPAN - PILLAR_W, 0, 0);
-    // Raízes pendendo do teto
-    for (let i = 0; i < 3; i++) {
-      const rx = cx + randomInt(rng, -30, 30);
-      for (let j = 0; j < randomInt(rng, 16, 44); j++) {
-        rect(
-          ctx,
-          mix(look.moss, ramp.deep, 0.5),
-          rx + Math.round(Math.sin(j / 5 + i) * 1.5),
-          74 + j,
-          1,
-          1,
-        );
+  }
+
+  // 2) Os vãos em arco: abertos (o fundo aparece), com anel de pedra, juntas e pedra-chave
+  for (const cx of centers) {
+    const xl = cx - open / 2;
+    const radius = open * ratio;
+    const top = Math.ceil(archHeight(open, radius));
+    for (let dy = 0; dy <= top; dy++) {
+      const span = archInterval(xl, xl + open, radius, 0, dy);
+      if (span) ctx.clearRect(Math.round(span[0]), spring - dy, Math.round(span[1] - span[0]), 1);
+    }
+    ctx.clearRect(Math.round(xl), spring + 1, open, h - spring);
+    archRing(ctx, cx, spring, open, ratio, 7, ramp.light, ramp.highlight);
+    for (let dy = 6; dy < top * 0.78; dy += 8) {
+      const outer = archInterval(xl, xl + open, radius, 0, dy);
+      const inner = archInterval(xl, xl + open, radius, 7, dy);
+      if (!outer || !inner) continue;
+      rect(ctx, ramp.deep, outer[0], spring - dy, inner[0] - outer[0], 1, 0.7);
+      rect(ctx, ramp.deep, inner[1], spring - dy, outer[1] - inner[1], 1, 0.7);
+    }
+    rect(ctx, ramp.highlight, cx - 3, apex, 6, 8, 0.4); // pedra-chave
+    rect(ctx, ramp.deep, cx - 3, apex, 1, 8, 0.8);
+    rect(ctx, ramp.deep, cx + 2, apex, 1, 8, 0.8);
+    // Teias nos cantos onde o arco encontra os pilares
+    if (rng() < 0.75) cryptWeb(ctx, look.fog, cx - open / 2 + 1, spring + 6, 20, 1, 0.3);
+    if (rng() < 0.6) cryptWeb(ctx, look.fog, cx + open / 2 - 1, spring + 6, 16, -1, 0.26);
+  }
+
+  // 3) Ossuário baixo: muro de lóculos de ponta a ponta, com cornija
+  bricks(ctx, -30, dadoTop, w + 60, h - dadoTop, ramp, rng, 13, 8);
+  rect(ctx, ramp.deep, 0, dadoTop, w, h - dadoTop, 0.18);
+  rect(ctx, ramp.light, 0, dadoTop - 3, w, 3);
+  rect(ctx, ramp.highlight, 0, dadoTop - 3, w, 1, 0.45);
+  rect(ctx, ramp.deep, 0, dadoTop, w, 1, 0.9);
+  for (const cx of centers) {
+    for (const ny of [dadoTop + 7, dadoTop + 21]) {
+      for (let i = 0; i < 6; i++)
+        cryptNiche(ctx, ramp, rng, cx - open / 2 - 2 + i * 16, ny, 12, 10);
+    }
+  }
+
+  // 4) Pilares grossos, com manchas de umidade, rachaduras e tochas de chama verde
+  let pillarIndex = 0;
+  for (let x0 = -30; x0 <= w; x0 += SPAN, pillarIndex++) {
+    column(ctx, x0, spring - 12, h, PILLAR_W, ramp, rng);
+    cryptStain(
+      ctx,
+      look,
+      rng,
+      x0 + randomInt(rng, 2, PILLAR_W - 4),
+      spring - 4,
+      randomInt(rng, 26, 70),
+    );
+    cryptCrack(
+      ctx,
+      rng,
+      x0 + randomInt(rng, 3, PILLAR_W - 3),
+      spring + 20,
+      randomInt(rng, 14, 36),
+      ramp.deep,
+      0.8,
+    );
+    if (pillarIndex % 2 === 1) cryptTorch(ctx, look, ramp, x0 + PILLAR_W / 2, 172);
+  }
+
+  // 5) Correntes, lanternas de alma e manchas de umidade sob os arcos
+  for (const cx of centers) {
+    const central = Math.abs(cx - w / 2) < 30;
+    if (rng() < 0.75) {
+      const hx = cx + randomInt(rng, -26, 27);
+      const len = randomInt(rng, 22, 54);
+      chain(ctx, hx, apex + 8, len, ramp.light, ramp.highlight);
+      const ey = apex + 8 + len;
+      if (!central && rng() < 0.5) {
+        disc(ctx, look.glow, hx + 1, ey + 4, 13, 0.07);
+        disc(ctx, look.glow, hx + 1, ey + 4, 6, 0.12);
+        rect(ctx, ramp.light, hx - 2, ey, 6, 2);
+        rect(ctx, look.glow, hx - 1, ey + 2, 4, 5, 0.8);
+        rect(ctx, look.glowSoft, hx - 1, ey + 4, 4, 3, 0.9);
+        rect(ctx, ramp.light, hx - 2, ey + 7, 6, 1);
+      } else {
+        cryptSkull(ctx, hx - 3, ey, mix(BONE, ramp.base, 0.5), ramp.deep); // caveira acorrentada
       }
     }
-    // Lanterna de alma pendurada
-    if (rng() < 0.7) {
-      const lx = cx + randomInt(rng, -16, 16);
-      chain(ctx, lx, 74, 28, ramp.light, ramp.highlight);
-      disc(ctx, look.glow, lx + 1, 106, 12, 0.07);
-      disc(ctx, look.glow, lx + 1, 106, 6, 0.12);
-      rect(ctx, ramp.light, lx - 2, 100, 6, 2);
-      rect(ctx, look.glow, lx - 1, 102, 4, 5, 0.8);
-      rect(ctx, look.glowSoft, lx - 1, 104, 4, 3, 0.9);
-      rect(ctx, ramp.light, lx - 2, 107, 6, 1);
-    }
+    if (rng() < 0.6)
+      cryptStain(ctx, look, rng, cx + randomInt(rng, -40, 41), apex + 4, randomInt(rng, 10, 26));
   }
-  for (let x0 = -30; x0 <= w; x0 += SPAN) {
-    column(ctx, x0, 60, h, PILLAR_W, ramp, rng);
+
+  // 6) Pilhas de ossos ao pé do muro e dos pilares
+  for (const cx of centers) {
+    cryptBonePile(
+      ctx,
+      ramp,
+      rng,
+      cx + randomInt(rng, -34, 35),
+      238,
+      randomInt(rng, 26, 44),
+      randomInt(rng, 9, 15),
+    );
+    if (rng() < 0.6)
+      cryptBonePile(
+        ctx,
+        ramp,
+        rng,
+        cx - open / 2 - 12,
+        238,
+        randomInt(rng, 18, 28),
+        randomInt(rng, 7, 11),
+      );
   }
-  for (let i = 0; i < 20; i++) rect(ctx, look.fog, 0, h - 60 + i * 3, w, 3, 0.012 * (i / 2));
+  for (let i = 0; i < 20; i++) rect(ctx, look.fog, 0, h - 60 + i * 3, w, 3, 0.013 * (i / 2));
 }
 
 // --- Primeiro plano ----------------------------------------------------------------------
@@ -642,21 +1029,142 @@ function nearSaloes(ctx: Ctx, look: BiomeLook, rng: Rng, w: number, h: number): 
   }
 }
 
-function nearCatacumbas(ctx: Ctx, look: BiomeLook, rng: Rng, w: number, h: number): void {
-  nearPillars(ctx, look, rng, w, h);
-  // Raízes grossas e ossos pendurados
-  for (const x of [46, 70, w - 54, w - 88]) {
-    let cx = x;
-    const len = randomInt(rng, 40, 100);
-    for (let i = 0; i < len; i++) {
-      if (rng() < 0.25) cx += rng() < 0.5 ? -1 : 1;
-      rect(ctx, 0x111a14, cx, i, 2 + (i < 20 ? 1 : 0), 1);
+/** Pilar escuro do primeiro plano, com caveiras em relevo, limo e rachaduras. `inner` é o lado que olha a sala. */
+function cryptNearPillar(
+  ctx: Ctx,
+  look: BiomeLook,
+  rng: Rng,
+  x: number,
+  width: number,
+  h: number,
+  inner: 'left' | 'right',
+): void {
+  const dark: StoneRamp = {
+    deep: 0x030605,
+    dark: 0x050a08,
+    base: mix(look.back.deep, 0x000000, 0.35),
+    light: mix(look.back.dark, 0x000000, 0.1),
+    highlight: mix(look.back.base, look.back.light, 0.3),
+  };
+  bricks(ctx, x, 0, width, h, dark, rng, width, 12);
+  const edgeX = inner === 'right' ? x + width - 3 : x;
+  rect(ctx, dark.deep, inner === 'right' ? x : x + width - 12, 0, 12, h, 0.7); // lado de fora, na sombra
+  rect(ctx, dark.highlight, edgeX, 0, 3, h, 0.55); // aresta que pega a luz da sala
+  rect(ctx, dark.light, edgeX, 0, 1, h, 0.7);
+  // Cornija no alto e plinto embaixo
+  rect(ctx, dark.light, x - 3, 0, width + 6, 8);
+  rect(ctx, dark.highlight, x - 3, 8, width + 6, 1, 0.45);
+  rect(ctx, dark.light, x - 3, h - 26, width + 6, 26);
+  rect(ctx, dark.highlight, x - 3, h - 26, width + 6, 1, 0.4);
+  // Caveiras em relevo, numa moldura afundada
+  const skull = mix(dark.highlight, BONE, 0.14);
+  for (const sy of [132, 186]) {
+    const sx = x + Math.round((width - 14) / 2);
+    rect(ctx, dark.deep, sx, sy, 14, 16, 0.9);
+    rect(ctx, dark.highlight, sx, sy - 1, 14, 1, 0.5);
+    cryptSkull(ctx, sx + 3, sy + 3, skull, dark.deep);
+    rect(ctx, mix(dark.highlight, BONE, 0.08), sx + 3, sy + 10, 7, 1, 0.8);
+  }
+  cryptStain(ctx, look, rng, x + randomInt(rng, 4, width - 8), 10, randomInt(rng, 60, 130));
+  cryptCrack(
+    ctx,
+    rng,
+    x + randomInt(rng, 4, width - 4),
+    40,
+    randomInt(rng, 50, 90),
+    dark.deep,
+    0.9,
+  );
+}
+
+/** Raiz que desce do teto, afinando e serpenteando, com radículas. */
+function cryptRoot(ctx: Ctx, look: BiomeLook, rng: Rng, x: number, length: number): void {
+  const dark = mix(look.back.deep, 0x000000, 0.4);
+  const lit = mix(look.moss, look.back.base, 0.6);
+  const phase = rng() * 6;
+  for (let i = 0; i < length; i++) {
+    const t = i / length;
+    const thick = t < 0.3 ? 3 : t < 0.65 ? 2 : 1;
+    const rx = x + Math.round(Math.sin(i / 9 + phase) * 2.5);
+    rect(ctx, dark, rx, i, thick, 1, 0.96);
+    if (thick > 1) rect(ctx, lit, rx, i, 1, 1, 0.35);
+    if (i > 8 && i % 11 === 0 && rng() < 0.7) {
+      const side = rng() < 0.5 ? -1 : 1;
+      for (let j = 1; j <= randomInt(rng, 3, 7); j++)
+        rect(ctx, dark, rx + side * j, i + j, 1, 1, 0.9);
     }
   }
-  for (const x of [52, w - 62]) {
-    chain(ctx, x, 0, 36, 0x2a3a31, 0x4a5e52);
-    rect(ctx, 0x6a6a58, x - 2, 36, 6, 2);
-    rect(ctx, 0x8a8a74, x - 1, 38, 4, 6, 0.9);
+}
+
+function nearCatacumbas(ctx: Ctx, look: BiomeLook, rng: Rng, w: number, h: number): void {
+  // Pilares largos nas bordas (a vista começa uns 40 px dentro da textura)
+  cryptNearPillar(ctx, look, rng, 34, 40, h, 'right');
+  cryptNearPillar(ctx, look, rng, w - 74, 40, h, 'left');
+  // Teto de pedra rústico: estalactites escuras em toda a largura
+  const rock = 0x040806;
+  const tips: [number, number][] = [];
+  for (let x = 4; x < w; x += randomInt(rng, 8, 22)) {
+    const width = randomInt(rng, 6, 15);
+    const length = rng() < 0.2 ? randomInt(rng, 18, 30) : randomInt(rng, 5, 17);
+    for (let r = 0; r < length; r++) {
+      const half = Math.round((width / 2) * (1 - r / length));
+      rect(ctx, rock, x - half, r, half * 2 + 1, 1, 0.96);
+    }
+    rect(
+      ctx,
+      mix(look.back.base, rock, 0.4),
+      x - Math.round(width / 2),
+      0,
+      1,
+      Math.round(length * 0.5),
+      0.5,
+    );
+    if (length > 12) tips.push([x, length]);
+  }
+  // Raízes pendendo, algumas longas o bastante para aparecer abaixo do teto das salas
+  for (let i = 0; i < 9; i++) {
+    cryptRoot(
+      ctx,
+      look,
+      rng,
+      randomInt(rng, 84, w - 84),
+      i % 3 === 0 ? randomInt(rng, 110, 160) : randomInt(rng, 40, 100),
+    );
+  }
+  // Teias nos cantos, junto aos pilares, e uma solta no meio
+  const web = mix(look.fog, look.back.light, 0.35);
+  cryptWeb(ctx, web, 74, 0, 34, 1, 0.3);
+  cryptWeb(ctx, web, w - 74, 0, 34, -1, 0.3);
+  cryptWeb(ctx, web, randomInt(rng, 190, 260), 0, 24, rng() < 0.5 ? 1 : -1, 0.22);
+  // Correntes com caveiras penduradas
+  for (const x of [108, w - 124]) {
+    chain(ctx, x, 0, 96, 0x2a3a31, 0x4a5e52);
+    cryptSkull(ctx, x - 3, 96, 0x6a6a58, 0x050a08);
+  }
+  // Gotas: pontos d'água que escorrem das pontas das estalactites, com marca de respingo no chão
+  const dropColor = mix(look.fog, look.glow, 0.3);
+  let count = 0;
+  for (const [tx, length] of tips) {
+    if (count >= 7 || tx < 90 || tx > w - 90) continue;
+    count++;
+    const dropY = length + randomInt(rng, 6, 150);
+    rect(ctx, dropColor, tx, length + 1, 1, 2, 0.5);
+    rect(ctx, dropColor, tx, dropY, 1, 3, 0.75);
+    rect(ctx, dropColor, tx, dropY - 7, 1, 5, 0.2);
+    rect(ctx, dropColor, tx - 2, 236, 5, 1, 0.22);
+    rect(ctx, dropColor, tx - 1, 235, 3, 1, 0.3);
+  }
+  // Poeira fina boiando
+  for (let i = 0; i < 70; i++) {
+    rect(
+      ctx,
+      look.fog,
+      randomInt(rng, 0, w),
+      randomInt(rng, 20, 240),
+      rng() < 0.2 ? 2 : 1,
+      1,
+      0.1 + rng() * 0.15,
+    );
   }
 }
 
