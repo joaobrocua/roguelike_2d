@@ -20,6 +20,7 @@ import {
   type HitData,
 } from '../logic/attack';
 import { computeDamage, directionAway } from '../logic/damage';
+import { scaledHp } from '../logic/difficulty';
 import {
   enemyAnimKey,
   enemyAnimState,
@@ -180,6 +181,15 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
 
   get alive(): boolean {
     return !isDead(this.health);
+  }
+
+  /** Multiplica o dano que os golpes deste inimigo causam ao herói (a dificuldade da etapa). */
+  damageScale = 1;
+
+  /** Ajusta a vida máxima pela dificuldade da etapa (chamado ao nascer, com o inimigo cheio). */
+  scaleHealth(hpMult: number): void {
+    this.health.maxHp = scaledHp(this.def.maxHp, hpMult);
+    this.health.hp = this.health.maxHp;
   }
 
   /** Golpe em andamento. Chefes com vários golpes sobrescrevem `attackDef` e `attackShape`. */

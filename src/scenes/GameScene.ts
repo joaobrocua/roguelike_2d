@@ -31,6 +31,7 @@ import { RELIC_DROP, type RelicId } from '../data/relics';
 import { PROP_MARKERS, ROOM_TRANSITION, SHRINE, TILE_SIZE } from '../data/rooms';
 import { SANCTUARY_LAYOUT } from '../data/sanctuaryRoom';
 import { GUARDIAO, VICTORY_DELAY_MS } from '../data/boss';
+import { STAGE_SCALING } from '../data/difficulty';
 import { ROOM_TEMPLATES } from '../data/roomTemplates';
 import { ArqueiroOco } from '../entities/ArqueiroOco';
 import { CaoDeOssos } from '../entities/CaoDeOssos';
@@ -52,6 +53,7 @@ import { Prop, type PropKind } from '../entities/Prop';
 import { RelicPickup } from '../entities/RelicPickup';
 import { Vulto } from '../entities/Vulto';
 import { createPack, updatePack } from '../logic/ai/pack';
+import { stageScaling } from '../logic/difficulty';
 import { rollRelicDrop } from '../logic/drops';
 import { boxesOverlap } from '../logic/geometry';
 import { buildCatalog } from '../logic/map/catalog';
@@ -370,6 +372,7 @@ export class GameScene extends Phaser.Scene {
       onSwapStrike: (strike) =>
         this.fx.swapStrike(this.player.x, this.player.y, this.player.relic.color, strike.radius),
     });
+    this.combat.projectileDamageScale = stageScaling(this.run.stage, STAGE_SCALING).damageMult;
 
     this.createHud();
     this.relicHud = new RelicHud(this);
@@ -591,6 +594,7 @@ export class GameScene extends Phaser.Scene {
   ): void {
     if (this.run.cleared.has(this.run.roomId)) return;
     let dogs = 0;
+    const scaling = stageScaling(this.run.stage, STAGE_SCALING);
 
     for (const marker of room.markers) {
       if (marker.char === 'G') {
@@ -658,6 +662,9 @@ export class GameScene extends Phaser.Scene {
           );
           break;
       }
+      // Dificuldade da etapa: mais vida e mais dano a cada área (o chefe tem os números dele)
+      enemy.scaleHealth(scaling.hpMult);
+      enemy.damageScale = scaling.damageMult;
       // Fantasmas e chamas (vulto, fogo-fátuo) atravessam o cenário; os demais, voando ou não, colidem.
       if (type !== 'vulto' && type !== 'fatuo') {
         this.physics.add.collider(enemy, solids);

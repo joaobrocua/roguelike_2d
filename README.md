@@ -101,7 +101,7 @@ Existem **14 relíquias**; o jogador carrega **duas** e alterna entre elas com *
 | Tomo Cinzento     | Raio à distância         | Barreira que bloqueia flechas       | -20% de recarga dos especiais |
 | Adaga Sombria     | Combo rápido de 4 golpes | Investida curta e veloz             | +18% de velocidade            |
 | Lança Vigilante   | Estocada de longe        | Arremetida que perfura              | -10% de dano recebido         |
-| Machado Rachador  | Dois golpes pesados      | Giro que acerta em volta            | +25% de dano                  |
+| Machado Rachador  | Dois golpes pesados      | Giro que acerta em volta            | +15% de dano                  |
 | Arco de Osso      | Flecha rápida de longe   | Flecha pesada que atordoa           | +10% de dano                  |
 | Mangual Cinéreo   | Golpe e giro em volta    | Rodopio que empurra                 | -25% de recarga dos especiais |
 | Lâminas Gêmeas    | Combo veloz de 5 golpes  | Redemoinho de lâminas               | +10% de velocidade            |
@@ -112,6 +112,7 @@ Existem **14 relíquias**; o jogador carrega **duas** e alterna entre elas com *
 
 - **Guarda (Espada e Escudo):** durante o especial, o escudo bloqueia o que vem de frente (golpes e flechas) e empurra o jogador de leve; bloquear nos primeiros 150 ms é uma **defesa perfeita** (conta como esquiva perfeita). Por trás não protege. A lógica pura está em `src/logic/guard.ts`.
 - **Virote que atravessa:** projéteis com `pierce` seguem adiante depois de acertar (a Besta atravessa até 3 inimigos, sem acertar o mesmo duas vezes).
+- **Dificuldade por etapa:** os inimigos comuns ganham vida e dano a cada área (de 1,0x na primeira a 1,6x de vida e 1,3x de dano na última), numa tabela só em `src/data/difficulty.ts`. O chefe tem os números dele (`src/data/boss.ts`).
 - **Golpe de troca:** trocar de relíquia até 0,7 s depois de acertar um inimigo dispara um golpe curto em área (cada acerto vale um golpe de troca).
 - **Novas relíquias** caem de inimigos derrotados e ficam **no chão, deitadas**, como a arma de verdade. Chegue perto, aperte **E** (ou RT) e escolha qual das duas descartar (**J** ou as teclas **1**, **2** e **3**; a 3 deixa no chão). As teclas **1** e **2** também trocam direto de relíquia em jogo. A relíquia largada por um inimigo **some depois de 14 s** (pisca nos últimos 4 s); as de baús e do chefe esperam para sempre. Os baús das salas de tesouro sempre soltam uma relíquia (ou curam, se não houver nenhuma nova).
 

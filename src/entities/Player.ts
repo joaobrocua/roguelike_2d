@@ -371,7 +371,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   /** Aplica um golpe inimigo. Retorna o dano causado (0 se não acertou). */
-  receiveHit(sourceX: number, cfg: HitData): number {
+  receiveHit(sourceX: number, cfg: HitData, damageScale = 1): number {
     // Guarda do escudo: o golpe de frente é bloqueado (e, no começo da guarda, é uma defesa perfeita)
     const guard = this.relic.special.guard;
     const blocked = guardResult(
@@ -387,7 +387,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.setVelocityX(directionAway(sourceX, this.x) * PLAYER_COMBAT.guardPushSpeed);
       return 0;
     }
-    const damage = computeDamage(cfg.damage, this.passive.damageTakenMult);
+    const damage = computeDamage(cfg.damage, this.passive.damageTakenMult * damageScale);
     const hit = takeDamage(
       this.health,
       damage,

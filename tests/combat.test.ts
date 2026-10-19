@@ -47,6 +47,7 @@ function fakeEnemy(overrides: Record<string, unknown> = {}) {
     attackConfig: ENEMY_HIT,
     attackBox: { x: 90, y: 0, width: 44, height: 26 },
     hurtBox: { x: 112, y: 0, width: 16, height: 26 },
+    damageScale: 1,
     receiveHit: vi.fn(() => 10),
     get hitboxLive(): boolean {
       return this.attack.phase === 'active';
@@ -427,7 +428,7 @@ describe('CombatSystem: golpe do inimigo', () => {
     combat.update();
 
     expect(player.receiveHit).toHaveBeenCalledTimes(1);
-    expect(player.receiveHit).toHaveBeenCalledWith(enemy.x, ENEMY_HIT);
+    expect(player.receiveHit).toHaveBeenCalledWith(enemy.x, ENEMY_HIT, 1);
     expect(events.onPlayerHit).toHaveBeenCalledWith(15);
     expect(enemy.attack.resolved).toBe(true);
   });
@@ -513,6 +514,30 @@ describe('CombatSystem: golpe do inimigo', () => {
   });
 });
 
+describe('CombatSystem: dificuldade da etapa', () => {
+  it('o golpe corpo a corpo usa a escala de dano do próprio inimigo', () => {
+    const player = fakePlayer();
+    const enemy = fakeEnemy({ damageScale: 1.3 });
+    enemy.attack.phase = 'active';
+    const { combat } = setup(player, [enemy]);
+
+    combat.update();
+
+    expect(player.receiveHit).toHaveBeenCalledWith(enemy.x, ENEMY_HIT, 1.3);
+  });
+
+  it('as flechas usam a escala de projéteis do sistema', () => {
+    const player = fakePlayer();
+    const arrow = fakeArrow();
+    const { combat } = setup(player, [], [arrow]);
+    combat.projectileDamageScale = 1.15;
+
+    combat.update();
+
+    expect(player.receiveHit).toHaveBeenCalledWith(arrow.x, arrow.cfg, 1.15);
+  });
+});
+
 describe('CombatSystem: flechas', () => {
   it('a flecha que acerta causa dano e some', () => {
     const player = fakePlayer();
@@ -521,7 +546,7 @@ describe('CombatSystem: flechas', () => {
 
     combat.update();
 
-    expect(player.receiveHit).toHaveBeenCalledWith(arrow.x, arrow.cfg);
+    expect(player.receiveHit).toHaveBeenCalledWith(arrow.x, arrow.cfg, 1);
     expect(events.onPlayerHit).toHaveBeenCalledWith(15);
     expect(arrow.despawn).toHaveBeenCalledTimes(1);
   });

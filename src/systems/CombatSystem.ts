@@ -36,6 +36,9 @@ export class CombatSystem {
   /** Área do golpe de troca, reaproveitada (sem alocar). */
   private readonly strikeBox = createBox();
 
+  /** Dificuldade da etapa: multiplica o dano das flechas e raios dos inimigos comuns. */
+  projectileDamageScale = 1;
+
   constructor(
     private readonly player: Player,
     private readonly enemies: readonly Enemy[],
@@ -143,7 +146,7 @@ export class CombatSystem {
       if (!enemy.alive || !enemy.hitboxLive || attack.resolved) continue;
       if (!boxesOverlap(enemy.attackBox, player.hurtBox)) continue;
       attack.resolved = true; // um golpe só é resolvido uma vez (acerta, é esquivado ou ignorado)
-      this.resolveHit(enemy.x, enemy.attackConfig);
+      this.resolveHit(enemy.x, enemy.attackConfig, enemy.damageScale);
     }
   }
 
@@ -160,12 +163,12 @@ export class CombatSystem {
       }
       if (!boxesOverlap(arrow.box, player.hurtBox)) continue;
       arrow.resolved = true;
-      if (this.resolveHit(arrow.x, arrow.cfg)) arrow.despawn();
+      if (this.resolveHit(arrow.x, arrow.cfg, this.projectileDamageScale)) arrow.despawn();
     }
   }
 
   /** Aplica um golpe hostil ao jogador. Retorna true se causou dano. */
-  private resolveHit(sourceX: number, hit: HitData): boolean {
+  private resolveHit(sourceX: number, hit: HitData, damageScale = 1): boolean {
     const player = this.player;
     if (player.isRollInvulnerable()) {
       if (isPerfectDodge(player.rollElapsedMs, true, player.dodgeWindowMs)) {
@@ -173,7 +176,7 @@ export class CombatSystem {
       }
       return false;
     }
-    const damage = player.receiveHit(sourceX, hit);
+    const damage = player.receiveHit(sourceX, hit, damageScale);
     const guard = player.consumeGuard();
     if (guard !== 0) {
       // O escudo bloqueou: o golpe (ou o projétil) acaba aqui; a defesa perfeita vale como esquiva perfeita
