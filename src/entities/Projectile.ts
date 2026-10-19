@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { DEPTH } from '../data/atmosphere';
 import type { ProjectileData } from '../logic/attack';
 import { createBox, type Box } from '../logic/geometry';
+import { alreadyPierced, createPierce, registerPierce, resetPierce } from '../logic/pierce';
 
 export type ArrowConfig = ProjectileData;
 
@@ -19,9 +20,8 @@ export class Projectile extends Phaser.Physics.Arcade.Sprite {
   multiplier = 1;
   /** O disparo veio de uma esquiva perfeita (efeitos de destaque). */
   empowered = false;
-  /** Inimigos que o tiro ainda pode atravessar, e quem ele já atravessou (não acerta o mesmo duas vezes). */
-  pierceLeft = 0;
-  private readonly hitTargets: object[] = [];
+  /** Quantos inimigos o tiro ainda atravessa e quem ele já acertou (não acerta o mesmo duas vezes). */
+  private readonly pierce = createPierce();
 
   private readonly defaultTexture: string;
 
@@ -45,14 +45,16 @@ export class Projectile extends Phaser.Physics.Arcade.Sprite {
     this.resolved = false;
     this.multiplier = 1;
     this.empowered = false;
-    this.pierceLeft = cfg.pierce ?? 0;
-    this.hitTargets.length = 0;
+    resetPierce(this.pierce, cfg.pierce ?? 0);
     this.enableBody(true, x, y, true, true);
     // Tiros especiais (o cuspe do sapo) trocam a textura e a cor, e saem em arco
     const body = this.body as Phaser.Physics.Arcade.Body;
     const arc = (cfg.gravityY ?? 0) > 0;
     this.setTexture(cfg.textureKey ?? this.defaultTexture);
+    // O corpo acompanha a textura do disparo: o tiro com textura própria usa o tamanho do dado e os
+    // demais voltam ao da textura padrão (o slot do pool não herda o corpo do tiro anterior)
     if (cfg.textureKey) body.setSize(cfg.width, cfg.height, true);
+    else body.setSize(this.frame.realWidth, this.frame.realHeight, true);
     if (cfg.tint !== undefined) this.setTint(cfg.tint);
     else this.clearTint();
     body.setAllowGravity(arc);
@@ -64,15 +66,12 @@ export class Projectile extends Phaser.Physics.Arcade.Sprite {
 
   /** Este alvo já foi atravessado por este tiro? */
   hasHit(target: object): boolean {
-    return this.hitTargets.includes(target);
+    return alreadyPierced(this.pierce, target);
   }
 
   /** Registra o acerto em `target`; devolve true se o tiro deve sumir (não atravessa mais ninguém). */
   registerHit(target: object): boolean {
-    this.hitTargets.push(target);
-    if (this.pierceLeft <= 0) return true;
-    this.pierceLeft -= 1;
-    return false;
+    return registerPierce(this.pierce, target);
   }
 
   despawn(): void {

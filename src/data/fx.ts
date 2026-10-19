@@ -112,6 +112,9 @@ export const DUST_FX = {
   /** Fiozinho de poeira a cada passo da corrida e nuvem curta ao frear. */
   stepCount: 1,
   brakeCount: 3,
+  /** Quanto (px) a poeira nasce atrás dos pés: na freada e a cada passo da corrida. */
+  brakeOffsetX: 3,
+  stepOffsetX: 4,
   /** Velocidade de queda (px/s) a partir da qual o pouso levanta poeira. */
   landMinSpeed: 140,
   lifespanMs: 340,
@@ -151,3 +154,6 @@ export const PROP_FX = {
   chest: { radius: 34, strength: 0.5, glowAlpha: 0.16, color: 0xe8892d, pulseMs: 1100 },
   shrine: { radius: 74, strength: 0.75, glowAlpha: 0.3, color: 0x6fe3b0, pulseMs: 1900 },
 } as const;
+
+/** Faísca de um golpe bloqueado pela guarda do escudo: quanto (px) nasce à frente do herói. */
+export const GUARD_FX = { sparkOffsetX: 10 } as const;

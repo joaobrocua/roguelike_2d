@@ -32,6 +32,7 @@ import { PROP_MARKERS, ROOM_TRANSITION, SHRINE, TILE_SIZE } from '../data/rooms'
 import { SANCTUARY_LAYOUT } from '../data/sanctuaryRoom';
 import { GUARDIAO, VICTORY_DELAY_MS } from '../data/boss';
 import { STAGE_SCALING } from '../data/difficulty';
+import { GUARD_FX } from '../data/fx';
 import { ROOM_TEMPLATES } from '../data/roomTemplates';
 import { ArqueiroOco } from '../entities/ArqueiroOco';
 import { CaoDeOssos } from '../entities/CaoDeOssos';
@@ -368,7 +369,10 @@ export class GameScene extends Phaser.Scene {
       onProjectileBlocked: (arrow) => this.fx.projectileBlocked(arrow.x, arrow.y),
       onEnemyBlocked: (enemy) => this.fx.projectileBlocked(enemy.x, enemy.y),
       onPlayerBlocked: () =>
-        this.fx.projectileBlocked(this.player.x + this.player.lookDir * 10, this.player.y),
+        this.fx.projectileBlocked(
+          this.player.x + this.player.lookDir * GUARD_FX.sparkOffsetX,
+          this.player.y,
+        ),
       onSwapStrike: (strike) =>
         this.fx.swapStrike(this.player.x, this.player.y, this.player.relic.color, strike.radius),
     });
@@ -942,7 +946,9 @@ export class GameScene extends Phaser.Scene {
       const kind: PropKind | undefined = PROP_MARKERS[marker.char as keyof typeof PROP_MARKERS];
       // Na sala do santuário o 'X' é uma passagem (ver spawnGate) e, nas salas de saída, o arco
       // com a vista da próxima área (ver spawnExitGate): nos dois casos não há porta comum
-      if (!kind || (kind === 'door' && (this.run.sanctuary || this.hasExitGate()))) continue;
+      // A porta comum não existe mais: na sala do santuário o 'X' é uma passagem e, nas salas de
+      // saída, o arco com a vista da próxima área (ver spawnGate e spawnExitGate)
+      if (!kind || kind === 'door') continue;
       const prop = new Prop(
         this,
         kind,
@@ -1022,9 +1028,6 @@ export class GameScene extends Phaser.Scene {
         case 'fire':
           this.restAtFire(prop);
           break;
-        case 'door':
-          this.useDoor();
-          return;
         case 'shrine':
           break; // a estátua só abre com o botão de interagir (ver checkShrine)
       }
@@ -1062,20 +1065,6 @@ export class GameScene extends Phaser.Scene {
     const healed = this.player.heal(this.player.health.maxHp);
     this.markPropUsed(prop);
     this.fx.heal(this.player.x, this.player.y - 6, healed);
-  }
-
-  /** Porta da sala de saída (leva ao santuário) ou da sala do santuário (leva adiante). */
-  private useDoor(): void {
-    if (this.transitioning || this.victoryQueued) return;
-    if (this.run.sanctuary) return; // na sala do santuário quem leva adiante são as passagens
-    if (isLastStage(this.run.stage)) return; // último bioma: o fim da run é do chefe (sala 'boss')
-    // Ao passar de bioma, as almas carregadas são guardadas com segurança na base...
-    this.run.lastBanked = bankSouls(this.run, this.meta.save);
-    this.meta.commit();
-    // ...e o herói passa antes pelo santuário
-    sfx('passage');
-    enterSanctuaryBetweenBiomes(this.run);
-    this.leave(null);
   }
 
   /** Passagem do santuário: segue para a área escolhida ou, no despertar, começa a run nova nela. */

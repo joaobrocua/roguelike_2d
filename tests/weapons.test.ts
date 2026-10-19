@@ -44,7 +44,7 @@ describe('armas empunhadas (dados)', () => {
     for (const id of RELIC_IDS) {
       const steps = RELICS[id].basic.steps.length;
       expect(WEAPON_HOLD[id].styles.length, id).toBeGreaterThan(0);
-      expect(WEAPON_HOLD[id].styles.length, id).toBeLessThanOrEqual(Math.max(steps, 1) + 1);
+      expect(WEAPON_HOLD[id].styles.length, id).toBeLessThanOrEqual(Math.max(steps, 1));
     }
   });
 

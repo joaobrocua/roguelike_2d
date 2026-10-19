@@ -39,6 +39,7 @@ import {
   type RelicDef,
   type SwapStrikeDef,
 } from '../data/relics';
+import type { ProjectileData } from '../logic/attack';
 import {
   canCancelRecovery,
   cancelAttack,
@@ -177,6 +178,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private readonly offhand: Phaser.GameObjects.Image;
   /** O que a guarda fez com o último golpe recebido (lido uma vez pelo CombatSystem). */
   private guardOutcome: GuardResult = 0;
+  /** O empurrão do golpe bloqueado: para onde e até quando (relógio do herói, ms) ele vale. */
+  private guardPushDir = 1;
+  private guardPushUntilMs = 0;
   /** Imagens-fantasma da arma durante o golpe (o rastro): as três posições mais recentes. */
   private readonly trail: Phaser.GameObjects.Image[] = [];
   private readonly trailX = [0, 0, 0];
@@ -384,7 +388,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     );
     if (blocked !== 0) {
       this.guardOutcome = blocked;
-      this.setVelocityX(directionAway(sourceX, this.x) * PLAYER_COMBAT.guardPushSpeed);
+      this.guardPushDir = directionAway(sourceX, this.x);
+      this.guardPushUntilMs = this.clockMs + PLAYER_COMBAT.guardPushMs;
+      this.setVelocityX(this.guardPushDir * PLAYER_COMBAT.guardPushSpeed);
       return 0;
     }
     const damage = computeDamage(cfg.damage, this.passive.damageTakenMult * damageScale);
@@ -468,7 +474,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       !isStunned(this.health)
     ) {
       this.brakeUntilMs = this.clockMs + HERO_BRAKE_MS;
-      this.onDust?.(body.center.x - this.facing * 3, body.bottom, DUST_FX.brakeCount);
+      this.onDust?.(
+        body.center.x - this.facing * DUST_FX.brakeOffsetX,
+        body.bottom,
+        DUST_FX.brakeCount,
+      );
     }
     this.lastVelX = speedX;
     const stunned = isStunned(this.health);
@@ -615,6 +625,21 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.currentIsSpecial = false;
   }
 
+  /** Solta um projétil do jogador à frente do corpo, com o dano do golpe em curso. */
+  private fireShot(shot: ProjectileData): void {
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    const bolt = this.bolts.fire(
+      body.center.x + this.facing * (PLAYER.width / 2),
+      body.center.y + shot.spawnOffsetY,
+      this.facing,
+      shot,
+    );
+    if (bolt) {
+      bolt.multiplier = this.swingMultiplier;
+      bolt.empowered = this.swingEmpowered;
+    }
+  }
+
   /** Efeitos do primeiro frame da fase ativa: projétil do Tomo e barreira. */
   private onActivePhaseStart(): void {
     const def = this.currentAttack;
@@ -624,25 +649,17 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
     sfx(this.currentIsSpecial ? 'special' : 'swing');
     // A esquiva perfeita dobra o dano do golpe; a barreira (sem dano) não gasta o bônus
-    const shots = def.projectiles ?? (def.projectile ? [def.projectile] : []);
-    if (def.damage > 0 || shots.length > 0) {
+    const volley = def.projectiles;
+    const single = def.projectile;
+    const hasShots = volley ? volley.length > 0 : single !== undefined;
+    if (def.damage > 0 || hasShots) {
       const dodgeMultiplier = consumeDodgeBonus(this.dodgeBonus, PERFECT_DODGE.damageMultiplier);
       this.swingEmpowered = dodgeMultiplier > 1;
       this.swingMultiplier =
         dodgeMultiplier * relic.passive.damageMult * this.stats.damageMultiplier;
     }
-    for (const shot of shots) {
-      const bolt = this.bolts.fire(
-        (this.body as Phaser.Physics.Arcade.Body).center.x + this.facing * (PLAYER.width / 2),
-        (this.body as Phaser.Physics.Arcade.Body).center.y + shot.spawnOffsetY,
-        this.facing,
-        shot,
-      );
-      if (bolt) {
-        bolt.multiplier = this.swingMultiplier;
-        bolt.empowered = this.swingEmpowered;
-      }
-    }
+    if (volley) for (const shot of volley) this.fireShot(shot);
+    else if (single) this.fireShot(single);
     const barrier = relic.special.barrier;
     if (this.currentIsSpecial && barrier) {
       this.barrierOffsetX = barrier.offsetX;
@@ -653,6 +670,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   /** Andar (mais devagar durante o golpe) ou, na fase ativa de uma investida, avançar. */
   private moveOrLunge(intent: InputIntent): void {
+    if (this.clockMs < this.guardPushUntilMs) {
+      this.setVelocityX(this.guardPushDir * PLAYER_COMBAT.guardPushSpeed);
+      return;
+    }
     const attacking = this.attack.phase !== 'idle';
     const def = this.currentAttack;
     if (this.attack.phase === 'active' && def.lungeSpeed > 0) {
@@ -774,7 +795,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     if (name === this.lastStepFrame) return;
     this.lastStepFrame = name;
     if (HERO_STEP_FRAMES.includes(name)) {
-      this.onDust?.(body.center.x - this.facing * 4, body.bottom, DUST_FX.stepCount);
+      this.onDust?.(
+        body.center.x - this.facing * DUST_FX.stepOffsetX,
+        body.bottom,
+        DUST_FX.stepCount,
+      );
     }
   }
 

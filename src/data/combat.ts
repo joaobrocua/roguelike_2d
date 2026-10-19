@@ -10,6 +10,8 @@ export const PLAYER_COMBAT = {
   hurtInvulnerableMs: 700,
   /** Quanto (px/s) um golpe bloqueado pela guarda do escudo empurra o herói para trás. */
   guardPushSpeed: 70,
+  /** Por quanto tempo (ms) o empurrão da guarda vale antes de o herói voltar a andar. */
+  guardPushMs: 120,
   /** Tempo sem controle após levar dano. */
   hitStunMs: 220,
   /** Atrito do knockback (px/s perdidos por segundo). */

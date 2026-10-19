@@ -1,5 +1,4 @@
 import type Phaser from 'phaser';
-import type { RelicId } from '../data/relics';
 import { PALETTE } from '../data/palette';
 
 /**
@@ -251,4 +250,3 @@ export const NEW_RELIC_ICONS: Readonly<
 };
 
 export type NewRelicId = keyof typeof NEW_RELIC_ICONS;
-export const NEW_RELIC_IDS: readonly RelicId[] = Object.keys(NEW_RELIC_ICONS) as RelicId[];
