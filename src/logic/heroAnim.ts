@@ -11,16 +11,25 @@ export interface HeroAnimInput {
   dead: boolean;
   /** Acabou de pousar de uma queda (o quadro de pouso ainda está no ar). */
   landing: boolean;
+  /** Acabou de parar de correr (a freada ainda dura um instante). */
+  braking: boolean;
+}
+
+/** Limiares de velocidade vertical (px/s) do impulso e da queda rápida. */
+export interface AirFastThresholds {
+  launch: number;
+  plunge: number;
 }
 
 /**
  * Escolhe o estado de animação do herói. Prioridade: morte, dano, rolagem, ataque,
- * ar (pulo/queda), corrida, parado. Roda por frame: não aloca nada.
+ * ar (impulso, pulo, topo, queda), pouso, corrida, freada, parado. Roda por frame: não aloca nada.
  */
 export function heroAnimState(
   input: HeroAnimInput,
   runThreshold: number,
   apexThreshold = 0,
+  fast: AirFastThresholds | null = null,
 ): HeroState {
   if (input.dead) return 'dead';
   if (input.stunned) return 'hurt';
@@ -39,11 +48,21 @@ export function heroAnimState(
 
   if (!input.grounded) {
     if (Math.abs(input.velY) < apexThreshold) return 'apex';
-    return input.velY < 0 ? 'jump' : 'fall';
+    if (input.velY < 0) return fast && input.velY < -fast.launch ? 'launch' : 'jump';
+    return fast && input.velY > fast.plunge ? 'plunge' : 'fall';
   }
   if (input.landing) return 'land';
   if (Math.abs(input.velX) > runThreshold) return 'run';
-  return 'idle';
+  return input.braking ? 'brake' : 'idle';
+}
+
+/**
+ * Velocidade de reprodução da corrida: proporcional à velocidade horizontal (1 na velocidade normal
+ * de andar `refSpeed`), limitada a [min, max]. Roda por frame: não aloca nada.
+ */
+export function runAnimScale(velX: number, refSpeed: number, min: number, max: number): number {
+  if (refSpeed <= 0) return 1;
+  return Math.min(max, Math.max(min, Math.abs(velX) / refSpeed));
 }
 
 /**

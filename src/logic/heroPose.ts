@@ -60,7 +60,8 @@ export function heroJoints(pose: HeroPose, geo: HeroGeometry): HeroJoints {
     footBackX = hipBackX - pose.stride * geo.strideReach;
     footBackY = geo.footY - pose.liftBack;
   } else {
-    const feet = pose.legs === 'jump' ? geo.jumpFeet : geo.fallFeet;
+    const feet =
+      pose.legs === 'jump' ? geo.jumpFeet : pose.legs === 'tuck' ? geo.tuckFeet : geo.fallFeet;
     footFrontX = hipFrontX + feet.front.dx;
     footFrontY = geo.footY + feet.front.dy;
     footBackX = hipBackX + feet.back.dx;

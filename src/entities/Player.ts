@@ -8,10 +8,14 @@ import {
   HERO_RUN_THRESHOLD,
   HERO_SHEET_KEY,
   HERO_TOME_FLOAT,
+  HERO_AIR_FAST,
   HERO_APEX_THRESHOLD,
   HERO_ATTACK_SETS,
+  HERO_BRAKE_MS,
   HERO_LAND_MIN_SPEED,
   HERO_LAND_MS,
+  HERO_RUN_SPEED_SCALE,
+  HERO_STEP_FRAMES,
   HERO_WEAPON_ANGLE,
   HERO_WEAPON_HIDDEN,
   HERO_WEAPON_SWAY,
@@ -67,7 +71,12 @@ import {
   updateCooldown,
 } from '../logic/cooldown';
 import { computeDamage, directionAway } from '../logic/damage';
-import { attackFrameIndex, heroAnimState, type HeroAnimInput } from '../logic/heroAnim';
+import {
+  attackFrameIndex,
+  heroAnimState,
+  runAnimScale,
+  type HeroAnimInput,
+} from '../logic/heroAnim';
 import { createBox, placeHitbox, type Box } from '../logic/geometry';
 import {
   createHealth,
@@ -179,6 +188,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private attackStyle: AttackStyle = 'slashA';
   /** Até quando (relógio do herói, ms) o quadro de pouso fica na tela. */
   private landUntilMs = 0;
+  /** Até quando (relógio do herói, ms) a freada de parar de correr fica na tela. */
+  private brakeUntilMs = 0;
+  private lastVelX = 0;
+  /** Último quadro da corrida que tocou o chão (para a poeira do passo sair uma vez só). */
+  private lastStepFrame = '';
   private readonly shadow: ActorShadow;
   private readonly animInput: HeroAnimInput = {
     grounded: true,
@@ -189,6 +203,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     stunned: false,
     dead: false,
     landing: false,
+    braking: false,
   };
   private heroState: HeroState | null = null;
   private weaponRelicId: string | null = null;
@@ -443,6 +458,19 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
     this.wasGrounded = grounded;
     this.lastVelY = body.velocity.y;
+    const speedX = Math.abs(body.velocity.x);
+    if (
+      grounded &&
+      this.lastVelX > HERO_RUN_THRESHOLD &&
+      speedX <= HERO_RUN_THRESHOLD &&
+      this.attack.phase === 'idle' &&
+      !this.roll.active &&
+      !isStunned(this.health)
+    ) {
+      this.brakeUntilMs = this.clockMs + HERO_BRAKE_MS;
+      this.onDust?.(body.center.x - this.facing * 3, body.bottom, DUST_FX.brakeCount);
+    }
+    this.lastVelX = speedX;
     const stunned = isStunned(this.health);
 
     // Aperto adiantado: fica guardado por um instante e vale quando o jogador puder agir
@@ -721,14 +749,33 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     input.stunned = isStunned(this.health);
     input.dead = this.isDead();
     input.landing = this.clockMs < this.landUntilMs;
-    const state = heroAnimState(input, HERO_RUN_THRESHOLD, HERO_APEX_THRESHOLD);
+    input.braking = this.clockMs < this.brakeUntilMs;
+    const state = heroAnimState(input, HERO_RUN_THRESHOLD, HERO_APEX_THRESHOLD, HERO_AIR_FAST);
     if (state !== this.heroState) {
       this.heroState = state;
+      this.anims.timeScale = 1;
       this.anims.play(heroAnimationKey(state), true);
     }
+    if (state === 'run') this.updateRunCycle(body);
     // Nos golpes o quadro vem do andamento da fase (preparar, golpear, recuperar), não do tempo
     if (state === 'windup' || state === 'swing' || state === 'recover') this.showAttackFrame(state);
     this.updateWeapon(state);
+  }
+
+  /** Corrida: toca mais rápido com a velocidade e levanta poeira quando um pé toca o chão. */
+  private updateRunCycle(body: Phaser.Physics.Arcade.Body): void {
+    this.anims.timeScale = runAnimScale(
+      body.velocity.x,
+      PLAYER.moveSpeed,
+      HERO_RUN_SPEED_SCALE.min,
+      HERO_RUN_SPEED_SCALE.max,
+    );
+    const name = String(this.frame.name);
+    if (name === this.lastStepFrame) return;
+    this.lastStepFrame = name;
+    if (HERO_STEP_FRAMES.includes(name)) {
+      this.onDust?.(body.center.x - this.facing * 4, body.bottom, DUST_FX.stepCount);
+    }
   }
 
   /** Escolhe o quadro do golpe pela fase e pelo quanto dela já passou. */

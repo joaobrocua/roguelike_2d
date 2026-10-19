@@ -47,6 +47,8 @@ export interface HeroGeometry {
   /** Pés no ar: deslocamento em relação ao quadril (x) e ao chão (y; negativo = mais alto). */
   jumpFeet: { front: { dx: number; dy: number }; back: { dx: number; dy: number } };
   fallFeet: { front: { dx: number; dy: number }; back: { dx: number; dy: number } };
+  /** Pés com os joelhos encolhidos (topo do pulo). */
+  tuckFeet: { front: { dx: number; dy: number }; back: { dx: number; dy: number } };
 }
 
 export const HERO_GEOMETRY: HeroGeometry = {
@@ -67,9 +69,10 @@ export const HERO_GEOMETRY: HeroGeometry = {
   kneeBend: 2,
   jumpFeet: { front: { dx: 3, dy: -3 }, back: { dx: -3, dy: -1 } },
   fallFeet: { front: { dx: 2, dy: 0 }, back: { dx: -2, dy: 0 } },
+  tuckFeet: { front: { dx: 3, dy: -5 }, back: { dx: -1, dy: -3 } },
 };
 
-export type HeroLegs = 'walk' | 'jump' | 'fall';
+export type HeroLegs = 'walk' | 'jump' | 'fall' | 'tuck';
 
 export interface HeroPose {
   /** Quanto o corpo sobe (px): respiração e passos. */
@@ -133,10 +136,13 @@ function pose(overrides: Partial<HeroPose>): HeroPose {
 export type HeroState =
   | 'idle'
   | 'run'
+  | 'launch'
   | 'jump'
   | 'apex'
   | 'fall'
+  | 'plunge'
   | 'land'
+  | 'brake'
   | 'roll'
   | 'windup'
   | 'swing'
@@ -150,7 +156,7 @@ export interface HeroFrame {
   pose: HeroPose;
 }
 
-const RUN_FRAMES = 6;
+const RUN_FRAMES = 8;
 const IDLE_BOB = [0, 1, 1, 0] as const;
 
 function idleFrames(): HeroFrame[] {
@@ -160,21 +166,24 @@ function idleFrames(): HeroFrame[] {
   }));
 }
 
+/** Altura do corpo em cada quadro da corrida: sobe depois da passagem das pernas e desce no apoio. */
+const RUN_BOB = [1, 1, 0, 0, 1, 1, 0, 0] as const;
+
 function runFrames(): HeroFrame[] {
   const frames: HeroFrame[] = [];
   for (let i = 0; i < RUN_FRAMES; i++) {
     const phase = (i / RUN_FRAMES) * Math.PI * 2;
-    const stride = Math.sin(phase);
+    const stride = Math.sin(phase) * 1.25;
     frames.push({
       name: `run-${i}`,
       pose: pose({
-        bob: i % 3 === 1 ? 1 : 0,
+        bob: RUN_BOB[i] ?? 0,
         lean: 1,
         stride,
-        liftFront: Math.max(0, Math.round(3 * Math.cos(phase))),
-        liftBack: Math.max(0, Math.round(-3 * Math.cos(phase))),
-        armFront: 0.6 - stride * 0.9,
-        armBack: 0.6 + stride * 0.9,
+        liftFront: Math.max(0, Math.round(4 * Math.cos(phase))),
+        liftBack: Math.max(0, Math.round(-4 * Math.cos(phase))),
+        armFront: 0.55 - stride * 0.8,
+        armBack: 0.75 + stride * 0.8,
         capeLen: 13,
         capeAmp: 2,
         capePhase: phase * 2,
@@ -457,12 +466,26 @@ export const HERO_FRAMES: readonly HeroFrame[] = [
   ...idleFrames(),
   ...runFrames(),
   {
+    // Impulso: o corpo se estica, braços para cima e pernas retas
+    name: 'launch-0',
+    pose: pose({
+      legs: 'fall',
+      bob: 1,
+      armFront: -1.45,
+      armBack: -1.1,
+      capeLen: 8,
+      capeAmp: 1,
+      capePhase: 0.4,
+    }),
+  },
+  {
     name: 'jump-0',
     pose: pose({ legs: 'jump', armFront: -0.9, armBack: -0.3, capeLen: 12, capeAmp: 1.5, lean: 1 }),
   },
   {
+    // Topo do pulo: os joelhos sobem e os braços abrem para o equilíbrio
     name: 'jump-1',
-    pose: pose({ legs: 'jump', armFront: -0.5, armBack: 0.1, capeLen: 10, capeAmp: 1.5, lean: 1 }),
+    pose: pose({ legs: 'tuck', armFront: -0.5, armBack: 0.1, capeLen: 10, capeAmp: 1.5, lean: 1 }),
   },
   {
     name: 'fall-0',
@@ -476,15 +499,54 @@ export const HERO_FRAMES: readonly HeroFrame[] = [
     }),
   },
   {
+    // Queda rápida: braços para cima e a capa subindo com o vento
+    name: 'plunge-0',
+    pose: pose({
+      legs: 'fall',
+      armFront: -1.9,
+      armBack: -2.4,
+      capeLen: 6,
+      capeAmp: 3,
+      capePhase: 2.2,
+    }),
+  },
+  {
+    // Pouso: agacha fundo e levanta (dois quadros)
     name: 'land-0',
     pose: pose({
-      bob: -2,
-      lean: 1,
-      armFront: 0.9,
-      armBack: 1.2,
+      bob: -3,
+      lean: 2,
+      armFront: 1.0,
+      armBack: 1.3,
       capeLen: 12,
       capeAmp: 2,
       capePhase: 0.5,
+    }),
+  },
+  {
+    name: 'land-1',
+    pose: pose({
+      bob: -1,
+      lean: 1,
+      armFront: 1.15,
+      armBack: 1.5,
+      capeLen: 11,
+      capeAmp: 2,
+      capePhase: 1.1,
+    }),
+  },
+  {
+    // Freada ao parar de correr: tronco para trás, pé da frente firme e o de trás arrastando
+    name: 'brake-0',
+    pose: pose({
+      bob: -1,
+      lean: -2,
+      stride: 0.9,
+      armFront: -0.5,
+      armBack: 0.3,
+      capeLen: 15,
+      capeAmp: 3,
+      capePhase: 0.8,
     }),
   },
   ...rollFrames(),
@@ -522,11 +584,14 @@ function names(prefix: string, count: number): string[] {
 
 export const HERO_ANIMATIONS: readonly HeroAnimation[] = [
   { state: 'idle', frames: names('idle', IDLE_BOB.length), fps: 4, loop: true },
-  { state: 'run', frames: names('run', RUN_FRAMES), fps: 12, loop: true },
+  { state: 'run', frames: names('run', RUN_FRAMES), fps: 16, loop: true },
+  { state: 'launch', frames: ['launch-0'], fps: 1, loop: false },
   { state: 'jump', frames: ['jump-0'], fps: 1, loop: false },
   { state: 'apex', frames: ['jump-1'], fps: 1, loop: false },
   { state: 'fall', frames: ['fall-0'], fps: 1, loop: false },
-  { state: 'land', frames: ['land-0'], fps: 1, loop: false },
+  { state: 'plunge', frames: ['plunge-0'], fps: 1, loop: false },
+  { state: 'land', frames: ['land-0', 'land-1'], fps: 16, loop: false },
+  { state: 'brake', frames: ['brake-0'], fps: 1, loop: false },
   { state: 'roll', frames: names('roll', 4), fps: 18, loop: true },
   // Os golpes escolhem o quadro pelo andamento da fase (HERO_ATTACK_SETS); estes são o reserva.
   { state: 'windup', frames: ['slashA-w0'], fps: 1, loop: false },
@@ -556,10 +621,13 @@ export const HERO_MARKER_OFFSET_Y = -19;
 export const HERO_WEAPON_ANGLE: Readonly<Record<HeroState, number>> = {
   idle: 0.45,
   run: 0.9,
+  launch: -0.4,
   jump: -0.3,
   apex: 0.2,
   fall: 0.75,
+  plunge: 0.4,
   land: 0.95,
+  brake: 0.6,
   roll: 0,
   windup: -0.6,
   swing: 1.5,
@@ -585,8 +653,23 @@ export const HERO_TOME_FLOAT = { offsetX: -11, offsetY: -6, bobPx: 2, bobPeriodM
 /** Velocidade vertical (px/s) abaixo da qual, no ar, o herói está no ponto mais alto do pulo. */
 export const HERO_APEX_THRESHOLD = 55;
 
+/**
+ * Velocidade vertical (px/s) a partir da qual o ar mostra o impulso (subindo) e a queda rápida
+ * (descendo); entre elas valem o pulo, o topo e a queda comum.
+ */
+export const HERO_AIR_FAST = { launch: 230, plunge: 300 } as const;
+
+/** A corrida toca mais rápida ou devagar conforme a velocidade (1 = a velocidade normal de andar). */
+export const HERO_RUN_SPEED_SCALE = { min: 0.8, max: 1.3 } as const;
+
+/** Quanto tempo (ms) o herói mostra a freada depois de parar de correr. */
+export const HERO_BRAKE_MS = 110;
+
+/** Quadros da corrida em que um pé toca o chão (levantam um fiozinho de poeira). */
+export const HERO_STEP_FRAMES: readonly string[] = ['run-2', 'run-6'];
+
 /** Quanto tempo (ms) o quadro de pouso dura depois de tocar o chão vindo de uma queda. */
-export const HERO_LAND_MS = 90;
+export const HERO_LAND_MS = 120;
 
 /** Queda mínima (px/s de velocidade vertical ao pousar) para o herói se agachar no pouso. */
 export const HERO_LAND_MIN_SPEED = 160;

@@ -17,10 +17,13 @@ import {
 const ALL_STATES: readonly HeroState[] = [
   'idle',
   'run',
+  'launch',
   'jump',
   'apex',
   'fall',
+  'plunge',
   'land',
+  'brake',
   'roll',
   'windup',
   'swing',

@@ -109,6 +109,9 @@ export const SWAP_FX = {
 export const DUST_FX = {
   landCount: 7,
   rollCount: 5,
+  /** Fiozinho de poeira a cada passo da corrida e nuvem curta ao frear. */
+  stepCount: 1,
+  brakeCount: 3,
   /** Velocidade de queda (px/s) a partir da qual o pouso levanta poeira. */
   landMinSpeed: 140,
   lifespanMs: 340,

@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { attackFrameIndex, heroAnimState, type HeroAnimInput } from '../src/logic/heroAnim';
+import {
+  attackFrameIndex,
+  heroAnimState,
+  runAnimScale,
+  type HeroAnimInput,
+} from '../src/logic/heroAnim';
 
 const THRESHOLD = 20;
 
@@ -13,6 +18,7 @@ function input(overrides: Partial<HeroAnimInput> = {}): HeroAnimInput {
     stunned: false,
     dead: false,
     landing: false,
+    braking: false,
     ...overrides,
   };
 }
@@ -153,5 +159,57 @@ describe('attackFrameIndex', () => {
     expect(attackFrameIndex(3, 50, 0)).toBe(0);
     expect(attackFrameIndex(3, -20, 100)).toBe(0);
     expect(attackFrameIndex(3, 500, 100)).toBe(2); // nunca passa do último
+  });
+});
+
+describe('impulso, queda rápida e freada', () => {
+  const FAST = { launch: 230, plunge: 300 };
+  const air = (velY: number, extra: Partial<HeroAnimInput> = {}) =>
+    heroAnimState(input({ grounded: false, velY, ...extra }), THRESHOLD, 55, FAST);
+
+  it('subindo muito rápido: launch; mais devagar: jump; perto do topo: apex', () => {
+    expect(air(-290)).toBe('launch');
+    expect(air(-230)).toBe('jump');
+    expect(air(-120)).toBe('jump');
+    expect(air(-30)).toBe('apex');
+  });
+
+  it('caindo muito rápido: plunge; senão fall', () => {
+    expect(air(200)).toBe('fall');
+    expect(air(300)).toBe('fall');
+    expect(air(380)).toBe('plunge');
+  });
+
+  it('sem os limiares, o ar fica como antes', () => {
+    expect(heroAnimState(input({ grounded: false, velY: -290 }), THRESHOLD, 55)).toBe('jump');
+    expect(heroAnimState(input({ grounded: false, velY: 400 }), THRESHOLD, 55)).toBe('fall');
+  });
+
+  it('o golpe vence o impulso e a queda rápida', () => {
+    expect(air(-290, { attackPhase: 'active' })).toBe('swing');
+    expect(air(400, { attackPhase: 'windup' })).toBe('windup');
+  });
+
+  it('freada: só parado no chão, abaixo da corrida e do pouso', () => {
+    expect(state({ braking: true })).toBe('brake');
+    expect(state({ braking: true, velX: 100 })).toBe('run');
+    expect(state({ braking: true, landing: true })).toBe('land');
+    expect(state({ braking: true, attackPhase: 'windup' })).toBe('windup');
+    expect(state({ braking: true, rolling: true })).toBe('roll');
+    expect(state({ braking: true, grounded: false, velY: 100 })).toBe('fall');
+  });
+});
+
+describe('runAnimScale', () => {
+  it('é proporcional à velocidade e fica dentro dos limites', () => {
+    expect(runAnimScale(110, 110, 0.8, 1.3)).toBeCloseTo(1);
+    expect(runAnimScale(-110, 110, 0.8, 1.3)).toBeCloseTo(1);
+    expect(runAnimScale(120, 110, 0.8, 1.3)).toBeCloseTo(120 / 110);
+    expect(runAnimScale(40, 110, 0.8, 1.3)).toBe(0.8);
+    expect(runAnimScale(400, 110, 0.8, 1.3)).toBe(1.3);
+  });
+
+  it('velocidade de referência inválida não quebra', () => {
+    expect(runAnimScale(100, 0, 0.8, 1.3)).toBe(1);
   });
 });
