@@ -802,6 +802,9 @@ export class GameScene extends Phaser.Scene {
   /** Atravessa o arco da saída: guarda as almas e vai direto à próxima área, à bifurcação ou ao portão. */
   private useExitGate(): void {
     const options = areaOptions(this.run.stage + 1, this.run.route);
+    // Um fôlego ao deixar a área: cura parte da vida antes de seguir (a sala nova guarda o estado)
+    const healed = this.player.heal(this.player.health.maxHp * PLAYER_COMBAT.exitHealFraction);
+    this.fx.heal(this.player.x, this.player.y - 6, healed);
     // Ao passar de área, as almas carregadas são guardadas com segurança na base
     this.run.lastBanked = bankSouls(this.run, this.meta.save);
     this.meta.commit();

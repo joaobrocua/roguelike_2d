@@ -6,6 +6,8 @@ export const PLAYER_COMBAT = {
   maxHp: 100,
   /** Cura de um baú quando não há relíquia nova para dar (fração da vida máxima). */
   chestHealFraction: 0.3,
+  /** Cura (fração da vida máxima) ao cruzar o arco da saída para a próxima área. */
+  exitHealFraction: 0.25,
   /** Invulnerabilidade após levar dano. */
   hurtInvulnerableMs: 700,
   /** Quanto (px/s) um golpe bloqueado pela guarda do escudo empurra o herói para trás. */

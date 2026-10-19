@@ -1016,7 +1016,7 @@ export const STARTING_LOADOUT: readonly [RelicId, RelicId] = ['lamina', 'tomo'];
 
 export const RELIC_DROP = {
   /** Chance de um inimigo derrotado soltar uma relíquia nova (só entram as que o jogador não carrega). */
-  chance: 0.3,
+  chance: 0.22,
   /** Quanto tempo a relíquia largada por um inimigo espera no chão antes de sumir. */
   lifetimeMs: 14000,
   /** Nos últimos instantes ela pisca para avisar que vai sumir (visível/invisível a cada `blinkMs`). */
