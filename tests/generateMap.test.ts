@@ -61,6 +61,9 @@ function buildCatalog(): TemplateInfo[] {
       out.push(tpl(p(`${kind}-w-u0d1`), b, kind, 2, ['l', 'r', 'u0', 'd1']));
       out.push(tpl(p(`${kind}-w-lr`), b, kind, 2, ['l', 'r']));
     }
+    // mini-chefe: sala de passagem só com portas laterais (arena)
+    out.push(tpl(p('miniboss-lr'), b, 'miniboss', 1, ['l', 'r']));
+    out.push(tpl(p('miniboss-w-lr'), b, 'miniboss', 2, ['l', 'r']));
     // becos: uma porta só, em lados variados
     for (const kind of ['secret', 'chest'] as const) {
       for (const side of ['l', 'r', 'u0', 'd0']) {

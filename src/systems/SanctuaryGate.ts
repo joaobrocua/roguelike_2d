@@ -27,6 +27,9 @@ export class SanctuaryGate {
   /** Luz que entra pelo arco, para a escuridão da sala abrir em volta dele. */
   readonly light: LightSource & { lightRadius: number; lightStrength: number };
   private readonly glow: Phaser.GameObjects.Image;
+  private veil: Phaser.GameObjects.Rectangle | null = null;
+  private readonly sealBase: { x: number; y: number };
+  private sealed = false;
   private clockMs = 0;
 
   /**
@@ -58,6 +61,7 @@ export class SanctuaryGate {
       .setAlpha(g.glowAlpha)
       .setDepth(DEPTH.warmGlow);
     scene.add.image(x, centerY, viewKey).setDepth(D.depth.view);
+    this.sealBase = { x, y: floorY - g.height + g.opening.top };
     scene.add.image(x, centerY, SANCTUARY_TEXTURE.gate(biome)).setDepth(D.depth.gate);
     this.addSign(scene, x, floorY - g.height - g.labelDy, label);
 
@@ -95,6 +99,32 @@ export class SanctuaryGate {
     this.box.y = floorY - g.trigger.height;
     this.box.width = g.trigger.halfWidth * 2;
     this.box.height = g.trigger.height;
+  }
+
+  /** Arco selado: um véu escuro tapa a paisagem e a luz de fora some. Desselar devolve tudo. */
+  setSealed(sealed: boolean): void {
+    if (sealed === this.sealed) return;
+    this.sealed = sealed;
+    const g = D.gate;
+    if (sealed && !this.veil) {
+      this.veil = this.glow.scene.add
+        .rectangle(
+          this.sealBase.x - g.opening.width / 2,
+          this.sealBase.y,
+          g.opening.width,
+          g.opening.bottom - g.opening.top,
+          g.seal.color,
+          g.seal.alpha,
+        )
+        .setOrigin(0, 0)
+        .setDepth(D.depth.view + 0.05);
+    }
+    this.veil?.setVisible(sealed);
+    this.light.visible = !sealed;
+  }
+
+  get isSealed(): boolean {
+    return this.sealed;
   }
 
   /** Uma placa de madeira pendurada por duas correntes, com o nome do lugar. */
@@ -141,6 +171,8 @@ export class SanctuaryGate {
     // A luz de fora oscila de leve (nuvens, folhas), bem menos que uma chama
     this.light.lightRadius =
       g.light.radius * (1 + t.flickerAmplitude * 0.5 * Math.sin(seconds * 0.9));
-    this.glow.setAlpha(g.glowAlpha * (D.pulse.shaftBase + D.pulse.shaftSwing * wave));
+    this.glow.setAlpha(
+      this.sealed ? 0 : g.glowAlpha * (D.pulse.shaftBase + D.pulse.shaftSwing * wave),
+    );
   }
 }

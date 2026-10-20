@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { DEPTH } from '../data/atmosphere';
 import { GAME_SIZE } from '../data/balance';
-import { BOSS_BAR, GUARDIAO } from '../data/boss';
+import { BOSS_BAR } from '../data/boss';
 import { PALETTE } from '../data/palette';
 import { TEXT_COLORS } from '../data/ui';
 import { clampFraction, trailFraction } from '../logic/gauge';
@@ -20,7 +20,7 @@ export class BossHud {
   private readonly ghost: Phaser.GameObjects.Image;
   private ghostFraction = 1;
 
-  constructor(scene: Phaser.Scene) {
+  constructor(scene: Phaser.Scene, bossName: string) {
     const { width, height, border, padding, plateHeight, bottomMargin, nameY, barY } = BOSS_BAR;
     const plateWidth = width + border * 2 + padding * 2;
     const left = Math.floor((GAME_SIZE.width - plateWidth) / 2);
@@ -43,7 +43,7 @@ export class BossHud {
     this.ghost = scene.add.image(inner.x, inner.y, keys.ghost).setOrigin(0, 0);
     this.fill = scene.add.image(inner.x, inner.y, keys.fill).setOrigin(0, 0);
     const marks = scene.add.image(inner.x, inner.y, keys.marks).setOrigin(0, 0);
-    const name = pixelText(scene, GAME_SIZE.width / 2, top + nameY, GUARDIAO.name.toUpperCase(), {
+    const name = pixelText(scene, GAME_SIZE.width / 2, top + nameY, bossName.toUpperCase(), {
       color: TEXT_COLORS.normal,
       originX: 0.5,
     });

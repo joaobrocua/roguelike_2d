@@ -16,7 +16,7 @@ export interface StandPoint {
 }
 
 /** Marcadores que ficam em pé no chão e precisam ser alcançáveis. */
-const REACHABLE_MARKERS = 'PBFXGCADLROQNUK';
+const REACHABLE_MARKERS = 'PBFXGCADLROQNUKg';
 
 function pointKey(col: number, row: number): string {
   return `${col},${row}`;
@@ -187,7 +187,7 @@ export function exitsConnected(layout: readonly string[]): { ok: boolean; proble
 }
 
 /**
- * Marcadores 'P','B','F','X','G','C','A','D' que não são alcançáveis a partir de nenhuma porta
+ * Marcadores 'P','B','F','X','G','g','C','A','D' que não são alcançáveis a partir de nenhuma porta
  * (nem do 'P'). Cada item vem como `C(10,14)`. Marcador sem chão embaixo ou sem espaço livre
  * também conta como inalcançável.
  */

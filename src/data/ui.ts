@@ -184,6 +184,7 @@ export const MINIMAP = {
     rest: PALETTE.glow,
     chest: PALETTE.ember,
     secret: PALETTE.wraith,
+    miniboss: PALETTE.bloodDark,
     exit: PALETTE.soul,
     boss: PALETTE.blood,
   },
@@ -201,6 +202,11 @@ export const BANNER = {
   actLabel: 'ATO',
   /** Texto da placa do arco de saída quando há dois caminhos. */
   roads: 'CAMINHOS',
+  /** Aviso ao encostar no arco selado (o mini-chefe da área ainda vive): texto e tempos. */
+  sealed: 'SELADO: DERROTE O GUARDIÃO',
+  sealHintMs: 1800,
+  sealHintDy: 26,
+  sealHintRise: 10,
   /** Distâncias (px) acima e abaixo do título para o rótulo e os divisores. */
   captionDy: -17,
   dividerDy: 15,

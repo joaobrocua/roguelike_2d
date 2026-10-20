@@ -23,12 +23,13 @@ describe('parseRoom', () => {
     expect(parseRoom(['###', '#.#']).spawn).toBeNull();
   });
 
-  it('todo marcador dos modelos de sala é inimigo, decoração, objeto ou o chefe', () => {
+  it('todo marcador dos modelos de sala é inimigo, decoração, objeto, o chefe ou o mini-chefe', () => {
     const known = [
       ...Object.keys(ENEMY_MARKERS),
       ...Object.keys(DECOR_MARKERS),
       ...Object.keys(PROP_MARKERS),
       'G',
+      'g',
     ];
     for (const template of ROOM_TEMPLATES) {
       for (const marker of parseRoom(template.layout).markers) {

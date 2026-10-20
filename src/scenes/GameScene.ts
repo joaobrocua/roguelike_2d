@@ -21,16 +21,17 @@ import {
   ENEMY_MARKERS,
   type EnemyType,
 } from '../data/enemies';
-import { BIOME_DARKNESS, DECOR_MARKERS, TILE_VARIANTS } from '../data/atmosphere';
+import { BIOME_DARKNESS, DECOR_MARKERS, DEPTH, TILE_VARIANTS } from '../data/atmosphere';
 import { type MusicTrackId } from '../data/audio';
 import { BIOME_NAMES, BIOME_SHORT_NAMES, type BiomeId } from '../data/mapRules';
-import { BANNER } from '../data/ui';
+import { BANNER, TEXT_COLORS } from '../data/ui';
 import { PALETTE } from '../data/palette';
 import { SOUL_REWARD, VICTORY_SOUL_BONUS } from '../data/meta';
 import { RELIC_DROP, type RelicId } from '../data/relics';
 import { PROP_MARKERS, ROOM_TRANSITION, SHRINE, TILE_SIZE } from '../data/rooms';
 import { SANCTUARY_LAYOUT } from '../data/sanctuaryRoom';
 import { GUARDIAO, VICTORY_DELAY_MS } from '../data/boss';
+import { BIOME_MINIBOSS, MINI_BOSSES } from '../data/miniBosses';
 import { STAGE_SCALING } from '../data/difficulty';
 import { GUARD_FX } from '../data/fx';
 import { ROOM_TEMPLATES } from '../data/roomTemplates';
@@ -75,6 +76,7 @@ import {
   createRun,
   enterRoom,
   enterSanctuaryBetweenBiomes,
+  exitUnlocked,
   isLastStage,
   leaveSanctuary,
   passesThroughSanctuary,
@@ -91,6 +93,7 @@ import { wingForRoom } from '../logic/wings';
 import { tileLook } from '../logic/tileVariant';
 import { AtmosphereSystem, type LightSource } from '../systems/AtmosphereSystem';
 import { BossHud } from '../systems/BossHud';
+import { pixelText } from '../systems/pixelFont';
 import { CombatSystem } from '../systems/CombatSystem';
 import { decorTextureKey } from '../systems/decorArt';
 import { tileTextureKey } from '../systems/environmentTextures';
@@ -166,6 +169,8 @@ export class GameScene extends Phaser.Scene {
   private sanctuaryGates: SanctuaryGate[] = [];
   /** O arco da saída só leva adiante depois de o herói ter se afastado dele uma vez. */
   private exitGateArmed = false;
+  /** Até quando (tempo da cena, ms) o aviso do arco selado fica sem repetir. */
+  private sealHintUntilMs = 0;
   private boss: Guardiao | null = null;
   private bossHud: BossHud | null = null;
   private victoryQueued = false;
@@ -605,6 +610,10 @@ export class GameScene extends Phaser.Scene {
         this.spawnBoss(marker, world, solids);
         continue;
       }
+      if (marker.char === 'g') {
+        this.spawnMiniBoss(marker, world, solids);
+        continue;
+      }
       if (marker.char in DECOR_MARKERS || marker.char in PROP_MARKERS) continue;
       const type = ENEMY_MARKERS[marker.char as keyof typeof ENEMY_MARKERS] as
         EnemyType | undefined;
@@ -694,7 +703,31 @@ export class GameScene extends Phaser.Scene {
     this.physics.add.collider(boss, solids);
     this.enemies.push(boss);
     this.boss = boss;
-    this.bossHud = new BossHud(this);
+    this.bossHud = new BossHud(this, boss.bossName);
+  }
+
+  /** O mini-chefe da área: nasce no marcador 'g' da sala dele, com a barra de vida do chefe. */
+  private spawnMiniBoss(
+    marker: RoomMarker,
+    world: EnemyWorld,
+    solids: Phaser.Physics.Arcade.StaticGroup,
+  ): void {
+    const id = BIOME_MINIBOSS[this.run.map.biome];
+    const def = id ? MINI_BOSSES[id] : undefined;
+    if (!def) return;
+    const rng = createRng(this.run.seed ^ (0x51ed270b + this.run.stage));
+    const boss = new Guardiao(
+      this,
+      marker.col * TILE_SIZE + TILE_SIZE / 2,
+      this.markerY(marker, def.height),
+      world,
+      rng,
+      def,
+    );
+    this.physics.add.collider(boss, solids);
+    this.enemies.push(boss);
+    this.boss = boss;
+    this.bossHud = new BossHud(this, boss.bossName);
   }
 
   /**
@@ -783,6 +816,8 @@ export class GameScene extends Phaser.Scene {
       ),
     );
     this.exitGateArmed = false; // só vale depois de o herói se afastar do arco (ele nasce perto)
+    // Com o mini-chefe da área vivo, o arco fica selado
+    this.sanctuaryGates[this.sanctuaryGates.length - 1]?.setSealed(!exitUnlocked(this.run));
   }
 
   /** O herói entrou no arco da saída? Segue para a próxima área (ou abre a bifurcação). */
@@ -796,7 +831,30 @@ export class GameScene extends Phaser.Scene {
       this.exitGateArmed = true;
       return;
     }
+    if (gate.isSealed) {
+      this.hintSealedGate();
+      return;
+    }
     if (this.exitGateArmed) this.useExitGate();
+  }
+
+  /** O herói encostou no arco selado: um aviso curto (no máximo um por vez). */
+  private hintSealedGate(): void {
+    if (this.time.now < this.sealHintUntilMs) return;
+    this.sealHintUntilMs = this.time.now + BANNER.sealHintMs;
+    const text = pixelText(this, this.player.x, this.player.y - BANNER.sealHintDy, BANNER.sealed, {
+      color: TEXT_COLORS.normal,
+      originX: 0.5,
+      originY: 0.5,
+      depth: DEPTH.hud,
+    });
+    this.tweens.add({
+      targets: text,
+      y: text.y - BANNER.sealHintRise,
+      alpha: 0,
+      duration: BANNER.sealHintMs,
+      onComplete: () => text.destroy(),
+    });
   }
 
   /** Atravessa o arco da saída: guarda as almas e vai direto à próxima área, à bifurcação ou ao portão. */
@@ -901,6 +959,10 @@ export class GameScene extends Phaser.Scene {
 
   private onEnemyKilled(enemy: Enemy): void {
     sfx('kill');
+    if (enemy.isMiniBoss) {
+      this.onMiniBossDefeated(enemy);
+      return;
+    }
     if (enemy.isBoss) {
       this.onBossDefeated(enemy);
       return;
@@ -914,6 +976,35 @@ export class GameScene extends Phaser.Scene {
     const reward = SOUL_REWARD[enemy.enemyId] ?? 0;
     const gained = earnSouls(this.run, reward, this.meta.effects.soulGainMultiplier);
     if (gained > 0) this.fx.soulGain(enemy.x, enemy.y - 6, gained);
+  }
+
+  /**
+   * O mini-chefe caiu: rende almas e uma relíquia garantida (ou cura, se não houver nenhuma nova)
+   * e o arco de saída da área se abre.
+   */
+  private onMiniBossDefeated(boss: Enemy): void {
+    this.collectSouls(boss);
+    const id = rollRelicDrop(
+      this.rng,
+      1,
+      this.meta.effects.unlockedRelics,
+      this.player.loadout.slots,
+    );
+    if (id) {
+      this.spawnPickup(boss.x, boss.y - 6, id);
+    } else {
+      const amount = this.player.health.maxHp * PLAYER_COMBAT.chestHealFraction;
+      this.fx.heal(boss.x, boss.y - 10, this.player.heal(amount));
+    }
+    // A sala já conta como limpa (o mini-chefe era o último inimigo) para o arco abrir de vez
+    this.run.cleared.add(this.run.roomId);
+    this.unsealExitGate();
+  }
+
+  /** Abre o arco da saída, se esta sala o tem (o que acontece em outra sala se vê ao chegar lá). */
+  private unsealExitGate(): void {
+    const gate = this.sanctuaryGates[0];
+    if (gate && this.hasExitGate()) gate.setSealed(false);
   }
 
   /** O chefe caiu: solta uma relíquia e, depois de um instante, mostra a tela de vitória. */

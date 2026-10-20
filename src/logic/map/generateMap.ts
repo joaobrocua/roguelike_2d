@@ -157,7 +157,8 @@ export function generateBiomeMap(
   const finalKind: RoomKind = options.final === true ? 'boss' : 'exit';
   const eligible = catalog.filter((t) => t.biome === biome || t.biome === 'any');
 
-  const fixed = 2 + config.chests + config.rests + config.secrets;
+  const miniboss = config.miniboss ?? 0;
+  const fixed = 2 + config.chests + config.rests + config.secrets + miniboss;
   if (config.minRooms < fixed) {
     throw new Error(
       `Configuração do bioma '${biome}' inválida: minRooms (${config.minRooms}) é menor que as ${fixed} salas obrigatórias.`,
@@ -166,6 +167,7 @@ export function generateBiomeMap(
   const needed: RoomKind[] = ['start', finalKind];
   if (config.chests > 0) needed.push('chest');
   if (config.rests > 0) needed.push('rest');
+  if (miniboss > 0) needed.push('miniboss');
   if (config.secrets > 0) needed.push('secret');
   if (config.maxRooms > fixed) needed.push('combat');
   for (const kind of needed) {
@@ -213,8 +215,9 @@ function tryBuild(
   const { rng, config } = ctx;
   const dead = config.chests + config.secrets;
   const n = randomInt(rng, config.minRooms, config.maxRooms + 1);
-  const core = n - dead; // start + final + rests + combates (tudo que não é beco)
-  const combats = core - 2 - config.rests;
+  const miniboss = config.miniboss ?? 0;
+  const core = n - dead; // start + final + rests + mini-chefe + combates (tudo que não é beco)
+  const combats = core - 2 - config.rests - miniboss;
 
   const draft = buildDraft(ctx, n, core, combats);
   if (typeof draft === 'string') return draft;
@@ -345,13 +348,16 @@ function buildDraft(ctx: Context, n: number, core: number, combats: number): Dra
   };
 
   // caminho principal: start -> (rests e combates em ordem sorteada) -> final
-  const lo = Math.min(core, Math.max(3, config.rests + 2));
+  const miniboss = config.miniboss ?? 0;
+  const lo = Math.min(core, Math.max(3, config.rests + miniboss + 2));
   const hi = Math.max(lo, Math.min(core, cols + 1));
   const m = randomInt(rng, lo, hi + 1);
   const mids: RoomKind[] = [];
   for (let i = 0; i < config.rests; i++) mids.push('rest');
-  while (mids.length < m - 2) mids.push('combat');
-  const midOrder = shuffle(rng, mids);
+  while (mids.length < m - 2 - miniboss) mids.push('combat');
+  // o mini-chefe fica sempre por último, logo antes da saída
+  const midOrder: RoomKind[] = shuffle(rng, mids);
+  for (let i = 0; i < miniboss; i++) midOrder.push('miniboss');
 
   const startGx = rng() < START_SHIFT_CHANCE ? 1 : 0;
   const startWidths = (widths.get('start') ?? []).filter((w) => startGx + w <= cols);
@@ -383,7 +389,7 @@ function buildDraft(ctx: Context, n: number, core: number, combats: number): Dra
   const maxCol = endRoom.gx + endRoom.w - 1;
 
   // combates fora do caminho principal: penduram-se em qualquer sala que não seja beco
-  const branchCombats = combats - (m - 2 - config.rests);
+  const branchCombats = combats - (m - 2 - config.rests - miniboss);
   for (let i = 0; i < branchCombats; i++) {
     const all: Candidate[] = [];
     for (const parent of shuffle(
@@ -588,6 +594,7 @@ export function validateMap(
     [finalKind, 1],
     [finalKind === 'boss' ? 'exit' : 'boss', 0],
     ['rest', config.rests],
+    ['miniboss', config.miniboss ?? 0],
     ['chest', config.chests],
     ['secret', config.secrets],
   ];

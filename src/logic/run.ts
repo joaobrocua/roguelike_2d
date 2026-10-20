@@ -226,3 +226,14 @@ export function passesThroughSanctuary(
   const first = options[0];
   return first !== undefined && gated.includes(first);
 }
+
+/**
+ * A saída da área está liberada? Sim se o mapa não tem mini-chefe ou se a sala dele já foi limpa
+ * (o mini-chefe caiu); do contrário o arco fica selado.
+ */
+export function exitUnlocked(run: Pick<RunState, 'map' | 'cleared'>): boolean {
+  for (const room of run.map.rooms) {
+    if (room.kind === 'miniboss' && !run.cleared.has(room.id)) return false;
+  }
+  return true;
+}

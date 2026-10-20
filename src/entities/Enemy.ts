@@ -179,6 +179,11 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
     return false;
   }
 
+  /** É o mini-chefe de uma área (também conta como `isBoss`)? */
+  get isMiniBoss(): boolean {
+    return false;
+  }
+
   get alive(): boolean {
     return !isDead(this.health);
   }

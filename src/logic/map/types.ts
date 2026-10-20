@@ -4,8 +4,9 @@ export type { BiomeId };
 
 export type Side = 'left' | 'right' | 'up' | 'down';
 
-/** Tipo de sala. 'exit' leva ao próximo bioma; 'boss' só existe no último. */
-export type RoomKind = 'start' | 'combat' | 'rest' | 'chest' | 'secret' | 'exit' | 'boss';
+/** Tipo de sala. 'miniboss' guarda a saída da área; 'exit' leva ao próximo bioma; 'boss' só existe no último. */
+export type RoomKind =
+  'start' | 'combat' | 'rest' | 'chest' | 'secret' | 'miniboss' | 'exit' | 'boss';
 
 /** Uma porta de um modelo de sala: em que lado e em qual célula da sala (0 = a primeira). */
 export interface ExitInfo {
@@ -80,6 +81,7 @@ export function oppositeSide(side: Side): Side {
  *   'K' Aldeão em Chamas (corre e agarra)  'J' Corvo Carniceiro (voa e cruza a sala em rasante, como o 'V')
  *   'B' baú (só 'chest')   'F' fogueira de descanso (só 'rest')
  *   'X' porta para o próximo bioma (só 'exit')   'G' o chefe (só 'boss')
+ *   'g' o mini-chefe da área (só 'miniboss')
  * As dimensões são múltiplos da célula (src/data/mapRules.ts): largura 30 ou 60, altura 17.
  */
 export interface RoomTemplate {

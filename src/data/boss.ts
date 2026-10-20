@@ -5,12 +5,19 @@
  */
 import type { BossAttackKind, BossConfig } from '../logic/ai/boss';
 import type { AttackConfig } from '../logic/attack';
-import type { MeleeShape } from './enemies';
+import type { EnemyBody, MeleeShape } from './enemies';
 import { PALETTE } from './palette';
 
 export interface BossAttack {
   attack: AttackConfig;
   shape: MeleeShape;
+}
+
+/** Um chefe (o Guardião ou um mini-chefe): corpo, nome, os três golpes e o comportamento. */
+export interface BossDef extends EnemyBody {
+  name: string;
+  attacks: Record<BossAttackKind, BossAttack>;
+  ai: BossConfig;
 }
 
 export const GUARDIAO = {
@@ -103,7 +110,7 @@ export const GUARDIAO = {
     leapCooldownMs: 3200,
     jumpCooldownMs: 700,
   } satisfies BossConfig,
-} as const;
+} as const satisfies BossDef;
 
 /** Barra de vida do chefe, no pé da tela, dentro de um painel com o nome. */
 export const BOSS_BAR = {

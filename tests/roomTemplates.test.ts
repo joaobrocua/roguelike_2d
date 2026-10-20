@@ -17,6 +17,7 @@ const MIN_PER_KIND: Readonly<Record<RoomKind, number>> = {
   rest: 2,
   chest: 2,
   secret: 2,
+  miniboss: 2,
   exit: 2,
   boss: 1,
 };
@@ -70,6 +71,8 @@ for (const biome of ALL_BIOMES) {
         // O último bioma termina no chefe; os outros, na porta de saída
         if (kind === 'boss' && !isFinal) continue;
         if (kind === 'exit' && isFinal) continue;
+        // O mini-chefe só existe nas áreas que o configuram
+        if (kind === 'miniboss' && !BIOME_CONFIG[biome].miniboss) continue;
         const count = templates.filter((t) => t.kind === kind).length;
         expect(count, `${biome}/${kind}`).toBeGreaterThanOrEqual(min);
       }

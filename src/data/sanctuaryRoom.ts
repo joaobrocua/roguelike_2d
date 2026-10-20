@@ -179,6 +179,8 @@ export const SANCTUARY_DECOR = {
     light: { radius: 135, strength: 1 },
     glowAlpha: 0.2,
     glowPulseMs: 3200,
+    /** Arco selado (o mini-chefe da área ainda vive): véu escuro sobre a paisagem. */
+    seal: { color: 0x0b0d14, alpha: 0.88 },
     /** Altura (px) do centro da placa acima do topo do arco. */
     labelDy: 12,
     /** A placa de madeira: folga lateral, altura, correntes e cores. */

@@ -1,5 +1,8 @@
 import type Phaser from 'phaser';
 import { GUARDIAO } from '../data/boss';
+import { ENT_SHEET } from '../data/entSprites';
+import { FROG_KING_SHEET } from '../data/frogKingSprites';
+import { ENT_APODRECIDO, REI_DOS_CHARCOS } from '../data/miniBosses';
 import { ENEMY_BODIES, type EnemyBody } from '../data/enemies';
 import {
   ALDEAO_SHEET,
@@ -33,6 +36,8 @@ import {
 import { PALETTE } from '../data/palette';
 import { enemyAnimKey } from '../logic/enemyAnim';
 import { drawGuardian } from './bossSprite';
+import { drawEnt } from './entSprite';
+import { drawFrogKing } from './frogKingSprite';
 import { createSpriteSheet, fillPx, linePx, type SheetFrame } from './pixelSheet';
 
 /**
@@ -1315,6 +1320,8 @@ const SHEETS: readonly EnemySheet<unknown>[] = [
   ALDEAO_SHEET,
   CORVO_SHEET,
   GUARDIAO_SHEET,
+  ENT_SHEET,
+  FROG_KING_SHEET,
 ];
 
 /** O desenho de um inimigo: a folha de poses, o corpo de colisão e a função que pinta um quadro. */
@@ -1342,6 +1349,8 @@ export function enemyDrawers(): readonly EnemyDrawer[] {
     { sheet: ALDEAO_SHEET, body: enemyDef('aldeao'), draw: drawVillager },
     { sheet: CORVO_SHEET, body: enemyDef('corvo'), draw: drawCrow },
     { sheet: GUARDIAO_SHEET, body: GUARDIAO, draw: drawGuardian },
+    { sheet: ENT_SHEET, body: ENT_APODRECIDO, draw: drawEnt },
+    { sheet: FROG_KING_SHEET, body: REI_DOS_CHARCOS, draw: drawFrogKing },
   ] as unknown as readonly EnemyDrawer[];
 }
 
