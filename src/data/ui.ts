@@ -204,6 +204,9 @@ export const BANNER = {
   roads: 'CAMINHOS',
   /** Aviso ao encostar no arco selado (o mini-chefe da área ainda vive): texto e tempos. */
   sealed: 'SELADO: DERROTE O CHEFE DA ÁREA',
+  /** Rótulo em cima do nome do mini-chefe ao entrar na arena dele e o aviso quando ele cai. */
+  miniBossCaption: 'GUARDIÃO DA ÁREA',
+  exitOpened: 'O CAMINHO SE ABRIU',
   sealHintMs: 1800,
   sealHintDy: 26,
   sealHintRise: 10,

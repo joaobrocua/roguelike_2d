@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ENEMY_BODIES } from '../src/data/enemies';
 import { BIOME_CONFIG, ALL_BIOMES, RUN_PLAN, type BiomeId } from '../src/data/mapRules';
-import { BIOME_MINIBOSS, MINI_BOSSES, type MiniBossId } from '../src/data/miniBosses';
+import { BIOME_MINIBOSS, MINIBOSS_FX, MINI_BOSSES, type MiniBossId } from '../src/data/miniBosses';
 import { SOUL_REWARD } from '../src/data/meta';
 import { ROOM_TEMPLATES } from '../src/data/roomTemplates';
 import { exitUnlocked } from '../src/logic/run';
@@ -189,6 +189,15 @@ describe('mini-chefes: arenas jogáveis', () => {
         }
       }
     }
+  });
+});
+
+describe('mini-chefes: o momento da vitória', () => {
+  it('câmera lenta e tremor são curtos (não seguram o jogo)', () => {
+    expect(MINIBOSS_FX.slowMoMs).toBeGreaterThan(0);
+    expect(MINIBOSS_FX.slowMoMs).toBeLessThanOrEqual(1500);
+    expect(MINIBOSS_FX.shakeMs).toBeLessThanOrEqual(600);
+    expect(MINIBOSS_FX.shakeIntensity).toBeLessThan(0.03);
   });
 });
 

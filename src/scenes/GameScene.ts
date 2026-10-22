@@ -31,7 +31,7 @@ import { RELIC_DROP, type RelicId } from '../data/relics';
 import { PROP_MARKERS, ROOM_TRANSITION, SHRINE, TILE_SIZE } from '../data/rooms';
 import { SANCTUARY_LAYOUT } from '../data/sanctuaryRoom';
 import { BOSS_SEED_SALT, GUARDIAO, VICTORY_DELAY_MS } from '../data/boss';
-import { BIOME_MINIBOSS, MINI_BOSSES } from '../data/miniBosses';
+import { BIOME_MINIBOSS, MINIBOSS_FX, MINI_BOSSES } from '../data/miniBosses';
 import { STAGE_SCALING } from '../data/difficulty';
 import { GUARD_FX } from '../data/fx';
 import { ROOM_TEMPLATES } from '../data/roomTemplates';
@@ -218,6 +218,8 @@ export class GameScene extends Phaser.Scene {
   private musicTrack(): MusicTrackId {
     if (this.run.sanctuary) return 'sanctuary';
     if (this.placed?.kind === 'boss') return 'boss';
+    // A arena do mini-chefe toca a trilha de chefe até ele cair
+    if (this.placed?.kind === 'miniboss' && !this.run.cleared.has(this.run.roomId)) return 'boss';
     return this.run.map.biome;
   }
 
@@ -728,6 +730,7 @@ export class GameScene extends Phaser.Scene {
     this.enemies.push(boss);
     this.boss = boss;
     this.bossHud = new BossHud(this, boss.bossName);
+    showBiomeBanner(this, this.run.stage, boss.bossName.toUpperCase(), 0, BANNER.miniBossCaption);
   }
 
   /**
@@ -1008,6 +1011,12 @@ export class GameScene extends Phaser.Scene {
     // sala vizinha e abre sozinho ao chegar lá (exitUnlocked). A barra de vida some.
     this.bossHud?.hide();
     this.bossHud = null;
+    // O momento da vitória: câmera lenta, tremor, aviso e a trilha da área volta
+    triggerSlowMo(this.slowMo, MINIBOSS_FX.slowMoMs);
+    this.cameras.main.shake(MINIBOSS_FX.shakeMs, MINIBOSS_FX.shakeIntensity, true);
+    showWingCaption(this, BANNER.exitOpened);
+    sfx('altar');
+    getAudio().playMusic(this.run.map.biome);
   }
 
   /** O chefe caiu: solta uma relíquia e, depois de um instante, mostra a tela de vitória. */

@@ -465,3 +465,6 @@ export const BIOME_MINIBOSS: Readonly<Partial<Record<BiomeId, MiniBossId>>> = {
   muralhas: 'gargula',
   saloes: 'condessa',
 };
+
+/** O momento em que um mini-chefe cai: câmera lenta e tremor curtos. */
+export const MINIBOSS_FX = { slowMoMs: 650, shakeMs: 320, shakeIntensity: 0.01 } as const;
