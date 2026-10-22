@@ -6,6 +6,30 @@ Dead Cells, Skul, Astral Ascent, Have a Nice Death, Blasphemous e Hollow Knight 
 
 **Jogue no navegador:** https://joaobrocua.github.io/roguelike_2d/ (teclado ou controle; o jogo é publicado automaticamente a cada atualização da branch `main`).
 
+## Como jogar
+
+**O objetivo:** descer pelo reino em ruínas até as Catacumbas e derrotar o **Guardião Partido**. Uma descida passa por 6 áreas: começa ao ar livre (Floresta Apodrecida ou Pântano dos Afogados), segue pelo Cemitério dos Caídos ou pelas Minas Desabadas, pela Vila Queimada, pelas Muralhas e Pátio e pelos Salões e Capela, e termina nas Catacumbas. Cada área tem um **mini-chefe** que guarda o arco de saída: o arco fica selado até ele cair.
+
+**O básico:**
+
+- **Lute, role e telegrafe:** os inimigos piscam em laranja um instante antes de golpear. **Rolar** deixa você invulnerável; rolar no último instante antes de um golpe é uma **esquiva perfeita** (câmera lenta e o seu próximo golpe causa o dobro de dano).
+- **Relíquias são as suas armas:** você carrega duas e alterna com **Q** (ou **1** e **2**). Cada uma tem um golpe básico, um **especial com recarga** (K) e um bônus enquanto estiver na mão. Trocar logo depois de acertar dispara um golpe extra em área. Inimigos e baús soltam relíquias novas: chegue perto e aperte **E**.
+- **Cure com cuidado:** cada área tem uma **fogueira** que cura tudo uma vez (duas nos Salões e nas Catacumbas) e atravessar o arco de saída cura um pouco.
+- **Almas e o Santuário:** cada inimigo derrotado rende almas, que ficam **carregadas** e só são guardadas ao passar de área. Se você morrer, perde as que não guardou (menos a fração que a Retenção protege). As almas guardadas compram **melhorias permanentes** no Santuário e liberam armas novas.
+- **Ao morrer, recomece:** cada descida é diferente (os mapas são gerados), mas o que você guardou fica salvo no navegador.
+
+**Controles** (teclado ou controle; a tabela completa está em [Controles](#controles)):
+
+| Ação                     | Teclado      |
+| ------------------------ | ------------ |
+| Andar / pular            | A D / Espaço |
+| Atacar / especial        | J / K        |
+| Rolar                    | L ou Shift   |
+| Trocar relíquia / pegar  | Q / E        |
+| Pausar / som liga e mudo | Esc / M      |
+
+O áudio só começa depois da primeira tecla ou clique (regra dos navegadores).
+
 ## Status
 
 - [x] 1. Setup e movimento
@@ -15,6 +39,7 @@ Dead Cells, Skul, Astral Ascent, Have a Nice Death, Blasphemous e Hollow Knight 
 - [x] 5. Salas procedurais (fortaleza em 3 biomas, minimapa e o chefe Guardião Partido)
 - [x] 6. Progressão permanente (almas, Santuário e árvore de melhorias salva no navegador)
 - [x] 7. Polimento e deploy (áudio sintetizado, título, pausa, opções e build pronto para publicar)
+- [x] 8. O reino inteiro: 8 áreas (6 por descida), 14 relíquias, 7 mini-chefes e o Guardião, herói e armas animados, fundos e atmosfera por área, dificuldade por etapa e jogo publicado no navegador
 
 ## Prints e GIFs
 
