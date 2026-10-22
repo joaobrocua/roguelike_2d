@@ -13,9 +13,35 @@ export interface BossAttack {
   shape: MeleeShape;
 }
 
+/**
+ * A aura da fase 2 (vida abaixo da metade): um brilho que pulsa atrás do chefe e brasas que sobem
+ * dele, na cor de cada um. O tamanho do brilho é múltiplo do maior lado do corpo.
+ */
+export interface RageSpec {
+  color: number;
+  /** Brasas: cor e quantas nascem por segundo. */
+  emberColor: number;
+  embersPerSecond: number;
+}
+
+/** Valores comuns da aura (o que não muda de um chefe para outro). */
+export const RAGE_AURA = {
+  /** Tamanho do brilho em múltiplos do maior lado do corpo. */
+  glowScale: 2.6,
+  /** O brilho pulsa entre estas opacidades, uma volta a cada `pulseMs`. */
+  alphaMin: 0.22,
+  alphaMax: 0.5,
+  pulseMs: 900,
+  /** Brasas: vida (ms), velocidade para cima (px/s) e tamanho inicial. */
+  emberLifeMs: 800,
+  emberSpeedY: { min: -46, max: -22 },
+  emberScale: 1.3,
+} as const;
+
 /** Um chefe (o Guardião ou um mini-chefe): corpo, nome, os três golpes e o comportamento. */
 export interface BossDef extends EnemyBody {
   name: string;
+  rage: RageSpec;
   attacks: Record<BossAttackKind, BossAttack>;
   ai: BossConfig;
 }
@@ -32,6 +58,7 @@ export const GUARDIAO = {
   /** Fração do knockback que ele sofre. */
   knockbackScale: 0.18,
   color: PALETTE.stone,
+  rage: { color: PALETTE.ember, emberColor: PALETTE.glow, embersPerSecond: 14 },
   flying: false,
   meleeShape: 'front',
   /** Golpe padrão (usado só enquanto nenhum dos três está em andamento). */

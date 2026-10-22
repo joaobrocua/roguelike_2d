@@ -1,10 +1,11 @@
-import type Phaser from 'phaser';
+import Phaser from 'phaser';
 import { GUARDIAO, type BossDef } from '../data/boss';
 import type { MeleeShape } from '../data/enemies';
 import { createBoss, updateBoss, type BossSense, type BossState } from '../logic/ai/boss';
 import { createAiSense } from '../logic/ai/types';
 import type { AttackConfig } from '../logic/attack';
-import { Enemy, type EnemyWorld } from './Enemy';
+import { RageAura } from '../systems/RageAura';
+import { Enemy, type EnemyTarget, type EnemyWorld } from './Enemy';
 
 /**
  * O Guardião Partido, chefe da fortaleza, e também os mini-chefes das áreas (data/miniBosses.ts):
@@ -16,6 +17,8 @@ export class Guardiao extends Enemy {
   private readonly rng: () => number;
   private readonly bossDef: BossDef;
   private lastPhase: 1 | 2 = 1;
+  /** A aura da fase 2 (brilho e brasas); nasce quando a vida cai abaixo da metade. */
+  private rage: RageAura | null = null;
 
   /** Mesmo objeto de percepção da base, com a vida acrescentada (a IA do chefe lê a fase). */
   protected override readonly sense: BossSense = { ...createAiSense(), hpFraction: 1 };
@@ -32,6 +35,7 @@ export class Guardiao extends Enemy {
     this.rng = rng;
     this.bossDef = def;
     this.ai = createBoss(def.ai.introMs);
+    this.once(Phaser.GameObjects.Events.DESTROY, () => this.rage?.destroy());
   }
 
   override get isBoss(): boolean {
@@ -67,6 +71,26 @@ export class Guardiao extends Enemy {
     if (this.ai.phase !== this.lastPhase) {
       this.lastPhase = this.ai.phase;
       this.world.onBossPhase?.();
+      this.rage ??= new RageAura(
+        this.scene,
+        this.bossDef.rage,
+        this.bossDef.width,
+        this.bossDef.height,
+      );
     }
+  }
+
+  override update(dtMs: number, target: EnemyTarget): void {
+    super.update(dtMs, target);
+    const rage = this.rage;
+    if (!rage) return;
+    if (!this.alive) {
+      // O chefe caiu: a aura se apaga com ele
+      rage.destroy();
+      this.rage = null;
+      return;
+    }
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    rage.update(dtMs, body.center.x, body.center.y);
   }
 }

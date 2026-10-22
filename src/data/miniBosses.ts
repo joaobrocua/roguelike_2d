@@ -5,7 +5,7 @@
  * Tempos em ms, velocidades em px/s, distâncias em px.
  */
 import type { BiomeId } from './mapRules';
-import type { BossAttack, BossDef } from './boss';
+import type { BossAttack, BossDef, RageSpec } from './boss';
 import type { BossConfig } from '../logic/ai/boss';
 import { PALETTE } from './palette';
 
@@ -23,6 +23,7 @@ export const ENT_APODRECIDO = {
   knockbackFriction: 800,
   knockbackScale: 0.3,
   color: PALETTE.venom,
+  rage: { color: 0xb9d83a, emberColor: 0xe8892d, embersPerSecond: 12 },
   flying: false,
   meleeShape: 'front',
   attack: {
@@ -112,6 +113,7 @@ export const REI_DOS_CHARCOS = {
   knockbackFriction: 800,
   knockbackScale: 0.3,
   color: PALETTE.venom,
+  rage: { color: 0x9be84a, emberColor: 0xe8f06b, embersPerSecond: 12 },
   flying: false,
   meleeShape: 'front',
   attack: {
@@ -266,6 +268,7 @@ function body(
   height: number,
   maxHp: number,
   color: number,
+  rage: RageSpec,
   attacks: BossDef['attacks'],
   config: BossConfig,
 ): BossDef {
@@ -279,6 +282,7 @@ function body(
     knockbackFriction: 800,
     knockbackScale: 0.3,
     color,
+    rage,
     flying: false,
     meleeShape: 'front',
     attack: attacks.slam.attack,
@@ -295,6 +299,7 @@ export const COVEIRO_INSONE: BossDef = body(
   44,
   170,
   PALETTE.mist,
+  { color: 0x9ec8ff, emberColor: 0xe8f6fa, embersPerSecond: 11 },
   moves(
     { windupMs: 650, activeMs: 140, recoveryMs: 600, damage: 17, width: 52, height: 40 },
     {
@@ -319,6 +324,7 @@ export const MATRIZ_DE_CRISTAL: BossDef = body(
   38,
   180,
   PALETTE.player,
+  { color: 0x7fe8ff, emberColor: 0xe8f6fa, embersPerSecond: 16 },
   moves(
     { windupMs: 700, activeMs: 130, recoveryMs: 650, damage: 17, width: 50, height: 38 },
     {
@@ -343,6 +349,7 @@ export const CARRASCO_EM_CHAMAS: BossDef = body(
   46,
   190,
   PALETTE.ember,
+  { color: 0xff6a1a, emberColor: 0xffc46b, embersPerSecond: 20 },
   moves(
     { windupMs: 600, activeMs: 130, recoveryMs: 560, damage: 18, width: 54, height: 42 },
     {
@@ -373,6 +380,7 @@ export const GORGOLA_RACHADA: BossDef = body(
   34,
   200,
   PALETTE.stoneLight,
+  { color: 0xff4a3a, emberColor: 0xe8892d, embersPerSecond: 12 },
   moves(
     { windupMs: 520, activeMs: 120, recoveryMs: 520, damage: 17, width: 44, height: 34 },
     {
@@ -408,6 +416,7 @@ export const CONDESSA_PALIDA: BossDef = body(
   42,
   220,
   PALETTE.wraith,
+  { color: 0xb36bff, emberColor: 0xe0b8ff, embersPerSecond: 14 },
   moves(
     { windupMs: 480, activeMs: 120, recoveryMs: 500, damage: 18, width: 46, height: 38 },
     {
