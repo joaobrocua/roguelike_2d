@@ -203,7 +203,7 @@ export const BANNER = {
   /** Texto da placa do arco de saída quando há dois caminhos. */
   roads: 'CAMINHOS',
   /** Aviso ao encostar no arco selado (o mini-chefe da área ainda vive): texto e tempos. */
-  sealed: 'SELADO: DERROTE O GUARDIÃO',
+  sealed: 'SELADO: DERROTE O CHEFE DA ÁREA',
   sealHintMs: 1800,
   sealHintDy: 26,
   sealHintRise: 10,

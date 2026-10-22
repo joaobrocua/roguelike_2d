@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { PLAYER_COMBAT } from '../src/data/combat';
 import { BIOME_CONFIG, type BiomeId } from '../src/data/mapRules';
+import { ENEMY_BODIES } from '../src/data/enemies';
 import { SOUL_REWARD, META_CAPS } from '../src/data/meta';
 import { RELIC_DROP } from '../src/data/relics';
 import { ROOM_TEMPLATES } from '../src/data/roomTemplates';
@@ -26,7 +27,8 @@ describe('economia de cura e relíquias', () => {
     expect(rests('catacumbas')).toBeGreaterThanOrEqual(rests('saloes'));
   });
 
-  it('todo inimigo renderiza almas', () => {
+  it('todo inimigo comum e todo chefe rende almas', () => {
+    for (const { id } of ENEMY_BODIES) expect(SOUL_REWARD[id], id).toBeGreaterThan(0);
     for (const [id, souls] of Object.entries(SOUL_REWARD)) {
       expect(souls, id).toBeGreaterThan(0);
     }
@@ -42,6 +44,18 @@ describe('economia de cura e relíquias', () => {
         const count = (kind: string): number => map.rooms.filter((r) => r.kind === kind).length;
         expect(count('rest'), `${biome} #${seed} fogueiras`).toBe(config.rests);
         expect(count('chest'), `${biome} #${seed} baús`).toBe(config.chests);
+      }
+    }
+  });
+
+  it('com o máximo de salas secretas da árvore, o gerador nunca falha (todas as áreas)', () => {
+    for (const biome of BIOMES) {
+      const config = { ...BIOME_CONFIG[biome], secrets: META_CAPS.secretRooms };
+      for (let seed = 1; seed <= 400; seed++) {
+        const map = generateBiomeMap(seed, biome, CATALOG.infos, config, {
+          final: biome === 'catacumbas',
+        });
+        expect(map.rooms.length, `${biome} #${seed}`).toBeGreaterThan(0);
       }
     }
   });

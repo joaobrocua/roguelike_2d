@@ -63,6 +63,16 @@ export class BossHud {
     });
   }
 
+  /** O chefe caiu: a barra some devagar e o painel é destruído. */
+  hide(): void {
+    this.container.scene.tweens.add({
+      targets: this.container,
+      alpha: 0,
+      duration: BOSS_BAR.introMs,
+      onComplete: () => this.container.destroy(),
+    });
+  }
+
   /** `dtMs` em tempo real; `hpFraction` de 0 a 1. */
   update(dtMs: number, hpFraction: number): void {
     const { width, height, ghostDelayRate } = BOSS_BAR;

@@ -16,7 +16,7 @@ export interface GenerateOptions {
 }
 
 /** Tentativas antes de desistir; todas consomem a MESMA sequência do rng (determinístico). */
-const MAX_ATTEMPTS = 50;
+const MAX_ATTEMPTS = 200;
 /** Teto de modelos testados na busca com retrocesso de uma tentativa. */
 const MAX_ASSIGN_STEPS = 4000;
 /** Chance de preferir uma sala larga (2 células) quando o catálogo oferece as duas larguras. */

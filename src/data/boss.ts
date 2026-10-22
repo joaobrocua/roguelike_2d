@@ -133,5 +133,8 @@ export const BOSS_BAR = {
   introSlidePx: 10,
 } as const;
 
+/** Sal da semente do rng do Guardião e dos mini-chefes (somado à semente da run), para não repetirem sorteios. */
+export const BOSS_SEED_SALT = { final: 0x9e3779b9, mini: 0x51ed270b } as const;
+
 /** Depois que o chefe cai, espera este tempo (ms) antes de mostrar a tela de vitória. */
 export const VICTORY_DELAY_MS = 2200;

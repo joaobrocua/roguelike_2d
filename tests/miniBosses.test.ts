@@ -53,14 +53,8 @@ describe('mini-chefes: dados', () => {
   });
 
   it('os mini-chefes ficam mais duros a cada etapa da jornada', () => {
-    // As áreas de uma mesma etapa são alternativas (o jogador escolhe uma)
-    const stages: BiomeId[][] = [
-      ['floresta', 'pantano'],
-      ['cemiterio', 'minas'],
-      ['vila'],
-      ['muralhas'],
-      ['saloes'],
-    ];
+    // As áreas de uma mesma etapa são alternativas (o jogador escolhe uma); a última etapa é o Guardião
+    const stages: BiomeId[][] = RUN_PLAN.slice(0, -1).map((stage) => [...stage.options]);
     const hp = (b: BiomeId): number => MINI_BOSSES[BIOME_MINIBOSS[b] as MiniBossId].maxHp;
     for (let i = 1; i < stages.length; i++) {
       const before = Math.max(...(stages[i - 1] as BiomeId[]).map(hp));

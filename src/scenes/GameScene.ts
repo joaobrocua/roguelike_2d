@@ -30,7 +30,7 @@ import { SOUL_REWARD, VICTORY_SOUL_BONUS } from '../data/meta';
 import { RELIC_DROP, type RelicId } from '../data/relics';
 import { PROP_MARKERS, ROOM_TRANSITION, SHRINE, TILE_SIZE } from '../data/rooms';
 import { SANCTUARY_LAYOUT } from '../data/sanctuaryRoom';
-import { GUARDIAO, VICTORY_DELAY_MS } from '../data/boss';
+import { BOSS_SEED_SALT, GUARDIAO, VICTORY_DELAY_MS } from '../data/boss';
 import { BIOME_MINIBOSS, MINI_BOSSES } from '../data/miniBosses';
 import { STAGE_SCALING } from '../data/difficulty';
 import { GUARD_FX } from '../data/fx';
@@ -692,7 +692,7 @@ export class GameScene extends Phaser.Scene {
     world: EnemyWorld,
     solids: Phaser.Physics.Arcade.StaticGroup,
   ): void {
-    const rng = createRng(this.run.seed ^ 0x9e3779b9);
+    const rng = createRng(this.run.seed ^ BOSS_SEED_SALT.final);
     const boss = new Guardiao(
       this,
       marker.col * TILE_SIZE + TILE_SIZE / 2,
@@ -715,7 +715,7 @@ export class GameScene extends Phaser.Scene {
     const id = BIOME_MINIBOSS[this.run.map.biome];
     const def = id ? MINI_BOSSES[id] : undefined;
     if (!def) return;
-    const rng = createRng(this.run.seed ^ (0x51ed270b + this.run.stage));
+    const rng = createRng(this.run.seed ^ (BOSS_SEED_SALT.mini + this.run.stage));
     const boss = new Guardiao(
       this,
       marker.col * TILE_SIZE + TILE_SIZE / 2,
@@ -860,13 +860,11 @@ export class GameScene extends Phaser.Scene {
   /** Atravessa o arco da saída: guarda as almas e vai direto à próxima área, à bifurcação ou ao portão. */
   private useExitGate(): void {
     const options = areaOptions(this.run.stage + 1, this.run.route);
-    // Um fôlego ao deixar a área: cura parte da vida antes de seguir (a sala nova guarda o estado)
-    const healed = this.player.heal(this.player.health.maxHp * PLAYER_COMBAT.exitHealFraction);
-    this.fx.heal(this.player.x, this.player.y - 6, healed);
     // Ao passar de área, as almas carregadas são guardadas com segurança na base
     this.run.lastBanked = bankSouls(this.run, this.meta.save);
     this.meta.commit();
     if (passesThroughSanctuary(options)) {
+      this.healOnExit();
       sfx('passage');
       enterSanctuaryBetweenBiomes(this.run);
       this.leave(null);
@@ -880,8 +878,18 @@ export class GameScene extends Phaser.Scene {
     if (dest) this.travelTo(dest);
   }
 
+  /**
+   * Um fôlego ao deixar a área: cura parte da vida. Só vale quando a travessia é confirmada (quem
+   * cancela a bifurcação e volta ao arco não ganha cura de novo).
+   */
+  private healOnExit(): void {
+    const healed = this.player.heal(this.player.health.maxHp * PLAYER_COMBAT.exitHealFraction);
+    if (healed > 0) this.fx.heal(this.player.x, this.player.y - 6, healed);
+  }
+
   /** Segue direto para a área escolhida (sem passar pelo santuário). */
   private travelTo(dest: BiomeId): void {
+    this.healOnExit();
     sfx('passage');
     // As "Passagens" compradas valem já no mapa da próxima área
     this.run.secretRooms = this.meta.effects.secretRooms;
@@ -980,7 +988,7 @@ export class GameScene extends Phaser.Scene {
 
   /**
    * O mini-chefe caiu: rende almas e uma relíquia garantida (ou cura, se não houver nenhuma nova)
-   * e o arco de saída da área se abre.
+   * e o arco de saída da área se libera.
    */
   private onMiniBossDefeated(boss: Enemy): void {
     this.collectSouls(boss);
@@ -996,15 +1004,10 @@ export class GameScene extends Phaser.Scene {
       const amount = this.player.health.maxHp * PLAYER_COMBAT.chestHealFraction;
       this.fx.heal(boss.x, boss.y - 10, this.player.heal(amount));
     }
-    // A sala já conta como limpa (o mini-chefe era o último inimigo) para o arco abrir de vez
-    this.run.cleared.add(this.run.roomId);
-    this.unsealExitGate();
-  }
-
-  /** Abre o arco da saída, se esta sala o tem (o que acontece em outra sala se vê ao chegar lá). */
-  private unsealExitGate(): void {
-    const gate = this.sanctuaryGates[0];
-    if (gate && this.hasExitGate()) gate.setSealed(false);
+    // A sala conta como limpa quando o mini-chefe cai (checkRoomCleared); o arco de saída fica na
+    // sala vizinha e abre sozinho ao chegar lá (exitUnlocked). A barra de vida some.
+    this.bossHud?.hide();
+    this.bossHud = null;
   }
 
   /** O chefe caiu: solta uma relíquia e, depois de um instante, mostra a tela de vitória. */
