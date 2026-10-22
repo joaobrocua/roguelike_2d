@@ -958,7 +958,7 @@ export const FLORESTA_TEMPLATES: readonly RoomTemplate[] = [
       '#############....##########################....#############',
     ],
   },
-  // Arena da clareira: chão limpo entre dois troncos caídos, com galhos baixos dos dois lados para o herói fugir.
+  // Arena da clareira: chão limpo; dois troncos caídos viram galhos baixos, cada um com uma raiz-degrau ao pé.
   {
     id: 'floresta-miniboss-1',
     biome: 'floresta',
@@ -976,14 +976,14 @@ export const FLORESTA_TEMPLATES: readonly RoomTemplate[] = [
       '#T..........................T#',
       '#............................#',
       '#............................#',
-      '......#####............#####..',
       '..............................',
-      '....###......#......g.....##..',
+      '..............................',
+      '.......###.###......g.........',
       '##############################',
       '##############################',
     ],
   },
-  // Arena do toco: uma lombada de raízes à esquerda leva a um galho; a direita fica livre para rolar.
+  // Arena do toco: um galho à esquerda e outro no meio, cada um com sua raiz-degrau; a direita fica livre para rolar.
   {
     id: 'floresta-miniboss-2',
     biome: 'floresta',
@@ -1000,15 +1000,15 @@ export const FLORESTA_TEMPLATES: readonly RoomTemplate[] = [
       '#............................#',
       '#............................#',
       '#............................#',
-      '#.........#####..............#',
-      '........................####..',
-      '....###.......................',
-      '...#####....#........g.....#..',
+      '#............................#',
+      '..............................',
+      '..............................',
+      '...###......###......g........',
       '##############################',
       '##############################',
     ],
   },
-  // Arena larga: um tronco grosso pende do teto no meio da clareira e três galhos baixos oferecem refúgio.
+  // Arena larga: um tronco grosso pende do teto e três galhos baixos, com raízes-degrau, oferecem refúgio.
   {
     id: 'floresta-miniboss-3',
     biome: 'floresta',
@@ -1026,9 +1026,9 @@ export const FLORESTA_TEMPLATES: readonly RoomTemplate[] = [
       '#T.........................................................#',
       '#..........................................................#',
       '#..........................................................#',
-      '.......#######............########.............######.......',
-      '.......................................................#....',
-      '.................###..#...............g....##.........###...',
+      '............................................................',
+      '............................................................',
+      '.....###.......................###......g........###........',
       '############################################################',
       '############################################################',
     ],

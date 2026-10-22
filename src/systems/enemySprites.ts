@@ -1,8 +1,21 @@
 import type Phaser from 'phaser';
 import { GUARDIAO } from '../data/boss';
 import { ENT_SHEET } from '../data/entSprites';
+import { COVEIRO_SHEET } from '../data/coveiroSprites';
+import { MATRIZ_SHEET } from '../data/matrizSprites';
+import { CARRASCO_SHEET } from '../data/carrascoSprites';
+import { GARGULA_SHEET } from '../data/gargulaSprites';
+import { CONDESSA_SHEET } from '../data/condessaSprites';
 import { FROG_KING_SHEET } from '../data/frogKingSprites';
-import { ENT_APODRECIDO, REI_DOS_CHARCOS } from '../data/miniBosses';
+import {
+  CARRASCO_EM_CHAMAS,
+  CONDESSA_PALIDA,
+  COVEIRO_INSONE,
+  ENT_APODRECIDO,
+  GORGOLA_RACHADA,
+  MATRIZ_DE_CRISTAL,
+  REI_DOS_CHARCOS,
+} from '../data/miniBosses';
 import { ENEMY_BODIES, type EnemyBody } from '../data/enemies';
 import {
   ALDEAO_SHEET,
@@ -37,6 +50,11 @@ import { PALETTE } from '../data/palette';
 import { enemyAnimKey } from '../logic/enemyAnim';
 import { drawGuardian } from './bossSprite';
 import { drawEnt } from './entSprite';
+import { drawCoveiro } from './coveiroSprite';
+import { drawMatriz } from './matrizSprite';
+import { drawCarrasco } from './carrascoSprite';
+import { drawGargula } from './gargulaSprite';
+import { drawCondessa } from './condessaSprite';
 import { drawFrogKing } from './frogKingSprite';
 import { createSpriteSheet, fillPx, linePx, type SheetFrame } from './pixelSheet';
 
@@ -1322,6 +1340,11 @@ const SHEETS: readonly EnemySheet<unknown>[] = [
   GUARDIAO_SHEET,
   ENT_SHEET,
   FROG_KING_SHEET,
+  COVEIRO_SHEET,
+  MATRIZ_SHEET,
+  CARRASCO_SHEET,
+  GARGULA_SHEET,
+  CONDESSA_SHEET,
 ];
 
 /** O desenho de um inimigo: a folha de poses, o corpo de colisão e a função que pinta um quadro. */
@@ -1351,6 +1374,11 @@ export function enemyDrawers(): readonly EnemyDrawer[] {
     { sheet: GUARDIAO_SHEET, body: GUARDIAO, draw: drawGuardian },
     { sheet: ENT_SHEET, body: ENT_APODRECIDO, draw: drawEnt },
     { sheet: FROG_KING_SHEET, body: REI_DOS_CHARCOS, draw: drawFrogKing },
+    { sheet: COVEIRO_SHEET, body: COVEIRO_INSONE, draw: drawCoveiro },
+    { sheet: MATRIZ_SHEET, body: MATRIZ_DE_CRISTAL, draw: drawMatriz },
+    { sheet: CARRASCO_SHEET, body: CARRASCO_EM_CHAMAS, draw: drawCarrasco },
+    { sheet: GARGULA_SHEET, body: GORGOLA_RACHADA, draw: drawGargula },
+    { sheet: CONDESSA_SHEET, body: CONDESSA_PALIDA, draw: drawCondessa },
   ] as unknown as readonly EnemyDrawer[];
 }
 

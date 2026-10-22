@@ -1,17 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { ENT_SHEET } from '../src/data/entSprites';
 import { ENEMY_BODIES } from '../src/data/enemies';
-import { FROG_KING_SHEET } from '../src/data/frogKingSprites';
 import { BIOME_CONFIG, ALL_BIOMES, RUN_PLAN, type BiomeId } from '../src/data/mapRules';
-import {
-  BIOME_MINIBOSS,
-  MINIBOSS_REWARD,
-  MINI_BOSSES,
-  type MiniBossId,
-} from '../src/data/miniBosses';
+import { BIOME_MINIBOSS, MINI_BOSSES, type MiniBossId } from '../src/data/miniBosses';
 import { SOUL_REWARD } from '../src/data/meta';
 import { ROOM_TEMPLATES } from '../src/data/roomTemplates';
 import { exitUnlocked } from '../src/logic/run';
+import { enemyDrawers } from '../src/systems/enemySprites';
 import { buildCatalog } from '../src/logic/map/catalog';
 import { generateBiomeMap } from '../src/logic/map/generateMap';
 import { parseRoom } from '../src/logic/roomParser';
@@ -46,14 +40,33 @@ describe('mini-chefes: dados', () => {
   it('os ids são únicos (não colidem com os inimigos comuns) e batem com as folhas de arte', () => {
     const common = new Set(ENEMY_BODIES.map((e) => e.id));
     for (const id of IDS) expect(common.has(id), id).toBe(false);
-    expect(ENT_SHEET.id).toBe(MINI_BOSSES.ent.id);
-    expect(FROG_KING_SHEET.id).toBe(MINI_BOSSES.saporei.id);
+    const drawn = new Map(enemyDrawers().map((d) => [d.sheet.id, d.body.id]));
+    for (const id of IDS) expect(drawn.get(id), `${id} tem folha de arte`).toBe(id);
   });
 
-  it('cada mini-chefe rende almas e o prêmio é razoável', () => {
-    for (const id of IDS) expect(SOUL_REWARD[id], id).toBe(MINIBOSS_REWARD.souls);
-    expect(MINIBOSS_REWARD.souls).toBeGreaterThan(8); // mais que o inimigo comum mais caro
-    expect(MINIBOSS_REWARD.souls).toBeLessThan(40); // menos que o Guardião
+  it('cada mini-chefe rende mais almas que o inimigo comum mais caro e menos que o Guardião', () => {
+    const priciestCommon = Math.max(...ENEMY_BODIES.map((e) => SOUL_REWARD[e.id] ?? 0));
+    for (const id of IDS) {
+      expect(SOUL_REWARD[id], id).toBeGreaterThan(priciestCommon);
+      expect(SOUL_REWARD[id], id).toBeLessThan(SOUL_REWARD.guardiao ?? 0);
+    }
+  });
+
+  it('os mini-chefes ficam mais duros a cada etapa da jornada', () => {
+    // As áreas de uma mesma etapa são alternativas (o jogador escolhe uma)
+    const stages: BiomeId[][] = [
+      ['floresta', 'pantano'],
+      ['cemiterio', 'minas'],
+      ['vila'],
+      ['muralhas'],
+      ['saloes'],
+    ];
+    const hp = (b: BiomeId): number => MINI_BOSSES[BIOME_MINIBOSS[b] as MiniBossId].maxHp;
+    for (let i = 1; i < stages.length; i++) {
+      const before = Math.max(...(stages[i - 1] as BiomeId[]).map(hp));
+      const now = Math.min(...(stages[i] as BiomeId[]).map(hp));
+      expect(now, `etapa ${i}`).toBeGreaterThanOrEqual(before);
+    }
   });
 
   it('só as áreas que configuram um mini-chefe têm um, e ele existe', () => {
@@ -98,6 +111,91 @@ describe('mini-chefes: mapa', () => {
       }
     });
   }
+});
+
+describe('mini-chefes: arenas jogáveis', () => {
+  const arenas = ROOM_TEMPLATES.filter((t) => t.kind === 'miniboss');
+
+  it('há 3 arenas por área com mini-chefe', () => {
+    for (const biome of ALL_BIOMES) {
+      if (!BIOME_MINIBOSS[biome]) continue;
+      expect(arenas.filter((t) => t.biome === biome).length, biome).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it('o espaço do chefe é livre: nas linhas 11 a 13 não há bloco no interior da sala', () => {
+    // O herói salta ~3,5 blocos e os chefes têm até 3 blocos de altura: nada de plataformas baixas
+    // ou pilares onde eles andam (plataformas de 2 a 4 blocos prendem o chefe alto ou ficam fora do pulo)
+    for (const t of arenas) {
+      const cols = t.layout[0]?.length ?? 0;
+      for (const row of [11, 12, 13]) {
+        for (let c = 1; c < cols - 1; c++) {
+          expect(t.layout[row]?.charAt(c), `${t.id} linha ${row} col ${c}`).not.toBe('#');
+        }
+      }
+    }
+  });
+
+  it('o chão ao redor do chefe é livre (6 blocos de cada lado do g)', () => {
+    for (const t of arenas) {
+      const row = t.layout[14] ?? '';
+      const g = row.indexOf('g');
+      expect(g, t.id).toBeGreaterThan(0);
+      for (let c = g - 6; c <= g + 6; c++) {
+        expect(row.charAt(c), `${t.id} col ${c}`).not.toBe('#');
+      }
+    }
+  });
+
+  it('na linha 14 só há tocos baixos de 1 bloco (o chefe os salta)', () => {
+    for (const t of arenas) {
+      const row = t.layout[14] ?? '';
+      const above = t.layout[13] ?? '';
+      for (let c = 1; c < row.length - 1; c++) {
+        if (row.charAt(c) === '#') expect(above.charAt(c), `${t.id} col ${c}`).not.toBe('#');
+      }
+    }
+  });
+
+  it('nenhum bloco flutua: tudo está ligado às paredes, ao teto ou ao chão', () => {
+    for (const t of arenas) {
+      const H = t.layout.length;
+      const W = t.layout[0]?.length ?? 0;
+      const solid = (r: number, c: number): boolean => t.layout[r]?.charAt(c) === '#';
+      const seen = new Set<string>();
+      const stack: [number, number][] = [];
+      for (let r = 0; r < H; r++) {
+        for (let c = 0; c < W; c++) {
+          if ((r === 0 || r === H - 1 || c === 0 || c === W - 1) && solid(r, c)) {
+            seen.add(`${r},${c}`);
+            stack.push([r, c]);
+          }
+        }
+      }
+      while (stack.length > 0) {
+        const [r, c] = stack.pop() as [number, number];
+        for (const [dr, dc] of [
+          [1, 0],
+          [-1, 0],
+          [0, 1],
+          [0, -1],
+        ] as const) {
+          const rr = r + dr;
+          const cc = c + dc;
+          if (solid(rr, cc) && !seen.has(`${rr},${cc}`)) {
+            seen.add(`${rr},${cc}`);
+            stack.push([rr, cc]);
+          }
+        }
+      }
+      for (let r = 0; r < H; r++) {
+        for (let c = 0; c < W; c++) {
+          if (solid(r, c))
+            expect(seen.has(`${r},${c}`), `${t.id} bloco solto ${r},${c}`).toBe(true);
+        }
+      }
+    }
+  });
 });
 
 describe('exitUnlocked', () => {
