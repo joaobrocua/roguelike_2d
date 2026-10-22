@@ -4,6 +4,8 @@ Roguelite 2D de ação lateral em fantasia sombria. Você controla o Último Vig
 
 Dead Cells, Skul, Astral Ascent, Have a Nice Death, Blasphemous e Hollow Knight servem apenas como referência de design. Nenhum código, arte ou conteúdo foi copiado.
 
+**Jogue no navegador:** https://joaobrocua.github.io/roguelike_2d/ (teclado ou controle; o jogo é publicado automaticamente a cada atualização da branch `main`).
+
 ## Status
 
 - [x] 1. Setup e movimento
