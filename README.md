@@ -239,11 +239,11 @@ docs/        prints e GIFs
 
 ## Licenças
 
-- Código: licença MIT.
+- Código: licença MIT (arquivo [LICENSE](LICENSE)).
 - Assets (gráficos e sons): veja [ASSETS-LICENSES.md](ASSETS-LICENSES.md).
 
 ```text
 MIT License
 
-Copyright (c) <ano 2026> <seu nome>
+Copyright (c) 2026 Joao Pedro
 ```
