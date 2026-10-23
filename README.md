@@ -43,7 +43,36 @@ O áudio só começa depois da primeira tecla ou clique (regra dos navegadores).
 
 ## Prints e GIFs
 
-<!-- Adicionar prints e GIFs em docs/ e referenciar aqui, por exemplo: ![Movimento](docs/movimento.gif) -->
+Capturas feitas do próprio jogo.
+
+**Em ação:** combate com a espada, correr, pular e rolar, e a esquiva de um golpe do mini-chefe (o Carrasco em Chamas, já na fase 2, com a aura de brasas).
+
+<p>
+  <img src="docs/combate.gif" width="32%" alt="Combate: o herói golpeia um cão de ossos nas Muralhas" />
+  <img src="docs/movimento.gif" width="32%" alt="Movimento: correr, pular e rolar no Cemitério dos Caídos" />
+  <img src="docs/mini-chefe.gif" width="32%" alt="O herói rola para desviar do golpe do Carrasco em Chamas" />
+</p>
+
+**As áreas:** Floresta Apodrecida, Pântano dos Afogados, Cemitério dos Caídos, Minas Desabadas, Vila Queimada e Catacumbas e Masmorra, cada uma com fundo, atmosfera e blocos próprios.
+
+<p>
+  <img src="docs/area-floresta.png" width="32%" alt="Floresta Apodrecida" />
+  <img src="docs/area-pantano.png" width="32%" alt="Pântano dos Afogados" />
+  <img src="docs/area-cemiterio.png" width="32%" alt="Cemitério dos Caídos" />
+</p>
+<p>
+  <img src="docs/area-minas.png" width="32%" alt="Minas Desabadas" />
+  <img src="docs/area-vila.png" width="32%" alt="Vila Queimada" />
+  <img src="docs/area-catacumbas.png" width="32%" alt="Catacumbas e Masmorra" />
+</p>
+
+**Título e chefes:** a tela de título, a Matriz de Cristal (mini-chefe das Minas, na fase 2) e o Guardião Partido, o chefe final.
+
+<p>
+  <img src="docs/titulo.png" width="32%" alt="Tela de título de Ruínas Esquecidas" />
+  <img src="docs/mini-chefe-matriz.png" width="32%" alt="A Matriz de Cristal, mini-chefe das Minas" />
+  <img src="docs/chefe-guardiao.png" width="32%" alt="O Guardião Partido, chefe final" />
+</p>
 
 ## Como rodar
 
