@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { integerDeviceZoom } from '../src/utils/zoom';
+import { fillZoom, integerDeviceZoom } from '../src/utils/zoom';
 
 const GAME = { width: 480, height: 270 };
 
@@ -36,5 +36,17 @@ describe('integerDeviceZoom', () => {
   it('nunca devolve menos que 1, nem com densidade inválida', () => {
     expect(integerDeviceZoom(200, 100, 1, GAME)).toBe(1);
     expect(integerDeviceZoom(1920, 1080, 0, GAME)).toBe(4);
+  });
+});
+
+describe('fillZoom (celular e tablet)', () => {
+  it('ocupa a janela toda, mesmo com escala fracionária', () => {
+    expect(fillZoom(960, 540, GAME)).toBe(2);
+    expect(fillZoom(390, 844, GAME)).toBeCloseTo(390 / 480); // em pé: a largura limita
+    expect(fillZoom(844, 390, GAME)).toBeCloseTo(390 / 270); // deitado: a altura limita
+  });
+
+  it('janela inválida volta para 1', () => {
+    expect(fillZoom(0, 0, GAME)).toBe(1);
   });
 });

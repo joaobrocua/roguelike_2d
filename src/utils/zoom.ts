@@ -17,3 +17,16 @@ export function integerDeviceZoom(
   // O epsilon evita perder um nível por erro de ponto flutuante (ex.: 1920 / 480 = 3,9999...)
   return Math.max(1, Math.floor(fit + 1e-6));
 }
+
+/**
+ * Escala que faz o jogo ocupar a janela toda (pode ser fracionária), para celular e tablet, onde a
+ * escala inteira deixaria o jogo pequeno demais. `cssWidth/cssHeight` em pixels CSS.
+ */
+export function fillZoom(
+  cssWidth: number,
+  cssHeight: number,
+  game: { width: number; height: number },
+): number {
+  const fit = Math.min(cssWidth / game.width, cssHeight / game.height);
+  return fit > 0 ? fit : 1;
+}

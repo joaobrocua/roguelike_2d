@@ -1,0 +1,131 @@
+/* Controles na tela (celular e tablet). A unidade --u é o tamanho de um botão médio. */
+#touch {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+  --u: clamp(44px, 10.5vmin, 64px);
+  font-family: 'Press Start 2P', monospace;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: none;
+}
+
+#touch[data-mode='hidden'] {
+  display: none;
+}
+
+/* Cada modo mostra só os seus botões */
+#touch[data-mode='game'] .tb[data-mode='menu'],
+#touch[data-mode='menu'] .tb[data-mode='game'],
+#touch[data-mode='menu'] .tstick {
+  display: none;
+}
+
+.tb {
+  position: absolute;
+  box-sizing: border-box;
+  width: calc(var(--u) * var(--sz));
+  height: calc(var(--u) * var(--sz));
+  padding: 0;
+  border: 2px solid rgba(255, 196, 107, 0.55);
+  border-radius: 50%;
+  background: rgba(11, 13, 20, 0.5);
+  color: #ffc46b;
+  font: inherit;
+  font-size: calc(var(--u) * 0.17);
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tb.on {
+  background: rgba(255, 196, 107, 0.38);
+  border-color: #ffe3a8;
+  color: #fff;
+}
+
+.tb--attack {
+  border-color: rgba(232, 137, 45, 0.85);
+  color: #ffd9a0;
+  font-size: calc(var(--u) * 0.2);
+}
+
+.tb--up,
+.tb--down,
+.tb--left,
+.tb--right {
+  font-size: calc(var(--u) * 0.36);
+}
+
+.tb--full {
+  font-size: calc(var(--u) * 0.34);
+}
+
+/* Direcional flutuante: a metade esquerda da tela, da altura do meio para baixo */
+.tstick {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 48%;
+  height: 72%;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.tstick__rest {
+  position: absolute;
+  left: calc(var(--u) * 0.8);
+  bottom: calc(var(--u) * 0.8);
+  width: calc(var(--u) * 2.2);
+  height: calc(var(--u) * 2.2);
+  box-sizing: border-box;
+  border: 2px dashed rgba(255, 196, 107, 0.3);
+  border-radius: 50%;
+  color: rgba(255, 196, 107, 0.4);
+  font-size: calc(var(--u) * 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.tstick__base,
+.tstick__knob {
+  position: absolute;
+  left: 0;
+  top: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.tstick__base {
+  width: 92px;
+  height: 92px;
+  margin: -46px 0 0 -46px;
+  border: 2px solid rgba(255, 196, 107, 0.5);
+  background: rgba(11, 13, 20, 0.35);
+}
+
+.tstick__knob {
+  width: 40px;
+  height: 40px;
+  margin: -20px 0 0 -20px;
+  background: rgba(255, 196, 107, 0.55);
+  border: 2px solid #ffe3a8;
+}
+
+.tstick.active .tstick__base,
+.tstick.active .tstick__knob {
+  opacity: 1;
+}
+
+.tstick.active .tstick__rest {
+  opacity: 0;
+}

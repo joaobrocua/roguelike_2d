@@ -1077,7 +1077,13 @@ export class GameScene extends Phaser.Scene {
     this.hpBar = new HpBar(this, this.player.health.maxHp, this.player.health.hp);
     this.soulCounter = new SoulCounter(this, this.run.souls);
     // A dica de controles só aparece na primeira sala da run e some sozinha
-    if (!this.run.sanctuary && this.run.stage === 0 && this.run.visited.size === 1) {
+    // (no celular os botões já estão na tela, e a dica mostraria teclas)
+    if (
+      !this.run.sanctuary &&
+      this.run.stage === 0 &&
+      this.run.visited.size === 1 &&
+      !this.game.registry.get('touch')
+    ) {
       new KeyHints(this);
     }
   }

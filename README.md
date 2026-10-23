@@ -30,6 +30,8 @@ Dead Cells, Skul, Astral Ascent, Have a Nice Death, Blasphemous e Hollow Knight 
 
 O áudio só começa depois da primeira tecla ou clique (regra dos navegadores).
 
+**No celular ou tablet:** os controles aparecem na tela. Em jogo, o dedo na metade esquerda vira um **direcional flutuante** (arraste para os lados) e os botões de ação ficam à direita (ATACAR, PULAR, ROLAR, ESPEC, TROCA, PEGAR e pausa); nos menus aparecem setas, OK e VOLTAR. O jogo ocupa a tela toda, em pé (com os botões embaixo) ou deitado (melhor); o botão no canto abre a tela cheia, onde o navegador permitir. Controle Bluetooth também funciona. Para ver os controles de toque num computador, abra o jogo com `?touch` no final do endereço.
+
 ## Status
 
 - [x] 1. Setup e movimento
@@ -101,6 +103,8 @@ npm run build      # build de produção
 | Pegar do chão   | E            | RT (índice 7)                    |
 | Pausa           | Esc ou P     | Start (índice 9)                 |
 | Som liga/mudo   | M            | —                                |
+
+No celular não é preciso decorar nada disso: veja a seção Como jogar.
 
 ## Combate (etapa 2)
 
