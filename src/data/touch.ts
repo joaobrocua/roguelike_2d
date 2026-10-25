@@ -74,6 +74,7 @@ export const TOUCH_BUTTONS: readonly TouchButton[] = [
 /** Menu e telas por cima do jogo: enquanto uma destas estiver ativa, valem os botões de menu. */
 export const TOUCH_MENU_SCENES: readonly string[] = [
   'Title',
+  'Intro',
   'Pause',
   'RelicChoice',
   'RoadChoice',

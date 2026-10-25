@@ -3,8 +3,17 @@ import { GUARDIAO } from '../src/data/boss';
 import { BIOME_NAMES, BIOME_SHORT_NAMES } from '../src/data/mapRules';
 import { RELIC_IDS, RELICS } from '../src/data/relics';
 import { UPGRADE_NODES } from '../src/data/meta';
-import { BANNER, DEATH_SCREEN, HUD, RELIC_CHOICE, SANCTUARY, VICTORY_SCREEN } from '../src/data/ui';
+import {
+  BANNER,
+  DEATH_SCREEN,
+  HUD,
+  RELIC_CHOICE,
+  SANCTUARY,
+  TITLE_SCREEN,
+  VICTORY_SCREEN,
+} from '../src/data/ui';
 import { SHRINE } from '../src/data/rooms';
+import { EPILOGUE, INTRO_CARDS, STORY } from '../src/data/story';
 import { GLYPH_SET, unsupportedChars } from '../src/logic/glyphs';
 
 describe('unsupportedChars', () => {
@@ -25,7 +34,14 @@ describe('unsupportedChars', () => {
 describe('os textos do jogo só usam glifos que a fonte tem', () => {
   const texts: Record<string, string> = {
     morte: `${DEATH_SCREEN.title} ${DEATH_SCREEN.prompt}`,
-    vitoria: `${VICTORY_SCREEN.title} ${VICTORY_SCREEN.subtitle} ${VICTORY_SCREEN.prompt}`,
+    vitoria: `${VICTORY_SCREEN.title} ${EPILOGUE.join(' ')} ${VICTORY_SCREEN.prompt}`,
+    historia: [
+      ...INTRO_CARDS.map((card) => card.text),
+      STORY.prompt,
+      STORY.promptTouch,
+      TITLE_SCREEN.menu.story,
+    ].join(' '),
+    avisos: [BANNER.sealed, BANNER.miniBossCaption, BANNER.exitOpened].join(' '),
     relicChoice: [
       RELIC_CHOICE.title,
       RELIC_CHOICE.newLabel,

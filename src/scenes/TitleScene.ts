@@ -7,6 +7,7 @@ import { TEXT_COLORS, TITLE_SCREEN as T } from '../data/ui';
 import { getAudio, sfx } from '../systems/AudioSystem';
 import { backgroundKey, ENV_TEXTURE } from '../systems/environmentTextures';
 import { getMetaStore } from '../systems/metaStore';
+import { hasSeenIntro } from '../systems/storyStore';
 import { MenuInput } from '../systems/MenuInput';
 import { MenuList, type MenuRow } from '../systems/MenuList';
 import { ControlsPanel, soundRows } from '../systems/menuRows';
@@ -18,7 +19,7 @@ import { UI_TEXTURE } from '../systems/uiArt';
 type Page = 'main' | 'options' | 'controls' | 'confirmReset';
 
 /** Posição de cada linha do menu principal (para devolver o foco ao voltar de uma página). */
-const MAIN = { play: 0, options: 1, controls: 2, reset: 3 } as const;
+const MAIN = { play: 0, story: 1, options: 2, controls: 3, reset: 4 } as const;
 /** Na confirmação de zerar, as linhas são [SIM, NÃO]: o foco começa no NÃO. */
 const RESET_NO = 1;
 
@@ -178,6 +179,7 @@ export class TitleScene extends Phaser.Scene {
       case 'main':
         rows = [
           { label: T.menu.play, onActivate: () => this.play() },
+          { label: T.menu.story, onActivate: () => this.showStory() },
           { label: T.menu.options, onActivate: () => this.showPage('options') },
           { label: T.menu.controls, onActivate: () => this.showPage('controls') },
           {
@@ -245,8 +247,21 @@ export class TitleScene extends Phaser.Scene {
     this.starting = true;
     sfx('passage');
     this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
-      // Dados vazios: começa uma run nova (ver GameScene.init)
-      this.scene.start('Game', {});
+      // Na primeira vez a história vem antes da descida; depois vai direto ao jogo
+      // (dados vazios: começa uma run nova, ver GameScene.init)
+      if (hasSeenIntro()) this.scene.start('Game', {});
+      else this.scene.start('Intro', { next: 'Game' });
+    });
+    this.cameras.main.fadeOut(T.fx.fadeOutMs, 0, 0, 0);
+  }
+
+  /** O menu HISTÓRIA: rever a abertura e voltar ao título. */
+  private showStory(): void {
+    if (this.starting) return;
+    this.starting = true;
+    sfx('passage');
+    this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
+      this.scene.start('Intro', { next: 'Title' });
     });
     this.cameras.main.fadeOut(T.fx.fadeOutMs, 0, 0, 0);
   }

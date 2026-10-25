@@ -226,13 +226,21 @@ export const BANNER = {
 /** Tela de vitória (depois de derrotar o Guardião Partido). */
 export const VICTORY_SCREEN = {
   title: 'A NÉVOA RECUA',
-  subtitle: 'O Guardião Partido caiu. A fortaleza descansa.',
+  /** O fim da história (duas linhas): ver EPILOGUE em src/data/story.ts. */
   prompt: 'J / ESPAÇO / A: acordar no santuário',
   bankedLabel: 'ALMAS GUARDADAS',
   inputLockMs: 900,
   overlayAlpha: 0.82,
   titleFadeMs: 900,
-  layout: { bandHalf: 52, dividerY: 46, titleY: -24, subtitleY: 0, summaryY: 16, promptY: 34 },
+  layout: {
+    bandHalf: 60,
+    dividerY: 54,
+    titleY: -30,
+    subtitleY: -6,
+    subtitle2Y: 6,
+    summaryY: 24,
+    promptY: 42,
+  },
 } as const;
 
 /** Santuário: a tela entre as runs onde as almas viram melhorias permanentes. */
@@ -295,7 +303,13 @@ export const CONTROLS_HELP: readonly (readonly [string, string])[] = [
 export const TITLE_SCREEN = {
   name: ['RUÍNAS', 'ESQUECIDAS'],
   tagline: 'Desça. Caia. Volte mais forte.',
-  menu: { play: 'JOGAR', options: 'OPÇÕES', controls: 'CONTROLES', reset: 'ZERAR PROGRESSO' },
+  menu: {
+    play: 'JOGAR',
+    story: 'HISTÓRIA',
+    options: 'OPÇÕES',
+    controls: 'CONTROLES',
+    reset: 'ZERAR PROGRESSO',
+  },
   back: 'VOLTAR',
   sound: { music: 'MÚSICA', sfx: 'EFEITOS', mute: 'SOM', on: 'LIGADO', off: 'MUDO' },
   reset: {

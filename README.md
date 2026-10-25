@@ -30,6 +30,8 @@ Dead Cells, Skul, Astral Ascent, Have a Nice Death, Blasphemous e Hollow Knight 
 
 O áudio só começa depois da primeira tecla ou clique (regra dos navegadores).
 
+**A história:** na primeira vez que você aperta _Jogar_, uma abertura em cinco cartões (ilustração em pixel art e texto que vai sendo digitado) conta o que aconteceu com o reino. Ela não volta sozinha: para rever, use _História_ no menu do título. **J** avança, **Esc** pula. Ao derrotar o Guardião Partido, a tela de vitória fecha a história com um epílogo.
+
 **No celular ou tablet:** os controles aparecem na tela. Em jogo, o dedo na metade esquerda vira um **direcional flutuante** (arraste para os lados) e os botões de ação ficam à direita (ATACAR, PULAR, ROLAR, ESPEC, TROCA, PEGAR e pausa); nos menus aparecem setas, OK e VOLTAR. O jogo ocupa a tela toda, em pé (com os botões embaixo) ou deitado (melhor); o botão no canto abre a tela cheia, onde o navegador permitir. Controle Bluetooth também funciona. Para ver os controles de toque num computador, abra o jogo com `?touch` no final do endereço.
 
 ## Status
@@ -245,7 +247,7 @@ Cada run rende **almas**, e o **Santuário** — uma sala própria, toda voltada
 
 ## Título, pausa e opções (etapa 7)
 
-- **Tela de título:** o anjo colossal ao fundo, o nome do jogo e o menu: _Jogar_, _Opções_ (música, efeitos e liga/mudo), _Controles_ e _Zerar progresso_ (pede confirmação, com "Não" já selecionado, e apaga o save e as cópias). Mostra as almas guardadas, as descidas e as vitórias.
+- **Tela de título:** o anjo colossal ao fundo, o nome do jogo e o menu: _Jogar_, _História_ (revê a abertura), _Opções_ (música, efeitos e liga/mudo), _Controles_ e _Zerar progresso_ (pede confirmação, com "Não" já selecionado, e apaga o save e as cópias). Mostra as almas guardadas, as descidas e as vitórias.
 - **Pausa:** Esc, P ou Start abre o menu sobre o jogo parado: continuar, ajustar o som, ver os controles ou _desistir da descida_ (com confirmação; conta como run perdida e as almas carregadas se perdem, menos a parte que a Retenção protege).
 - **Menus com teclado e controle:** o mesmo leitor de botões (`src/systems/MenuInput.ts`) e a mesma lista de linhas (`MenuList.ts`) servem ao título e à pausa. Textos e medidas em `src/data/ui.ts`.
 

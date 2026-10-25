@@ -4,6 +4,7 @@ import { PALETTE } from './data/palette';
 import { BootScene } from './scenes/BootScene';
 import { DeathScene } from './scenes/DeathScene';
 import { GameScene } from './scenes/GameScene';
+import { IntroScene } from './scenes/IntroScene';
 import { RelicChoiceScene } from './scenes/RelicChoiceScene';
 import { PauseScene } from './scenes/PauseScene';
 import { RoadChoiceScene } from './scenes/RoadChoiceScene';
@@ -36,6 +37,7 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
   scene: [
     BootScene,
     TitleScene,
+    IntroScene,
     GameScene,
     DeathScene,
     RelicChoiceScene,

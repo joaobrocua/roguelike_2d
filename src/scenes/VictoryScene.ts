@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { GAME_SIZE } from '../data/balance';
 import type { BiomeId } from '../data/mapRules';
 import { PALETTE } from '../data/palette';
+import { EPILOGUE } from '../data/story';
 import { TEXT_COLORS, VICTORY_SCREEN } from '../data/ui';
 import { InputSystem } from '../systems/InputSystem';
 import { pixelText } from '../systems/pixelFont';
@@ -52,7 +53,13 @@ export class VictoryScene extends Phaser.Scene {
       originY: 0.5,
     }).setAlpha(0);
     this.tweens.add({ targets: title, alpha: 1, duration: VICTORY_SCREEN.titleFadeMs });
-    pixelText(this, cx, cy + layout.subtitleY, VICTORY_SCREEN.subtitle, {
+    // O fim da história, em duas linhas
+    pixelText(this, cx, cy + layout.subtitleY, EPILOGUE[0], {
+      color: TEXT_COLORS.normal,
+      originX: 0.5,
+      originY: 0.5,
+    });
+    pixelText(this, cx, cy + layout.subtitle2Y, EPILOGUE[1], {
       color: TEXT_COLORS.normal,
       originX: 0.5,
       originY: 0.5,
