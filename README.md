@@ -6,6 +6,8 @@ Dead Cells, Skul, Astral Ascent, Have a Nice Death, Blasphemous e Hollow Knight 
 
 **Jogue no navegador:** https://joaobrocua.github.io/roguelike_2d/ (teclado ou controle; o jogo é publicado automaticamente a cada atualização da branch `main`).
 
+**Baixe para Windows:** [Ruínas Esquecidas v0.1.0](https://github.com/joaobrocua/roguelike_2d/releases/tag/v0.1.0) (instalador ou versão portátil, sem precisar de navegador).
+
 ## Como jogar
 
 **O objetivo:** descer pelo reino em ruínas até as Catacumbas e derrotar o **Guardião Partido**. Uma descida passa por 6 áreas: começa ao ar livre (Floresta Apodrecida ou Pântano dos Afogados), segue pelo Cemitério dos Caídos ou pelas Minas Desabadas, pela Vila Queimada, pelas Muralhas e Pátio e pelos Salões e Capela, e termina nas Catacumbas. Cada área tem um **mini-chefe** que guarda o arco de saída: o arco fica selado até ele cair.
@@ -276,7 +278,7 @@ A pasta `dist/` é o jogo inteiro (HTML, JavaScript e a fonte), com caminhos rel
 
 ## Executável para Windows
 
-O jogo também vira um programa de Windows, com [Tauri](https://tauri.app): uma janela própria (960x540, F11 liga e desliga a tela cheia) em vez do navegador. Quem só quer jogar não instala nada: baixa o `.exe` e abre. O jogo usa o WebView2 da Microsoft, que já vem no Windows 10 e 11.
+O jogo também vira um programa de Windows, com [Tauri](https://tauri.app): uma janela própria (960x540, F11 liga e desliga a tela cheia) em vez do navegador. Quem só quer jogar não instala nada: baixa o `.exe` na [página de Releases](https://github.com/joaobrocua/roguelike_2d/releases) e abre. O jogo usa o WebView2 da Microsoft, que já vem no Windows 10 e 11.
 
 Para gerar o executável é preciso ter, uma vez, o [Rust](https://rustup.rs) e o Build Tools do Visual Studio (carga de trabalho "Desenvolvimento para desktop com C++", com o Windows SDK). Depois:
 
