@@ -134,7 +134,7 @@ Cada área tem também o seu **clima** de partículas (`BIOME_AMBIENCE` em `src/
 
 Os desenhos ficam em `src/systems/biomeBackgrounds.ts`, `tileArt.ts`, `decorArt.ts` e `environmentTextures.ts`; para usar arte final basta carregar imagens com as mesmas chaves.
 
-**Nitidez:** o jogo usa escala inteira _em pixels do monitor_, não do CSS. Com a escala do Windows em 125% ou 150%, um zoom inteiro em pixels CSS vira fracionário no monitor e alguns pixels ficam maiores que outros (borrão e tremida); aqui o zoom é calculado em pixels reais (`src/utils/zoom.ts`).
+**Tamanho da tela:** o jogo (16:9) cresce até ocupar a janela toda, sem ficar preso a múltiplos inteiros (`src/utils/zoom.ts`). Em troca, numa janela que não é múltiplo exato de 480x270 alguns pixels da arte ficam um pouco maiores que outros; sobra faixa escura só no lado que a proporção da janela não alcança.
 
 ## Interface (HUD)
 
@@ -274,17 +274,35 @@ A pasta `dist/` é o jogo inteiro (HTML, JavaScript e a fonte), com caminhos rel
 - Abrir o `index.html` direto do disco (`file://`) não funciona, porque os navegadores bloqueiam módulos de arquivo local; use `npm run preview` ou uma hospedagem.
 - O progresso (almas, melhorias, volume) fica no `localStorage` do navegador, separado por endereço: mudar de domínio começa um save novo.
 
+## Executável para Windows
+
+O jogo também vira um programa de Windows, com [Tauri](https://tauri.app): uma janela própria (960x540, F11 liga e desliga a tela cheia) em vez do navegador. Quem só quer jogar não instala nada: baixa o `.exe` e abre. O jogo usa o WebView2 da Microsoft, que já vem no Windows 10 e 11.
+
+Para gerar o executável é preciso ter, uma vez, o [Rust](https://rustup.rs) e o Build Tools do Visual Studio (carga de trabalho "Desenvolvimento para desktop com C++", com o Windows SDK). Depois:
+
+```bash
+npm run desktop      # gera o jogo e o executável (a primeira vez demora alguns minutos)
+npm run desktop:dev  # abre a janela com o servidor de desenvolvimento
+```
+
+Saída, em `src-tauri/target/release/`:
+
+- `ruinas-esquecidas.exe`: versão portátil, um arquivo só (~3 MB), roda sem instalar.
+- `bundle/nsis/Ruinas Esquecidas_0.1.0_x64-setup.exe`: instalador (instala só para o seu usuário, sem pedir administrador).
+
+O save (almas, melhorias e volume) fica na pasta de dados do programa, no perfil do usuário. O executável não é assinado, então o Windows pode mostrar o aviso "O Windows protegeu o computador" na primeira vez: _Mais informações_ e _Executar assim mesmo_.
+
 ## Decisões técnicas
 
 - **Phaser 3 + Arcade Physics** para renderização e colisões.
 - **TypeScript em modo `strict`.**
 - **Lógica pura separada da camada Phaser:** `src/logic` não importa Phaser e é coberta por testes com Vitest; a camada Phaser apenas chama essas funções.
 - **Dados em `src/data`:** balanceamento e conteúdo (relíquias, inimigos, salas) fora do código de lógica.
-- **Resolução 480x270 com escala inteira**, para manter o pixel art nítido.
+- **Resolução 480x270, ampliada para caber na janela** (a escala pode ser fracionária: o jogo ocupa mais da tela, ao custo de pixels de tamanhos levemente diferentes).
 - **Coyote time e jump buffer** para um pulo mais tolerante e responsivo.
 - **Sem alocação no `update`:** objetos pré-alocados e reutilizados para evitar pausas do coletor de lixo.
 - **Arte e som criados em código:** nenhum arquivo de arte ou áudio externo; o único asset de terceiros é a fonte.
-- **Fonte pixel (Press Start 2P, OFL) em bitmap:** os glifos são desenhados uma vez num atlas, sem meios-tons e com contorno escuro de 1 px já no desenho, e viram uma fonte de bitmap do Phaser. O texto fica nítido em qualquer escala inteira (o texto comum de canvas borrava nas bordas e no contorno).
+- **Fonte pixel (Press Start 2P, OFL) em bitmap:** os glifos são desenhados uma vez num atlas, sem meios-tons e com contorno escuro de 1 px já no desenho, e viram uma fonte de bitmap do Phaser. O texto fica nítido (o texto comum de canvas borrava nas bordas e no contorno).
 
 ## Estrutura de pastas
 
@@ -297,6 +315,7 @@ src/
   systems/   sistemas que ligam a lógica ao Phaser
 tests/       testes da lógica
 docs/        prints e GIFs
+src-tauri/   a janela do programa de Windows (Tauri/Rust)
 ```
 
 ## Licenças

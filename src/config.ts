@@ -21,7 +21,7 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
   pixelArt: true,
   roundPixels: true,
   scale: {
-    // Escala inteira (1x, 2x, 3x...) para manter os pixels nítidos e do mesmo tamanho
+    // O zoom é ajustado em src/main.ts para o jogo ocupar a janela toda
     mode: Phaser.Scale.NONE,
     zoom: Phaser.Scale.MAX_ZOOM,
     autoCenter: Phaser.Scale.CENTER_BOTH,
