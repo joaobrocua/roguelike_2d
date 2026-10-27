@@ -7,7 +7,7 @@ import { TEXT_COLORS, TITLE_SCREEN as T } from '../data/ui';
 import { getAudio, sfx } from '../systems/AudioSystem';
 import { backgroundKey, ENV_TEXTURE } from '../systems/environmentTextures';
 import { getMetaStore } from '../systems/metaStore';
-import { hasSeenIntro } from '../systems/storyStore';
+import { recordIntroShown, shouldPlayIntro } from '../systems/storyStore';
 import { MenuInput } from '../systems/MenuInput';
 import { MenuList, type MenuRow } from '../systems/MenuList';
 import { ControlsPanel, soundRows } from '../systems/menuRows';
@@ -247,10 +247,14 @@ export class TitleScene extends Phaser.Scene {
     this.starting = true;
     sfx('passage');
     this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
-      // Na primeira vez a história vem antes da descida; depois vai direto ao jogo
-      // (dados vazios: começa uma run nova, ver GameScene.init)
-      if (hasSeenIntro()) this.scene.start('Game', {});
-      else this.scene.start('Intro', { next: 'Game' });
+      // Nas primeiras visitas a história vem antes da descida (pulável); depois vai direto ao
+      // jogo (dados vazios: começa uma run nova, ver GameScene.init)
+      if (shouldPlayIntro()) {
+        recordIntroShown();
+        this.scene.start('Intro', { next: 'Game' });
+      } else {
+        this.scene.start('Game', {});
+      }
     });
     this.cameras.main.fadeOut(T.fx.fadeOutMs, 0, 0, 0);
   }

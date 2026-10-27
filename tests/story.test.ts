@@ -4,7 +4,12 @@ import { PIXEL_FONT } from '../src/data/ui';
 import { EPILOGUE, INTRO_CARDS, STORY, STORY_STORAGE, type StoryArt } from '../src/data/story';
 import type { StorageLike } from '../src/logic/meta/save';
 import { typingDuration, visibleChars } from '../src/logic/typewriter';
-import { hasSeenIntro, markIntroSeen } from '../src/systems/storyStore';
+import {
+  introViews,
+  recordIntroShown,
+  shouldPlayIntro,
+  type StorySession,
+} from '../src/systems/storyStore';
 
 /** Largura de um caractere da fonte de pixels (monoespaçada), no tamanho 1. */
 const CHAR_WIDTH = PIXEL_FONT.glyphSize;
@@ -105,13 +110,41 @@ describe('visibleChars e typingDuration', () => {
   });
 });
 
-describe('abertura vista (armazenamento)', () => {
-  it('começa como não vista, e depois de marcada fica vista', () => {
+describe('abertura nas primeiras visitas (armazenamento)', () => {
+  const newVisit = (): StorySession => ({ offered: false });
+
+  it('vem sozinha nas primeiras visitas e depois só pelo menu', () => {
     const storage = fakeStorage();
-    expect(hasSeenIntro(storage)).toBe(false);
-    markIntroSeen(storage);
-    expect(hasSeenIntro(storage)).toBe(true);
-    expect(storage.data.get(STORY_STORAGE.key)).toBe('1');
+    for (let visit = 0; visit < STORY.autoShows; visit++) {
+      const session = newVisit();
+      expect(shouldPlayIntro(storage, session), `visita ${visit + 1}`).toBe(true);
+      recordIntroShown(storage, session);
+    }
+    expect(introViews(storage)).toBe(STORY.autoShows);
+    expect(shouldPlayIntro(storage, newVisit())).toBe(false);
+  });
+
+  it('não repete na mesma visita (depois de morrer ou desistir e voltar ao título)', () => {
+    const storage = fakeStorage();
+    const session = newVisit();
+    expect(shouldPlayIntro(storage, session)).toBe(true);
+    recordIntroShown(storage, session);
+    expect(shouldPlayIntro(storage, session)).toBe(false);
+  });
+
+  it('quem já tinha visto a abertura uma vez (valor antigo "1") continua contando', () => {
+    const storage = fakeStorage();
+    storage.setItem(STORY_STORAGE.key, '1');
+    expect(introViews(storage)).toBe(1);
+    expect(shouldPlayIntro(storage, newVisit())).toBe(STORY.autoShows > 1);
+  });
+
+  it('valor estragado conta como nenhuma visita', () => {
+    const storage = fakeStorage();
+    for (const junk of ['', 'abc', '-3', 'NaN']) {
+      storage.setItem(STORY_STORAGE.key, junk);
+      expect(introViews(storage), junk).toBe(0);
+    }
   });
 
   it('armazenamento que falha não derruba o jogo', () => {
@@ -124,7 +157,10 @@ describe('abertura vista (armazenamento)', () => {
       },
       removeItem: () => undefined,
     };
-    expect(hasSeenIntro(broken)).toBe(false);
-    expect(() => markIntroSeen(broken)).not.toThrow();
+    const session = newVisit();
+    expect(introViews(broken)).toBe(0);
+    expect(shouldPlayIntro(broken, session)).toBe(true);
+    expect(() => recordIntroShown(broken, session)).not.toThrow();
+    expect(shouldPlayIntro(broken, session)).toBe(false); // a visita ainda não repete
   });
 });

@@ -30,7 +30,7 @@ Dead Cells, Skul, Astral Ascent, Have a Nice Death, Blasphemous e Hollow Knight 
 
 O áudio só começa depois da primeira tecla ou clique (regra dos navegadores).
 
-**A história:** na primeira vez que você aperta _Jogar_, uma abertura em cinco cartões (ilustração em pixel art e texto que vai sendo digitado) conta o que aconteceu com o reino. Ela não volta sozinha: para rever, use _História_ no menu do título. **J** avança, **Esc** pula. Ao derrotar o Guardião Partido, a tela de vitória fecha a história com um epílogo.
+**A história:** nas três primeiras vezes que você abre o jogo, ao apertar _Jogar_ uma abertura em cinco cartões (ilustração em pixel art e texto que vai sendo digitado) conta o que aconteceu com o reino. Ela vem uma vez por visita: morrer ou desistir e recomeçar não repete, e depois da terceira visita só aparece pelo item _História_ do menu do título. **J** avança; **Esc** ou o botão **PULAR** no canto de cima pulam tudo. Ao derrotar o Guardião Partido, a tela de vitória fecha a história com um epílogo.
 
 **No celular ou tablet:** os controles aparecem na tela. Em jogo, o dedo na metade esquerda vira um **direcional flutuante** (arraste para os lados) e os botões de ação ficam à direita (ATACAR, PULAR, ROLAR, ESPEC, TROCA, PEGAR e pausa); nos menus aparecem setas, OK e VOLTAR. O jogo ocupa a tela toda, em pé (com os botões embaixo) ou deitado (melhor); o botão no canto abre a tela cheia, onde o navegador permitir. Controle Bluetooth também funciona. Para ver os controles de toque num computador, abra o jogo com `?touch` no final do endereço.
 

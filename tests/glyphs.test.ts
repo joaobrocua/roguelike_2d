@@ -39,6 +39,8 @@ describe('os textos do jogo só usam glifos que a fonte tem', () => {
       ...INTRO_CARDS.map((card) => card.text),
       STORY.prompt,
       STORY.promptTouch,
+      STORY.skip,
+      STORY.skipTouch,
       TITLE_SCREEN.menu.story,
     ].join(' '),
     avisos: [BANNER.sealed, BANNER.miniBossCaption, BANNER.exitOpened].join(' '),

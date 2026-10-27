@@ -56,9 +56,15 @@ export const STORY = {
   panel: { top: 188, alpha: 0.78, textX: 36, textY: 202, textWidth: 408 },
   /** Cada cartão: luz do fundo (escurece a ilustração sem apagar o que importa). */
   artShade: 0.2,
+  /** Em quantas visitas ao jogo a abertura vem sozinha antes da descida (depois, só pelo menu). */
+  autoShows: 3,
   /** Textos de apoio. */
-  prompt: 'J CONTINUAR   ESC PULAR',
-  promptTouch: 'OK CONTINUAR   VOLTAR PULA',
+  prompt: 'J CONTINUAR',
+  promptTouch: 'OK CONTINUAR',
+  /** O botão de pular, sempre visível no canto de cima (margem e folga de toque em px). */
+  skip: 'ESC PULAR',
+  skipTouch: 'PULAR >>',
+  skipButton: { margin: 8, padX: 8, padY: 6, y: 12 },
 } as const;
 
 /** Onde fica guardado que a abertura já foi vista. */

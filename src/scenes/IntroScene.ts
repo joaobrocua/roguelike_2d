@@ -17,7 +17,6 @@ import {
   ensureSanctuaryTextures,
   SANCTUARY_TEXTURE,
 } from '../systems/sanctuaryArt';
-import { markIntroSeen } from '../systems/storyStore';
 import { pulse, UI_TEXTURE } from '../systems/uiArt';
 
 export interface IntroData {
@@ -34,6 +33,7 @@ export class IntroScene extends Phaser.Scene {
   private label!: Phaser.GameObjects.BitmapText;
   private pips: Phaser.GameObjects.Rectangle[] = [];
   private prompt!: Phaser.GameObjects.BitmapText;
+  private skipArea = new Phaser.Geom.Rectangle();
   private wrapped = '';
   private typedMs = 0;
   private changing = false;
@@ -96,10 +96,39 @@ export class IntroScene extends Phaser.Scene {
       depth: DEPTH.hud + 1,
     }).setVisible(false);
     pulse(this, this.prompt);
-    this.input.on('pointerdown', () => this.advance());
+    this.buildSkipButton(touch);
+    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      if (this.skipArea.contains(pointer.x, pointer.y)) this.skip();
+      else this.advance();
+    });
 
     this.cameras.main.fadeIn(STORY.fadeMs, 0, 0, 0);
     this.showCard(0);
+  }
+
+  /** O botão de pular: sempre visível no canto de cima, com folga para o dedo. */
+  private buildSkipButton(touch: boolean): void {
+    const { margin, padX, padY, y } = STORY.skipButton;
+    const label = pixelText(
+      this,
+      GAME_SIZE.width - margin - padX,
+      y,
+      touch ? STORY.skipTouch : STORY.skip,
+      {
+        color: TEXT_COLORS.normal,
+        originX: 1,
+        originY: 0.5,
+        depth: DEPTH.hud + 2,
+      },
+    );
+    const w = label.width + padX * 2;
+    const h = label.height + padY * 2;
+    this.skipArea.setTo(GAME_SIZE.width - margin - w, y - h / 2, w, h);
+    this.add
+      .rectangle(this.skipArea.x, this.skipArea.y, w, h, PALETTE.void, 0.6)
+      .setOrigin(0, 0)
+      .setStrokeStyle(1, PALETTE.glow, 0.7)
+      .setDepth(DEPTH.hud + 1);
   }
 
   // --- Cartões ------------------------------------------------------------------------------
@@ -159,10 +188,15 @@ export class IntroScene extends Phaser.Scene {
     this.label.setText('');
   }
 
+  /** Pular a abertura inteira (ESC, VOLTAR ou o botão do canto). */
+  private skip(): void {
+    if (this.lockMs > 0) return;
+    this.finish();
+  }
+
   private finish(): void {
     if (this.finished) return;
     this.finished = true;
-    markIntroSeen();
     sfx('passage');
     this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
       if (this.next === 'Game') this.scene.start('Game', {});
@@ -259,9 +293,9 @@ export class IntroScene extends Phaser.Scene {
     this.input2.update();
     this.lockMs -= delta;
     if (this.finished) return;
-    if (this.input2.pressed.cancel && this.lockMs <= 0) {
-      this.finish();
-      return;
+    if (this.input2.pressed.cancel) {
+      this.skip();
+      if (this.finished) return;
     }
     if (this.input2.pressed.confirm) this.advance();
     if (this.changing) return;
